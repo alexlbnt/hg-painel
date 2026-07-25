@@ -3,45 +3,51 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import { useRouter, usePathname } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Shield, Crown, Sparkles, Home, Scroll, Sword } from 'lucide-react-native';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export default function HeaderNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const { isMobile } = useResponsive();
 
   const navItems = [
-    { name: 'Portal da Taverna', path: '/', icon: Home },
-    { name: 'Grimório do Jogador', path: '/player', icon: Shield },
-    { name: 'Escudo do Mestre', path: '/dm', icon: Crown },
+    { name: 'Portal da Taverna', mobileName: 'Taverna', path: '/', icon: Home },
+    { name: 'Grimório do Jogador', mobileName: 'Jogador', path: '/player', icon: Shield },
+    { name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown },
   ];
 
   return (
     <View style={styles.container}>
-      <View style={styles.inner}>
+      <View style={[styles.inner, isMobile && { justifyContent: 'center' }]}>
         {/* Logo & Emblema Medieval */}
-        <TouchableOpacity style={styles.brand} onPress={() => router.push('/')}>
+        <TouchableOpacity style={[styles.brand, isMobile && { marginBottom: 8 }]} onPress={() => router.push('/')}>
           <View style={styles.iconContainer}>
             <Sword color={Colors.fantasy.gold} size={22} />
           </View>
           <View>
-            <Text style={styles.title}>HONRA & EGOÍSMO</Text>
-            <Text style={styles.subtitle}>GRIMÓRIO D&D 5E • CAMPANHA MEDIEVAL</Text>
+            <Text style={[styles.title, isMobile && { fontSize: 15 }]}>HONRA & EGOÍSMO</Text>
+            <Text style={styles.subtitle}>GRIMÓRIO D&D 5E</Text>
           </View>
         </TouchableOpacity>
 
         {/* Links de Navegação Medieval */}
-        <View style={styles.navLinks}>
+        <View style={[styles.navLinks, isMobile && { width: '100%', justifyContent: 'space-around', gap: 2 }]}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
             return (
               <TouchableOpacity
                 key={item.path}
-                style={[styles.navButton, isActive && styles.navButtonActive]}
+                style={[
+                  styles.navButton,
+                  isMobile && { paddingHorizontal: 8, paddingVertical: 6 },
+                  isActive && styles.navButtonActive
+                ]}
                 onPress={() => router.push(item.path as any)}
               >
-                <Icon color={isActive ? Colors.fantasy.goldBright : Colors.fantasy.textSecondary} size={16} />
-                <Text style={[styles.navText, isActive && styles.navTextActive]}>
-                  {item.name}
+                <Icon color={isActive ? Colors.fantasy.goldBright : Colors.fantasy.textSecondary} size={isMobile ? 14 : 16} />
+                <Text style={[styles.navText, isMobile && { fontSize: 12 }, isActive && styles.navTextActive]}>
+                  {isMobile ? item.mobileName : item.name}
                 </Text>
               </TouchableOpacity>
             );
@@ -49,10 +55,12 @@ export default function HeaderNav() {
         </View>
 
         {/* Emblema de Campanha */}
-        <View style={styles.roomBadge}>
-          <Text style={styles.roomLabel}>MESA EM SESSÃO</Text>
-          <Text style={styles.roomCode}>⚔️ #HONRA-5E</Text>
-        </View>
+        {!isMobile && (
+          <View style={styles.roomBadge}>
+            <Text style={styles.roomLabel}>MESA EM SESSÃO</Text>
+            <Text style={styles.roomCode}>⚔️ #HONRA-5E</Text>
+          </View>
+        )}
       </View>
     </View>
   );

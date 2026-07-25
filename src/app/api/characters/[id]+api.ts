@@ -39,6 +39,21 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
       }
     }
 
+    if (body.items && Array.isArray(body.items)) {
+      await prisma.item.deleteMany({ where: { characterId: id } });
+      await prisma.item.createMany({
+        data: body.items.map((i: any) => ({
+          name: i.name,
+          description: i.description || '',
+          weight: Number(i.weight) || 0,
+          quantity: Number(i.quantity) || 1,
+          isWeapon: !!i.isWeapon,
+          damage: i.damage || '',
+          characterId: id,
+        })),
+      });
+    }
+
     const updated = await prisma.character.update({
       where: { id },
       data: {
@@ -53,8 +68,11 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
         playerName: body.playerName,
         class: body.class,
         level: body.level !== undefined ? Number(body.level) : undefined,
+        gold: body.gold !== undefined ? Number(body.gold) : undefined,
+        silver: body.silver !== undefined ? Number(body.silver) : undefined,
+        copper: body.copper !== undefined ? Number(body.copper) : undefined,
       },
-      include: { spellSlots: true, abilities: true, conditions: true },
+      include: { spellSlots: true, abilities: true, conditions: true, items: true },
     });
 
     return Response.json(updated);

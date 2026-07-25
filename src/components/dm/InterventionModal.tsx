@@ -395,8 +395,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   conditionCard: {
-    width: Platform.OS === 'web' ? '48%' : '100%',
-    minWidth: 260,
+    flexGrow: 1,
+    flexBasis: 240,
+    minWidth: 240,
     backgroundColor: '#110F0D',
     borderWidth: 1,
     borderColor: '#3D342C',

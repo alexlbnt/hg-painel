@@ -98,6 +98,9 @@ export const ApiService = {
       wisProf: !!data.wisProf,
       chaProf: !!data.chaProf,
       proficientSkills: data.proficientSkills || '',
+      gold: data.gold !== undefined ? data.gold : 15,
+      silver: data.silver !== undefined ? data.silver : 10,
+      copper: data.copper !== undefined ? data.copper : 30,
       spellSlots: data.spellSlots || [
         { id: `slot-${Date.now()}-1`, level: 1, total: 2, used: 0 }
       ],
@@ -105,6 +108,10 @@ export const ApiService = {
         { id: `ab-${Date.now()}-1`, name: 'Ataque Especial', description: 'Habilidade básica.', maxUses: 1, currentUses: 1, resetType: 'SHORT_REST' }
       ],
       conditions: [],
+      items: data.items || [
+        { id: `item-${Date.now()}-1`, name: 'Espada Longa', description: 'Arma versátil', weight: 1.5, quantity: 1, isWeapon: true, damage: '1d8 cortante' },
+        { id: `item-${Date.now()}-2`, name: 'Mochila de Aventureiro', description: 'Kit de sobrevivência básico', weight: 5.0, quantity: 1, isWeapon: false },
+      ],
     };
 
     try {

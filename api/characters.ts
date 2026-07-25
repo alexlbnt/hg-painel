@@ -5,7 +5,7 @@ export default async function handler(req: any, res: any) {
   if (req.method === 'GET') {
     try {
       const characters = await prisma.character.findMany({
-        include: { spellSlots: true, abilities: true, conditions: true },
+        include: { spellSlots: true, abilities: true, conditions: true, items: true },
         orderBy: { createdAt: 'asc' },
       });
       if (characters.length === 0) {
@@ -43,14 +43,18 @@ export default async function handler(req: any, res: any) {
               wisProf: char.wisProf,
               chaProf: char.chaProf,
               proficientSkills: char.proficientSkills,
+              gold: char.gold || 15,
+              silver: char.silver || 10,
+              copper: char.copper || 30,
               spellSlots: { create: char.spellSlots.map(s => ({ level: s.level, total: s.total, used: s.used })) },
               abilities: { create: char.abilities.map(a => ({ name: a.name, description: a.description, maxUses: a.maxUses, currentUses: a.currentUses, resetType: a.resetType })) },
               conditions: { create: char.conditions.map(c => ({ name: c.name, description: c.description })) },
+              items: { create: (char.items || []).map(i => ({ name: i.name, description: i.description || '', weight: Number(i.weight) || 0, quantity: Number(i.quantity) || 1, isWeapon: !!i.isWeapon, damage: i.damage || '' })) },
             },
           });
         }
         const newChars = await prisma.character.findMany({
-          include: { spellSlots: true, abilities: true, conditions: true },
+          include: { spellSlots: true, abilities: true, conditions: true, items: true },
         });
         return res.status(200).json(newChars);
       }
@@ -95,10 +99,14 @@ export default async function handler(req: any, res: any) {
           wisProf: !!body.wisProf,
           chaProf: !!body.chaProf,
           proficientSkills: body.proficientSkills || '',
+          gold: Number(body.gold) || 15,
+          silver: Number(body.silver) || 10,
+          copper: Number(body.copper) || 30,
           spellSlots: { create: body.spellSlots || [] },
           abilities: { create: body.abilities || [] },
+          items: { create: body.items || [] },
         },
-        include: { spellSlots: true, abilities: true, conditions: true },
+        include: { spellSlots: true, abilities: true, conditions: true, items: true },
       });
       return res.status(201).json(newChar);
     } catch (error) {

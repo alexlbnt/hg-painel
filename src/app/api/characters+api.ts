@@ -8,6 +8,7 @@ export async function GET() {
         spellSlots: true,
         abilities: true,
         conditions: true,
+        items: true,
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -48,6 +49,9 @@ export async function GET() {
             wisProf: char.wisProf,
             chaProf: char.chaProf,
             proficientSkills: char.proficientSkills,
+            gold: char.gold || 15,
+            silver: char.silver || 10,
+            copper: char.copper || 30,
             spellSlots: {
               create: char.spellSlots.map(s => ({ level: s.level, total: s.total, used: s.used })),
             },
@@ -63,11 +67,21 @@ export async function GET() {
             conditions: {
               create: char.conditions.map(c => ({ name: c.name, description: c.description })),
             },
+            items: {
+              create: (char.items || []).map(i => ({
+                name: i.name,
+                description: i.description || '',
+                weight: Number(i.weight) || 0,
+                quantity: Number(i.quantity) || 1,
+                isWeapon: !!i.isWeapon,
+                damage: i.damage || '',
+              })),
+            },
           },
         });
       }
       const newChars = await prisma.character.findMany({
-        include: { spellSlots: true, abilities: true, conditions: true },
+        include: { spellSlots: true, abilities: true, conditions: true, items: true },
       });
       return Response.json(newChars);
     }
@@ -113,14 +127,20 @@ export async function POST(request: Request) {
         wisProf: !!body.wisProf,
         chaProf: !!body.chaProf,
         proficientSkills: body.proficientSkills || '',
+        gold: Number(body.gold) || 15,
+        silver: Number(body.silver) || 10,
+        copper: Number(body.copper) || 30,
         spellSlots: {
           create: body.spellSlots || [],
         },
         abilities: {
           create: body.abilities || [],
         },
+        items: {
+          create: body.items || [],
+        },
       },
-      include: { spellSlots: true, abilities: true, conditions: true },
+      include: { spellSlots: true, abilities: true, conditions: true, items: true },
     });
 
     return Response.json(newChar, { status: 201 });

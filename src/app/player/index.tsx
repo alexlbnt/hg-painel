@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInp
 import { ApiService } from '@/services/api';
 import { CharacterData } from '@/lib/mockData';
 import CharacterModal from '@/components/player/CharacterModal';
-import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword } from 'lucide-react-native';
+import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins } from 'lucide-react-native';
 
 const SKILLS_LIST = [
   { name: 'Acrobacia', attr: 'dex', label: 'DES' },
@@ -32,8 +32,14 @@ export default function PlayerModule() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingChar, setEditingChar] = useState<CharacterData | null>(null);
-  const [activeTab, setActiveTab] = useState<'spells' | 'abilities' | 'skills'>('spells');
+  const [activeTab, setActiveTab] = useState<'spells' | 'abilities' | 'skills' | 'inventory'>('spells');
   const [customHp, setCustomHp] = useState('');
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemDesc, setNewItemDesc] = useState('');
+  const [newItemWeight, setNewItemWeight] = useState('');
+  const [newItemQty, setNewItemQty] = useState('1');
+  const [newItemIsWeapon, setNewItemIsWeapon] = useState(false);
+  const [newItemDamage, setNewItemDamage] = useState('');
 
   const loadCharacters = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -77,6 +83,10 @@ export default function PlayerModule() {
   const passivePerception = selectedChar
     ? 10 + getMod(selectedChar.wis) + (selectedChar.proficientSkills.includes('Percepção') ? profBonus : 0)
     : 10;
+
+  const totalWeight = selectedChar ? (selectedChar.items || []).reduce((acc, i) => acc + ((Number(i.weight) || 0) * (Number(i.quantity) || 1)), 0) : 0;
+  const maxWeight = selectedChar ? (Number(selectedChar.str) || 10) * 7.5 : 75;
+  const isOverloaded = totalWeight > maxWeight;
 
   const handleCreateOrUpdate = async (data: Partial<CharacterData>) => {
     try {
@@ -198,6 +208,30 @@ export default function PlayerModule() {
       const newFailures = selectedChar.deathSaveFailures === index + 1 ? index : index + 1;
       await ApiService.updateCharacter(selectedChar.id, { deathSaveFailures: newFailures });
     }
+    loadCharacters(true);
+  };
+
+  const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string }) => {
+    if (!selectedChar) return;
+    const itemObj = {
+      id: `item-${Date.now()}`,
+      ...newItem,
+    };
+    const updatedItems = [...(selectedChar.items || []), itemObj];
+    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
+    loadCharacters(true);
+  };
+
+  const removeItem = async (itemId: string) => {
+    if (!selectedChar) return;
+    const updatedItems = (selectedChar.items || []).filter(i => i.id !== itemId);
+    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
+    loadCharacters(true);
+  };
+
+  const updateCoins = async (gold: number, silver: number, copper: number) => {
+    if (!selectedChar) return;
+    await ApiService.updateCharacter(selectedChar.id, { gold, silver, copper });
     loadCharacters(true);
   };
 
@@ -492,6 +526,15 @@ export default function PlayerModule() {
                 Perícias Medievais (18)
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === 'inventory' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('inventory')}
+            >
+              <Package color={activeTab === 'inventory' ? '#E6C280' : '#80776C'} size={18} />
+              <Text style={[styles.tabBtnText, activeTab === 'inventory' && styles.tabBtnTextActive]}>
+                Mochila & Armamento ({(selectedChar.items || []).length})
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Conteúdo das Abas */}
@@ -587,6 +630,236 @@ export default function PlayerModule() {
                     </View>
                   );
                 })}
+              </View>
+            )}
+
+            {/* ABA: Mochila & Armamento */}
+            {activeTab === 'inventory' && (
+              <View style={styles.inventoryContainer}>
+                {/* 1. Alerta de Sobrecarga Se Houver */}
+                {isOverloaded && (
+                  <View style={styles.overloadBanner}>
+                    <AlertTriangle color="#FF4545" size={24} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.overloadBannerTitle}>⚠️ SOBRECARGA ATIVA ({totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg max)</Text>
+                      <Text style={styles.overloadBannerDesc}>
+                        O aventureiro está carregando excesso de carga! O deslocamento é reduzido em 3m e o Escudo do Mestre foi notificado em tempo real.
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* 2. Barra de Peso / Capacidade de Carga */}
+                <View style={styles.weightSection}>
+                  <View style={styles.weightTopRow}>
+                    <Text style={styles.weightTitle}>⚖️ CAPACIDADE DE CARGA DO AVENTUREIRO (FOR x 7.5)</Text>
+                    <Text style={[styles.weightVal, isOverloaded && { color: '#FF4545', fontWeight: '700' }]}>
+                      {totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg
+                    </Text>
+                  </View>
+                  <View style={styles.weightBg}>
+                    <View
+                      style={[
+                        styles.weightFill,
+                        {
+                          width: `${Math.min(100, (totalWeight / maxWeight) * 100)}%`,
+                          backgroundColor: isOverloaded ? '#FF4545' : (totalWeight / maxWeight) > 0.75 ? '#C5A059' : '#38783C',
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+
+                {/* 3. Tesouro da Guilda / Moedas */}
+                <View style={styles.coinsSection}>
+                  <Text style={styles.sectionHeading}>💰 TESOURO DA GUILDA (PORTA-MOEDAS)</Text>
+                  <View style={styles.coinsGrid}>
+                    {/* Ouro */}
+                    <View style={[styles.coinCard, { borderColor: '#E6C280' }]}>
+                      <Text style={[styles.coinLabel, { color: '#E6C280' }]}>🥇 PEÇAS DE OURO (PO)</Text>
+                      <View style={styles.coinControls}>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(Math.max(0, (selectedChar.gold || 0) - 10), selectedChar.silver || 0, selectedChar.copper || 0)}>
+                          <Text style={styles.coinBtnText}>-10</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(Math.max(0, (selectedChar.gold || 0) - 1), selectedChar.silver || 0, selectedChar.copper || 0)}>
+                          <Text style={styles.coinBtnText}>-1</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.coinValue, { color: '#E6C280' }]}>{selectedChar.gold || 0}</Text>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins((selectedChar.gold || 0) + 1, selectedChar.silver || 0, selectedChar.copper || 0)}>
+                          <Text style={styles.coinBtnText}>+1</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins((selectedChar.gold || 0) + 10, selectedChar.silver || 0, selectedChar.copper || 0)}>
+                          <Text style={styles.coinBtnText}>+10</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Prata */}
+                    <View style={[styles.coinCard, { borderColor: '#C0C0C0' }]}>
+                      <Text style={[styles.coinLabel, { color: '#C0C0C0' }]}>🥈 PEÇAS DE PRATA (PP)</Text>
+                      <View style={styles.coinControls}>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, Math.max(0, (selectedChar.silver || 0) - 10), selectedChar.copper || 0)}>
+                          <Text style={styles.coinBtnText}>-10</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, Math.max(0, (selectedChar.silver || 0) - 1), selectedChar.copper || 0)}>
+                          <Text style={styles.coinBtnText}>-1</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.coinValue, { color: '#C0C0C0' }]}>{selectedChar.silver || 0}</Text>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, (selectedChar.silver || 0) + 1, selectedChar.copper || 0)}>
+                          <Text style={styles.coinBtnText}>+1</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, (selectedChar.silver || 0) + 10, selectedChar.copper || 0)}>
+                          <Text style={styles.coinBtnText}>+10</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Cobre */}
+                    <View style={[styles.coinCard, { borderColor: '#B87333' }]}>
+                      <Text style={[styles.coinLabel, { color: '#B87333' }]}>🥉 PEÇAS DE COBRE (PC)</Text>
+                      <View style={styles.coinControls}>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, selectedChar.silver || 0, Math.max(0, (selectedChar.copper || 0) - 10))}>
+                          <Text style={styles.coinBtnText}>-10</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, selectedChar.silver || 0, Math.max(0, (selectedChar.copper || 0) - 1))}>
+                          <Text style={styles.coinBtnText}>-1</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.coinValue, { color: '#B87333' }]}>{selectedChar.copper || 0}</Text>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, selectedChar.silver || 0, (selectedChar.copper || 0) + 1)}>
+                          <Text style={styles.coinBtnText}>+1</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, selectedChar.silver || 0, (selectedChar.copper || 0) + 10)}>
+                          <Text style={styles.coinBtnText}>+10</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* 4. Lista de Itens & Armas */}
+                <View style={styles.itemsListSection}>
+                  <Text style={styles.sectionHeading}>⚔️ ARMAMENTO & ITENS DA MOCHILA</Text>
+                  {(selectedChar.items || []).length === 0 ? (
+                    <View style={styles.emptyItems}>
+                      <Text style={styles.emptyItemsText}>A mochila do herói está vazia.</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.itemsGrid}>
+                      {(selectedChar.items || []).map((item) => (
+                        <View key={item.id} style={[styles.itemCard, item.isWeapon && styles.weaponCard]}>
+                          <View style={styles.itemHeader}>
+                            <View style={styles.itemTitleRow}>
+                              {item.isWeapon ? <Sword color="#E6C280" size={18} /> : <Package color="#BAAFA0" size={18} />}
+                              <Text style={[styles.itemName, item.isWeapon && { color: '#E6C280' }]}>{item.name}</Text>
+                              {item.isWeapon && (
+                                <View style={styles.weaponBadge}>
+                                  <Text style={styles.weaponBadgeText}>Arma • {item.damage || '1d6'}</Text>
+                                </View>
+                              )}
+                            </View>
+                            <TouchableOpacity style={styles.delItemBtn} onPress={() => removeItem(item.id)}>
+                              <Trash2 color="#80776C" size={16} />
+                            </TouchableOpacity>
+                          </View>
+                          {item.description ? <Text style={styles.itemDesc}>{item.description}</Text> : null}
+                          <View style={styles.itemFooter}>
+                            <Text style={styles.itemMeta}>⚖️ Peso: {Number(item.weight || 0).toFixed(1)} kg ({Number(item.weight || 0) * (item.quantity || 1)} kg total)</Text>
+                            <Text style={styles.itemMeta}>📦 Qtd: x{item.quantity || 1}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* 5. Adicionar Novo Item */}
+                <View style={styles.addItemBox}>
+                  <Text style={styles.addItemHeading}>➕ ADICIONAR NOVO ITEM / ARMA</Text>
+                  <View style={styles.addItemForm}>
+                    <View style={styles.addInputRow}>
+                      <TextInput
+                        style={[styles.addInput, { flex: 2 }]}
+                        placeholder="Nome do Item (ex: Espada Longa, Poção...)"
+                        placeholderTextColor="#80776C"
+                        value={newItemName}
+                        onChangeText={setNewItemName}
+                      />
+                      <TextInput
+                        style={[styles.addInput, { flex: 1 }]}
+                        placeholder="Peso (kg)"
+                        placeholderTextColor="#80776C"
+                        keyboardType="numeric"
+                        value={newItemWeight}
+                        onChangeText={setNewItemWeight}
+                      />
+                      <TextInput
+                        style={[styles.addInput, { flex: 0.8 }]}
+                        placeholder="Qtd"
+                        placeholderTextColor="#80776C"
+                        keyboardType="numeric"
+                        value={newItemQty}
+                        onChangeText={setNewItemQty}
+                      />
+                    </View>
+
+                    <View style={styles.addInputRow}>
+                      <TextInput
+                        style={[styles.addInput, { flex: 2 }]}
+                        placeholder="Descrição ou Notas do item..."
+                        placeholderTextColor="#80776C"
+                        value={newItemDesc}
+                        onChangeText={setNewItemDesc}
+                      />
+                      <TouchableOpacity
+                        style={[styles.weaponToggleBtn, newItemIsWeapon && styles.weaponToggleBtnActive]}
+                        onPress={() => setNewItemIsWeapon(!newItemIsWeapon)}
+                      >
+                        <Sword color={newItemIsWeapon ? '#110F0D' : '#BAAFA0'} size={16} />
+                        <Text style={[styles.weaponToggleText, newItemIsWeapon && { color: '#110F0D' }]}>
+                          {newItemIsWeapon ? 'É uma Arma ⚔️' : 'Item Normal 📦'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {newItemIsWeapon && (
+                      <TextInput
+                        style={styles.addInput}
+                        placeholder="Dano da Arma (ex: 1d8 cortante, 2d6+4 perfurante...)"
+                        placeholderTextColor="#80776C"
+                        value={newItemDamage}
+                        onChangeText={setNewItemDamage}
+                      />
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.addItemSubmitBtn}
+                      onPress={() => {
+                        if (!newItemName.trim()) {
+                          if (Platform.OS === 'web') window.alert('Por favor, informe o nome do item!');
+                          else Alert.alert('Erro', 'Por favor, informe o nome do item!');
+                          return;
+                        }
+                        addItem({
+                          name: newItemName.trim(),
+                          description: newItemDesc.trim(),
+                          weight: Number(newItemWeight) || 1.0,
+                          quantity: Number(newItemQty) || 1,
+                          isWeapon: newItemIsWeapon,
+                          damage: newItemIsWeapon ? (newItemDamage.trim() || '1d6 cortante') : '',
+                        });
+                        setNewItemName('');
+                        setNewItemDesc('');
+                        setNewItemWeight('');
+                        setNewItemQty('1');
+                        setNewItemIsWeapon(false);
+                        setNewItemDamage('');
+                      }}
+                    >
+                      <Plus color="#110F0D" size={18} />
+                      <Text style={styles.addItemSubmitText}>Guardar na Mochila</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             )}
           </View>
@@ -805,7 +1078,7 @@ const styles = StyleSheet.create({
   },
   hpSection: {
     flex: 2,
-    minWidth: Platform.OS === 'web' ? 330 : '100%',
+    minWidth: 280,
     backgroundColor: '#110F0D',
     borderRadius: 8,
     borderWidth: 1,
@@ -936,7 +1209,7 @@ const styles = StyleSheet.create({
   },
   deathAndRestSection: {
     flex: 1,
-    minWidth: Platform.OS === 'web' ? 290 : '100%',
+    minWidth: 260,
     gap: 18,
   },
   deathBox: {
@@ -1034,7 +1307,7 @@ const styles = StyleSheet.create({
   },
   attrCard: {
     flex: 1,
-    minWidth: Platform.OS === 'web' ? 160 : '45%',
+    minWidth: 140,
     backgroundColor: '#110F0D',
     borderRadius: 6,
     borderWidth: 1,
@@ -1089,9 +1362,10 @@ const styles = StyleSheet.create({
   },
   tabsNav: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     borderBottomWidth: 1,
     borderBottomColor: '#3D342C',
-    gap: 22,
+    gap: 12,
     marginTop: 10,
   },
   tabBtn: {
@@ -1353,6 +1627,279 @@ const styles = StyleSheet.create({
   createBtnLargeText: {
     color: '#110F0D',
     fontSize: 16,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  inventoryContainer: {
+    gap: 24,
+  },
+  overloadBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255, 69, 69, 0.15)',
+    borderWidth: 1,
+    borderColor: '#FF4545',
+    padding: 16,
+    borderRadius: 8,
+  },
+  overloadBannerTitle: {
+    color: '#FF4545',
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  overloadBannerDesc: {
+    color: '#E2D8C3',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  weightSection: {
+    backgroundColor: '#161311',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2D251E',
+    gap: 10,
+  },
+  weightTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  weightTitle: {
+    color: '#BAAFA0',
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  weightVal: {
+    color: '#E6C280',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  weightBg: {
+    height: 10,
+    backgroundColor: '#0A0908',
+    borderRadius: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#2D251E',
+  },
+  weightFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  coinsSection: {
+    gap: 12,
+  },
+  sectionHeading: {
+    color: '#E2D8C3',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2D251E',
+    paddingBottom: 8,
+  },
+  coinsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  coinCard: {
+    flex: 1,
+    minWidth: 200,
+    backgroundColor: '#161311',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    gap: 10,
+  },
+  coinLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  coinControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  coinBtn: {
+    backgroundColor: '#26201B',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#3D342C',
+  },
+  coinBtnText: {
+    color: '#E2D8C3',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  coinValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  itemsListSection: {
+    gap: 12,
+  },
+  emptyItems: {
+    backgroundColor: '#161311',
+    padding: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2D251E',
+  },
+  emptyItemsText: {
+    color: '#80776C',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  itemsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  itemCard: {
+    flexGrow: 1,
+    flexBasis: 280,
+    minWidth: 260,
+    backgroundColor: '#161311',
+    borderWidth: 1,
+    borderColor: '#2D251E',
+    borderRadius: 8,
+    padding: 14,
+    gap: 8,
+    justifyContent: 'space-between',
+  },
+  weaponCard: {
+    borderColor: '#5C4A32',
+    backgroundColor: '#1A1612',
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  itemTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  itemName: {
+    color: '#E2D8C3',
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  weaponBadge: {
+    backgroundColor: '#3D3020',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#8C704F',
+  },
+  weaponBadgeText: {
+    color: '#E6C280',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  delItemBtn: {
+    padding: 4,
+  },
+  itemDesc: {
+    color: '#BAAFA0',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  itemFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#26201B',
+    paddingTop: 8,
+    marginTop: 4,
+  },
+  itemMeta: {
+    color: '#80776C',
+    fontSize: 12,
+  },
+  addItemBox: {
+    backgroundColor: '#161311',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 8,
+    padding: 16,
+    gap: 14,
+  },
+  addItemHeading: {
+    color: '#C5A059',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  addItemForm: {
+    gap: 12,
+  },
+  addInputRow: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  addInput: {
+    backgroundColor: '#0A0908',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    color: '#E2D8C3',
+    fontSize: 14,
+    minWidth: 120,
+  },
+  weaponToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#26201B',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    paddingHorizontal: 14,
+    borderRadius: 6,
+  },
+  weaponToggleBtnActive: {
+    backgroundColor: '#E6C280',
+    borderColor: '#C5A059',
+  },
+  weaponToggleText: {
+    color: '#BAAFA0',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  addItemSubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#C5A059',
+    paddingVertical: 12,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  addItemSubmitText: {
+    color: '#110F0D',
+    fontSize: 15,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },

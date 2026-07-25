@@ -20,6 +20,16 @@ export interface ConditionData {
   description: string;
 }
 
+export interface ItemData {
+  id: string;
+  name: string;
+  description: string;
+  weight: number;
+  quantity: number;
+  isWeapon: boolean;
+  damage?: string;
+}
+
 export interface CharacterData {
   id: string;
   name: string;
@@ -53,9 +63,13 @@ export interface CharacterData {
   wisProf: boolean;
   chaProf: boolean;
   proficientSkills: string;
+  gold: number;
+  silver: number;
+  copper: number;
   spellSlots: SpellSlotData[];
   abilities: AbilityData[];
   conditions: ConditionData[];
+  items: ItemData[];
 }
 
 export const INITIAL_CHARACTERS: CharacterData[] = [
@@ -92,6 +106,9 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     wisProf: true,
     chaProf: true,
     proficientSkills: 'Intimidação,Persuasão,Atletismo,Religião',
+    gold: 45,
+    silver: 20,
+    copper: 10,
     spellSlots: [
       { id: 'slot-1-1', level: 1, total: 4, used: 2 },
       { id: 'slot-1-2', level: 2, total: 2, used: 0 },
@@ -102,6 +119,11 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
       { id: 'ab-1-3', name: 'Canalizar Divindade: Voto de Inimizade', description: 'Vantagem nas jogadas de ataque contra 1 alvo.', maxUses: 1, currentUses: 1, resetType: 'SHORT_REST' },
     ],
     conditions: [],
+    items: [
+      { id: 'item-1-1', name: 'Montante Sagrado', description: 'Espada pesada abençoada', weight: 3.0, quantity: 1, isWeapon: true, damage: '2d6+4 cortante' },
+      { id: 'item-1-2', name: 'Armadura de Placas (CA 18)', description: 'Armadura pesada de aço anão', weight: 32.0, quantity: 1, isWeapon: false },
+      { id: 'item-1-3', name: 'Poção de Cura Maior', description: 'Restaura 4d4+4 HP', weight: 0.5, quantity: 2, isWeapon: false },
+    ],
   },
   {
     id: 'char-2',
@@ -136,6 +158,9 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     wisProf: true,
     chaProf: true,
     proficientSkills: 'Enganação,Furtividade,Arcanismo,Percepção',
+    gold: 120,
+    silver: 50,
+    copper: 80,
     spellSlots: [
       { id: 'slot-2-3', level: 3, total: 2, used: 1 },
     ],
@@ -146,6 +171,11 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     ],
     conditions: [
       { id: 'cond-2-1', name: 'Abençoado', description: '+1d4 em jogadas de ataque e testes de resistência.' }
+    ],
+    items: [
+      { id: 'item-2-1', name: 'Adaga Mágica Sombria', description: 'Arma leve de pacto', weight: 0.5, quantity: 1, isWeapon: true, damage: '1d4+3 perfurante' },
+      { id: 'item-2-2', name: 'Baú de Relíquias Amaldiçoadas', description: 'Baú maciço e pesado com artefatos de culto', weight: 45.0, quantity: 1, isWeapon: false },
+      { id: 'item-2-3', name: 'Tomo dos Encantos Proibidos', description: 'Livro de feitiços selado com ferro e chumbo', weight: 18.0, quantity: 1, isWeapon: false },
     ],
   },
   {
@@ -181,6 +211,9 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     wisProf: true,
     chaProf: true,
     proficientSkills: 'Medicina,Intuição,Religião,Persuasão',
+    gold: 80,
+    silver: 40,
+    copper: 100,
     spellSlots: [
       { id: 'slot-3-1', level: 1, total: 4, used: 3 },
       { id: 'slot-3-2', level: 2, total: 3, used: 2 },
@@ -192,6 +225,11 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     ],
     conditions: [
       { id: 'cond-3-1', name: 'Amedrontado', description: 'Desvantagem em testes e ataques enquanto a fonte do medo estiver visível.' }
+    ],
+    items: [
+      { id: 'item-3-1', name: 'Maça Sagrada da Sepultura', description: 'Arma de contusão abençoada', weight: 2.0, quantity: 1, isWeapon: true, damage: '1d6+1 contundente' },
+      { id: 'item-3-2', name: 'Escudo com Emblema Fúnebre', description: '+2 CA', weight: 3.0, quantity: 1, isWeapon: false },
+      { id: 'item-3-3', name: 'Kit de Primeiros Socorros', description: 'Estojo com ataduras e ervas de cura', weight: 1.5, quantity: 1, isWeapon: false },
     ],
   },
   {
@@ -227,6 +265,9 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     wisProf: false,
     chaProf: false,
     proficientSkills: 'Atletismo,Sobrevivência,Percepção,Intimidação',
+    gold: 15,
+    silver: 10,
+    copper: 5,
     spellSlots: [],
     abilities: [
       { id: 'ab-4-1', name: 'Fúria Sanguinária (Rage)', description: 'Vantagem em FOR, bônus de dano +2, resistência a dano físico.', maxUses: 3, currentUses: 3, resetType: 'LONG_REST' },
@@ -234,5 +275,10 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
       { id: 'ab-4-3', name: 'Resistência Implacável', description: 'Ao cair para 0 HP, fica com 1 HP em vez disso (1x por Descanso Longo).', maxUses: 1, currentUses: 1, resetType: 'LONG_REST' },
     ],
     conditions: [],
+    items: [
+      { id: 'item-4-1', name: 'Machado Grande dos Orcs', description: 'Machado brutal de duas mãos', weight: 3.5, quantity: 1, isWeapon: true, damage: '1d12+4 cortante' },
+      { id: 'item-4-2', name: 'Azagaia de Caça', description: 'Arma de arremesso', weight: 1.0, quantity: 3, isWeapon: true, damage: '1d6+4 perfurante' },
+      { id: 'item-4-3', name: 'Mochila de Acampamento', description: 'Saco de dormir, pederneira e rações secas', weight: 12.0, quantity: 1, isWeapon: false },
+    ],
   }
 ];

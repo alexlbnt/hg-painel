@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert } from 'react
 import { useRouter } from 'expo-router';
 import { Shield, Crown, Zap, Moon, RefreshCw, Scroll, Sword, Heart } from 'lucide-react-native';
 import { ApiService } from '@/services/api';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [resetting, setResetting] = useState(false);
+  const { isMobile } = useResponsive();
 
   const handleResetDemo = async () => {
     setResetting(true);
@@ -33,8 +35,8 @@ export default function HomeScreen() {
           <Text style={styles.badgeText}>GRIMÓRIO D&D 5E • CAMPANHA MEDIEVAL</Text>
         </View>
         
-        <Text style={styles.heroTitle}>HONRA & EGOÍSMO</Text>
-        <Text style={styles.heroSubtitle}>
+        <Text style={[styles.heroTitle, isMobile && { fontSize: 30, letterSpacing: 1 }]}>HONRA & EGOÍSMO</Text>
+        <Text style={[styles.heroSubtitle, isMobile && { fontSize: 14, lineHeight: 22 }]}>
           O grimório ancestral interativo para D&D 5e. Esqueça contas manuais e tabelas complexas: 
           automatize atributos, pontos de vida e magias com intervenção divina em tempo real do Mestre.
         </Text>
@@ -196,7 +198,7 @@ const styles = StyleSheet.create({
   },
   moduleCard: {
     flex: 1,
-    minWidth: Platform.OS === 'web' ? 330 : '100%',
+    minWidth: 280,
     backgroundColor: '#1A1714',
     borderRadius: 8,
     borderWidth: 1,
@@ -301,7 +303,7 @@ const styles = StyleSheet.create({
   },
   featureItem: {
     flex: 1,
-    minWidth: Platform.OS === 'web' ? 260 : '100%',
+    minWidth: 250,
     backgroundColor: '#110F0D',
     padding: 22,
     borderRadius: 6,

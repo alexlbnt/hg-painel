@@ -10,6 +10,7 @@ async function main() {
   await prisma.condition.deleteMany({});
   await prisma.ability.deleteMany({});
   await prisma.spellSlot.deleteMany({});
+  await prisma.item.deleteMany({});
   await prisma.character.deleteMany({});
   await prisma.room.deleteMany({});
 

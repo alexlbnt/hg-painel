@@ -82,12 +82,18 @@ model Character {
   // Skill Proficiencies (stored as comma-separated string for simplicity in D&D 5e skills)
   proficientSkills   String      @default("")
 
+  // Coins (Tesouro / Moedas)
+  gold               Int         @default(15) // PO
+  silver             Int         @default(10) // PP
+  copper             Int         @default(30) // PC
+
   // Relations
   roomId             String?
   room               Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
   spellSlots         SpellSlot[]
   abilities          Ability[]
   conditions         Condition[]
+  items              Item[]
   
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
@@ -117,6 +123,18 @@ model Condition {
   id          String    @id @default(uuid())
   name        String
   description String    @default("")
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+model Item {
+  id          String    @id @default(uuid())
+  name        String
+  description String    @default("")
+  weight      Float     @default(1.0)
+  quantity    Int       @default(1)
+  isWeapon    Boolean   @default(false)
+  damage      String    @default("")
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }

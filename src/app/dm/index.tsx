@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert }
 import { ApiService } from '@/services/api';
 import { CharacterData } from '@/lib/mockData';
 import InterventionModal from '@/components/dm/InterventionModal';
-import { Crown, Users, RefreshCw, Moon, Sun, Skull, Shield, Heart, Scroll, Sword, Zap } from 'lucide-react-native';
+import { Crown, Users, RefreshCw, Moon, Sun, Skull, Shield, Heart, Scroll, Sword, Zap, AlertTriangle, Package } from 'lucide-react-native';
 
 export default function DmModule() {
   const [characters, setCharacters] = useState<CharacterData[]>([]);
@@ -177,6 +177,9 @@ export default function DmModule() {
           {characters.map((char) => {
             const hpPercent = char.currentHp / char.maxHp;
             const isCritical = hpPercent <= 0.25;
+            const totalWeight = (char.items || []).reduce((acc, i) => acc + ((Number(i.weight) || 0) * (Number(i.quantity) || 1)), 0);
+            const maxWeight = (Number(char.str) || 10) * 7.5;
+            const isOverloaded = totalWeight > maxWeight;
 
             return (
               <View
@@ -230,6 +233,17 @@ export default function DmModule() {
                   </View>
                 )}
 
+                {/* Alerta de Sobrecarga de Inventário */}
+                {isOverloaded && (
+                  <View style={styles.overloadBox}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <AlertTriangle color="#FF4545" size={16} />
+                      <Text style={styles.overloadTitle}>⚠️ SOBRECARGA ATIVA ({totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg)</Text>
+                    </View>
+                    <Text style={styles.overloadDesc}>Deslocamento reduzido em -3m. O herói carrega excesso de peso.</Text>
+                  </View>
+                )}
+
                 {/* Mini Atributos Rápidos */}
                 <View style={styles.miniStatsRow}>
                   <Text style={styles.miniStat}>FOR {char.str} ({getMod(char.str)})</Text>
@@ -238,6 +252,16 @@ export default function DmModule() {
                   <Text style={styles.miniStat}>INT {char.int} ({getMod(char.int)})</Text>
                   <Text style={styles.miniStat}>SAB {char.wis} ({getMod(char.wis)})</Text>
                   <Text style={styles.miniStat}>CAR {char.cha} ({getMod(char.cha)})</Text>
+                </View>
+
+                {/* Moedas e Peso */}
+                <View style={styles.coinsRow}>
+                  <Text style={styles.coinBadge}>🥇 {char.gold || 0} PO</Text>
+                  <Text style={styles.coinBadge}>🥈 {char.silver || 0} PP</Text>
+                  <Text style={styles.coinBadge}>🥉 {char.copper || 0} PC</Text>
+                  <Text style={[styles.weightBadge, isOverloaded && { color: '#FF4545', fontWeight: '700' }]}>
+                    ⚖️ {totalWeight.toFixed(1)}/{maxWeight.toFixed(1)} kg
+                  </Text>
                 </View>
 
                 {/* Condições Ativas */}
@@ -435,8 +459,9 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   charCard: {
-    flex: 1,
-    minWidth: Platform.OS === 'web' ? 360 : '100%',
+    flexGrow: 1,
+    flexBasis: 300,
+    minWidth: 280,
     backgroundColor: '#1A1714',
     borderRadius: 8,
     borderWidth: 1,
@@ -620,5 +645,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  overloadBox: {
+    backgroundColor: 'rgba(255, 69, 69, 0.15)',
+    borderWidth: 1,
+    borderColor: '#FF4545',
+    padding: 10,
+    borderRadius: 6,
+    gap: 4,
+  },
+  overloadTitle: {
+    color: '#FF4545',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  overloadDesc: {
+    color: '#E2D8C3',
+    fontSize: 11,
+  },
+  coinsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    backgroundColor: '#161311',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2D251E',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  coinBadge: {
+    color: '#E6C280',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  weightBadge: {
+    color: '#BAAFA0',
+    fontSize: 12,
   },
 });
