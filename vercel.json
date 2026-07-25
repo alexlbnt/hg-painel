@@ -1,4 +1,9 @@
 {
-  "framework": "expo",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/((?!api/.*).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
