@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLAYER
+  DM
+}
+
+enum ResetType {
+  SHORT_REST
+  LONG_REST
+  NONE
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  role      Role     @default(PLAYER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Room {
+  id         String      @id @default(uuid())
+  code       String      @unique
+  name       String
+  dmName     String      @default("Mestre")
+  characters Character[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Character {
+  id                 String      @id @default(uuid())
+  name               String
+  playerName         String
+  race               String      @default("Humano")
+  class              String      @default("Guerreiro")
+  level              Int         @default(1)
+  alignment          String      @default("Neutro")
+  background         String      @default("Herói do Povo")
+  
+  // Combat stats
+  currentHp          Int         @default(10)
+  maxHp              Int         @default(10)
+  tempHp             Int         @default(0)
+  armorClass         Int         @default(10)
+  initiativeBonus    Int         @default(0)
+  speed              String      @default("9m")
+  
+  // Hit Dice
+  hitDiceType        String      @default("1d10")
+  hitDiceTotal       Int         @default(1)
+  hitDiceSpent       Int         @default(0)
+  
+  // Death Saves
+  deathSaveSuccesses Int         @default(0)
+  deathSaveFailures  Int         @default(0)
+  
+  // Attributes (Scores)
+  str                Int         @default(10)
+  dex                Int         @default(10)
+  con                Int         @default(10)
+  int                Int         @default(10)
+  wis                Int         @default(10)
+  cha                Int         @default(10)
+  
+  // Saving Throw Proficiencies
+  strProf            Boolean     @default(false)
+  dexProf            Boolean     @default(false)
+  conProf            Boolean     @default(false)
+  intProf            Boolean     @default(false)
+  wisProf            Boolean     @default(false)
+  chaProf            Boolean     @default(false)
+  
+  // Skill Proficiencies (stored as comma-separated string for simplicity in D&D 5e skills)
+  proficientSkills   String      @default("")
+
+  // Relations
+  roomId             String?
+  room               Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  spellSlots         SpellSlot[]
+  abilities          Ability[]
+  conditions         Condition[]
+  
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+}
+
+model SpellSlot {
+  id          String    @id @default(uuid())
+  level       Int
+  total       Int       @default(0)
+  used        Int       @default(0)
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+model Ability {
+  id          String    @id @default(uuid())
+  name        String
+  description String    @default("")
+  maxUses     Int       @default(1)
+  currentUses Int       @default(1)
+  resetType   ResetType @default(SHORT_REST)
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+model Condition {
+  id          String    @id @default(uuid())
+  name        String
+  description String    @default("")
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
