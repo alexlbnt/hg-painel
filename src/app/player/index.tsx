@@ -538,7 +538,12 @@ export default function PlayerModule() {
           </View>
 
           {/* Grid de Atributos Ancestrais (FOR, DES, CON, INT, SAB, CAR) */}
-          <Text style={styles.sectionHeader}>ATRIBUTOS ANCESTRAIS & TESTES DE RESISTÊNCIA</Text>
+          <View style={{ marginBottom: 12 }}>
+            <Text style={styles.sectionHeader}>ATRIBUTOS ANCESTRAIS & TESTES DE RESISTÊNCIA</Text>
+            <Text style={{ color: '#BAAFA0', fontSize: 12, marginTop: 4 }}>
+              As proficiências em testes de resistência são configuradas na criação ou em "Reescrever Grimório" e são indicadas pela borda em ouro antigo (+{profBonus}).
+            </Text>
+          </View>
           <View style={styles.attributesGrid}>
             {[
               { name: 'FORÇA', score: selectedChar.str, prof: selectedChar.strProf },
@@ -551,14 +556,17 @@ export default function PlayerModule() {
               const modVal = getMod(attr.score);
               const saveVal = modVal + (attr.prof ? profBonus : 0);
               return (
-                <View key={attr.name} style={styles.attrCard}>
-                  <Text style={styles.attrName}>{attr.name}</Text>
+                <View
+                  key={attr.name}
+                  style={[styles.attrCard, attr.prof && { borderColor: '#C5A059' }]}
+                >
+                  <Text style={[styles.attrName, attr.prof && { color: '#E2D8C3', fontWeight: '700' }]}>{attr.name}</Text>
                   <Text style={styles.attrMod}>{formatMod(attr.score)}</Text>
                   <Text style={styles.attrScore}>Score: {attr.score}</Text>
                   <View style={styles.saveRow}>
                     <View style={[styles.saveDot, attr.prof && styles.saveDotProf]} />
                     <Text style={styles.saveText}>
-                      Resistência: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
+                      Resistência: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
                     </Text>
                   </View>
                 </View>

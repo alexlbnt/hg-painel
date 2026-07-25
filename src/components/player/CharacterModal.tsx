@@ -28,6 +28,14 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
   const [wis, setWis] = useState('10');
   const [cha, setCha] = useState('10');
 
+  // Proficiências em Testes de Resistência
+  const [strProf, setStrProf] = useState(false);
+  const [dexProf, setDexProf] = useState(false);
+  const [conProf, setConProf] = useState(false);
+  const [intProf, setIntProf] = useState(false);
+  const [wisProf, setWisProf] = useState(false);
+  const [chaProf, setChaProf] = useState(false);
+
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
@@ -44,6 +52,12 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setInt(initialData.int.toString());
       setWis(initialData.wis.toString());
       setCha(initialData.cha.toString());
+      setStrProf(!!initialData.strProf);
+      setDexProf(!!initialData.dexProf);
+      setConProf(!!initialData.conProf);
+      setIntProf(!!initialData.intProf);
+      setWisProf(!!initialData.wisProf);
+      setChaProf(!!initialData.chaProf);
     } else {
       setName('');
       setPlayerName('Alex');
@@ -59,6 +73,12 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setInt('10');
       setWis('12');
       setCha('15');
+      setStrProf(false);
+      setDexProf(false);
+      setConProf(false);
+      setIntProf(false);
+      setWisProf(true);
+      setChaProf(true);
     }
   }, [initialData, visible]);
 
@@ -81,6 +101,12 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       int: parseInt(int, 10) || 10,
       wis: parseInt(wis, 10) || 10,
       cha: parseInt(cha, 10) || 10,
+      strProf,
+      dexProf,
+      conProf,
+      intProf,
+      wisProf,
+      chaProf,
     });
     onClose();
   };
@@ -193,33 +219,32 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
               </View>
             </View>
 
-            {/* Atributos (FOR-CAR) */}
-            <Text style={styles.sectionTitle}>ATRIBUTOS ANCESTRAIS (SCORES 1-30)</Text>
+            {/* Atributos (FOR-CAR) & Proficiência em Testes de Resistência */}
+            <Text style={styles.sectionTitle}>ATRIBUTOS ANCESTRAIS & RESISTÊNCIA</Text>
             <View style={styles.grid3}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Força (FOR)</Text>
-                <TextInput style={styles.input} value={str} onChangeText={setStr} keyboardType="numeric" />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Destreza (DES)</Text>
-                <TextInput style={styles.input} value={dex} onChangeText={setDex} keyboardType="numeric" />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Constituição (CON)</Text>
-                <TextInput style={styles.input} value={con} onChangeText={setCon} keyboardType="numeric" />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Inteligência (INT)</Text>
-                <TextInput style={styles.input} value={int} onChangeText={setInt} keyboardType="numeric" />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Sabedoria (SAB)</Text>
-                <TextInput style={styles.input} value={wis} onChangeText={setWis} keyboardType="numeric" />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Carisma (CAR)</Text>
-                <TextInput style={styles.input} value={cha} onChangeText={setCha} keyboardType="numeric" />
-              </View>
+              {[
+                { label: 'Força (FOR)', val: str, setVal: setStr, prof: strProf, setProf: setStrProf },
+                { label: 'Destreza (DES)', val: dex, setVal: setDex, prof: dexProf, setProf: setDexProf },
+                { label: 'Constituição (CON)', val: con, setVal: setCon, prof: conProf, setProf: setConProf },
+                { label: 'Inteligência (INT)', val: int, setVal: setInt, prof: intProf, setProf: setIntProf },
+                { label: 'Sabedoria (SAB)', val: wis, setVal: setWis, prof: wisProf, setProf: setWisProf },
+                { label: 'Carisma (CAR)', val: cha, setVal: setCha, prof: chaProf, setProf: setChaProf },
+              ].map((item) => (
+                <View key={item.label} style={[styles.inputGroup, styles.attrInputCard, item.prof && { borderColor: '#C5A059' }]}>
+                  <Text style={styles.label}>{item.label}</Text>
+                  <TextInput style={styles.input} value={item.val} onChangeText={item.setVal} keyboardType="numeric" />
+                  <TouchableOpacity
+                    style={[styles.profBtn, item.prof && styles.profBtnActive]}
+                    onPress={() => item.setProf(!item.prof)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.profDot, item.prof && styles.profDotActive]} />
+                    <Text style={[styles.profBtnText, item.prof && styles.profBtnTextActive]}>
+                      {item.prof ? '✓ Proficiente (Resist.)' : '+ Resistência'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
             </View>
           </ScrollView>
 
@@ -337,6 +362,47 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  attrInputCard: {
+    backgroundColor: '#141210',
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2D2620',
+  },
+  profBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    backgroundColor: '#1A1714',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+  },
+  profBtnActive: {
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+    borderColor: '#C5A059',
+  },
+  profDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3D342C',
+  },
+  profDotActive: {
+    backgroundColor: '#C5A059',
+  },
+  profBtnText: {
+    color: '#80776C',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  profBtnTextActive: {
+    color: '#E6C280',
+    fontWeight: '700',
   },
   footer: {
     flexDirection: 'row',
