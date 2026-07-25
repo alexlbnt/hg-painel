@@ -40,15 +40,23 @@ export default function PlayerModule() {
     try {
       const data = await ApiService.getCharacters();
       setCharacters(data);
-      if (data.length > 0 && !selectedId) {
-        setSelectedId(data[0].id);
-      }
     } catch (e) {
       console.error('Erro ao carregar fichas medievais', e);
     } finally {
       if (!silent) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (characters.length > 0) {
+      const exists = characters.some(c => c.id === selectedId);
+      if (!selectedId || !exists) {
+        setSelectedId(characters[0].id);
+      }
+    } else if (characters.length === 0 && selectedId !== null) {
+      setSelectedId(null);
+    }
+  }, [characters, selectedId]);
 
   useEffect(() => {
     loadCharacters();
@@ -586,7 +594,7 @@ export default function PlayerModule() {
           {/* Status e Condições Sombrias Ativas */}
           {selectedChar.conditions && selectedChar.conditions.length > 0 && (
             <View style={styles.conditionsBox}>
-              <Text style={styles.conditionsHeader}>MALDIÇÕES & CONDIÇÕES ATIVAS (ORÁCULO DO MESTRE)</Text>
+              <Text style={styles.conditionsHeader}>MALDIÇÕES & CONDIÇÕES ATIVAS (ESCUDO DO MESTRE)</Text>
               <View style={styles.conditionsRow}>
                 {selectedChar.conditions.map(cond => (
                   <View key={cond.id} style={styles.conditionChip}>

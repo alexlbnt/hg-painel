@@ -10,7 +10,7 @@ export default function DmModule() {
   const [selectedChar, setSelectedChar] = useState<CharacterData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [lastSync, setLastSync] = useState<string>('Conectando ao Oráculo...');
+  const [lastSync, setLastSync] = useState<string>('Conectando ao Escudo do Mestre...');
 
   const fetchTableData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -19,18 +19,20 @@ export default function DmModule() {
       setCharacters(data);
       const now = new Date();
       setLastSync(`Sincronizado: ${now.toLocaleTimeString()}`);
-      
-      if (selectedChar) {
-        const updated = data.find(c => c.id === selectedChar.id);
-        if (updated) setSelectedChar(updated);
-      }
     } catch (e) {
-      console.error('Erro no Oráculo da Mesa', e);
-      setLastSync('Desconectado do Oráculo');
+      console.error('Erro no Escudo do Mestre', e);
+      setLastSync('Desconectado do Escudo do Mestre');
     } finally {
       if (!silent) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedChar) {
+      const updated = characters.find(c => c.id === selectedChar.id);
+      if (updated) setSelectedChar(updated);
+    }
+  }, [characters]);
 
   useEffect(() => {
     fetchTableData();
@@ -114,14 +116,14 @@ export default function DmModule() {
 
   return (
     <View style={styles.container}>
-      {/* Header do Oráculo do Mestre */}
+      {/* Header do Escudo do Mestre */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.crownBadge}>
             <Crown color="#C5A059" size={20} />
           </View>
           <View>
-            <Text style={styles.title}>TÁBUA DO ORÁCULO • MESTRE (DM)</Text>
+            <Text style={styles.title}>ESCUDO DO MESTRE • CONTROLE (DM)</Text>
             <Text style={styles.subtitle}>
               Monitoramento em tempo real dos heróis da campanha e rituais de intervenção divina
             </Text>
@@ -134,7 +136,7 @@ export default function DmModule() {
             <Text style={styles.syncText}>{lastSync}</Text>
           </View>
           <TouchableOpacity style={styles.refreshBtn} onPress={() => fetchTableData()}>
-            <Text style={styles.refreshBtnText}>Sincronizar Oráculo</Text>
+            <Text style={styles.refreshBtnText}>Sincronizar Escudo</Text>
           </TouchableOpacity>
         </View>
       </View>

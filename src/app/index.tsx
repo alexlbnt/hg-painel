@@ -74,15 +74,15 @@ export default function HomeScreen() {
             <Crown color="#8C6C90" size={32} />
           </View>
           <View style={styles.cardContent}>
-            <Text style={[styles.cardTag, { color: '#8C6C90' }]}>MESTRE DO ORÁCULO (DM)</Text>
-            <Text style={styles.cardTitle}>Tábua do Mestre</Text>
+            <Text style={[styles.cardTag, { color: '#8C6C90' }]}>CONTROLE DO MESTRE (DM)</Text>
+            <Text style={styles.cardTitle}>Escudo do Mestre</Text>
             <Text style={styles.cardDesc}>
               Visão geral da mesa em sessão. Acompanhe os sinais vitais, iniciativa e magias de todos os heróis.
               Intervenha remotamente para causar dano, conceder cura divina ou aplicar maldições instantaneamente.
             </Text>
           </View>
           <View style={[styles.cardAction, styles.dmCardAction]}>
-            <Text style={[styles.cardActionText, { color: '#8C6C90' }]}>Acessar Tábua da Mesa →</Text>
+            <Text style={[styles.cardActionText, { color: '#8C6C90' }]}>Acessar Escudo do Mestre →</Text>
           </View>
         </TouchableOpacity>
       </View>

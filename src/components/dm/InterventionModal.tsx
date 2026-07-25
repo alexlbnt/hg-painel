@@ -59,7 +59,7 @@ export default function InterventionModal({ visible, onClose, character, onApply
             <View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <Crown color="#C5A059" size={16} />
-                <Text style={styles.tag}>ORÁCULO DE INTERVENÇÃO DIVINA (DM)</Text>
+                <Text style={styles.tag}>ESCUDO DE INTERVENÇÃO DIVINA (DM)</Text>
               </View>
               <Text style={styles.title}>{character.name} ({character.class})</Text>
               <Text style={styles.subtitle}>Jogador: {character.playerName} • Nível {character.level}</Text>

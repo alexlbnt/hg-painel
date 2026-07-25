@@ -11,7 +11,7 @@ export default function HeaderNav() {
   const navItems = [
     { name: 'Portal da Taverna', path: '/', icon: Home },
     { name: 'Grimório do Jogador', path: '/player', icon: Shield },
-    { name: 'Tábua do Mestre', path: '/dm', icon: Crown },
+    { name: 'Escudo do Mestre', path: '/dm', icon: Crown },
   ];
 
   return (
