@@ -40,6 +40,12 @@ export default function PlayerModule() {
   const [newItemQty, setNewItemQty] = useState('1');
   const [newItemIsWeapon, setNewItemIsWeapon] = useState(false);
   const [newItemDamage, setNewItemDamage] = useState('');
+  const [newSpellLevel, setNewSpellLevel] = useState('1');
+  const [newSpellTotal, setNewSpellTotal] = useState('2');
+  const [newAbName, setNewAbName] = useState('');
+  const [newAbDesc, setNewAbDesc] = useState('');
+  const [newAbUses, setNewAbUses] = useState('1');
+  const [newAbReset, setNewAbReset] = useState<'SHORT_REST' | 'LONG_REST' | 'NONE'>('SHORT_REST');
 
   const loadCharacters = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -235,6 +241,69 @@ export default function PlayerModule() {
     loadCharacters(true);
   };
 
+  const toggleSkillProficiency = async (skillName: string) => {
+    if (!selectedChar) return;
+    const currentList = selectedChar.proficientSkills ? selectedChar.proficientSkills.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const exists = currentList.includes(skillName);
+    const newList = exists ? currentList.filter(s => s !== skillName) : [...currentList, skillName];
+    const newProfString = newList.join(',');
+    
+    const updated = { ...selectedChar, proficientSkills: newProfString };
+    setCharacters(chars => chars.map(c => c.id === selectedChar.id ? updated : c));
+    
+    await ApiService.updateCharacter(selectedChar.id, { proficientSkills: newProfString });
+    loadCharacters(true);
+  };
+
+  const addSpellSlot = async () => {
+    if (!selectedChar || !newSpellLevel || !newSpellTotal) return;
+    const levelNum = parseInt(newSpellLevel, 10) || 1;
+    const totalNum = parseInt(newSpellTotal, 10) || 1;
+    const newSlot = {
+      id: `slot-${Date.now()}`,
+      level: levelNum,
+      total: totalNum,
+      used: 0,
+    };
+    const updatedSlots = [...selectedChar.spellSlots, newSlot].sort((a, b) => a.level - b.level);
+    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    setNewSpellLevel('1');
+    setNewSpellTotal('2');
+    loadCharacters(true);
+  };
+
+  const removeSpellSlot = async (slotId: string) => {
+    if (!selectedChar) return;
+    const updatedSlots = selectedChar.spellSlots.filter(s => s.id !== slotId);
+    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    loadCharacters(true);
+  };
+
+  const addAbility = async () => {
+    if (!selectedChar || !newAbName.trim()) return;
+    const newAb = {
+      id: `ab-${Date.now()}`,
+      name: newAbName.trim(),
+      description: newAbDesc.trim(),
+      maxUses: parseInt(newAbUses, 10) || 1,
+      currentUses: parseInt(newAbUses, 10) || 1,
+      resetType: newAbReset,
+    };
+    const updatedAbilities = [...selectedChar.abilities, newAb];
+    await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
+    setNewAbName('');
+    setNewAbDesc('');
+    setNewAbUses('1');
+    loadCharacters(true);
+  };
+
+  const removeAbility = async (abId: string) => {
+    if (!selectedChar) return;
+    const updatedAbilities = selectedChar.abilities.filter(a => a.id !== abId);
+    await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
+    loadCharacters(true);
+  };
+
   return (
     <View style={styles.container}>
       {/* Seletor de Personagens (Carrossel de Couro e Bronze) */}
@@ -329,7 +398,7 @@ export default function PlayerModule() {
           <View style={styles.combatPanel}>
             <View style={styles.hpSection}>
               <View style={styles.hpHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, flexWrap: 'wrap' }}>
                   <Heart color="#B82828" size={24} />
                   <Text style={styles.hpTitle}>SINAIS VITAIS • PONTOS DE VIDA</Text>
                 </View>
@@ -413,7 +482,7 @@ export default function PlayerModule() {
             <View style={styles.deathAndRestSection}>
               {/* Testes contra a Morte */}
               <View style={styles.deathBox}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, flexShrink: 1, flexWrap: 'wrap' }}>
                   <Skull color="#B82828" size={18} />
                   <Text style={styles.deathTitle}>RESISTÊNCIA CONTRA A MORTE</Text>
                 </View>
@@ -451,14 +520,14 @@ export default function PlayerModule() {
                 <View style={styles.restButtonsRow}>
                   <TouchableOpacity style={styles.shortRestBtn} onPress={triggerShortRest}>
                     <Moon color="#6B4A70" size={18} />
-                    <View>
+                    <View style={{ flexShrink: 1 }}>
                       <Text style={styles.restBtnTitle}>Descanso Curto</Text>
                       <Text style={styles.restBtnSub}>Curar & Hab. Marciais</Text>
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.longRestBtn} onPress={triggerLongRest}>
                     <Sun color="#C5A059" size={18} />
-                    <View>
+                    <View style={{ flexShrink: 1 }}>
                       <Text style={styles.restBtnTitle}>Descanso Longo</Text>
                       <Text style={styles.restBtnSub}>Restaura Vida & Magias</Text>
                     </View>
@@ -505,7 +574,7 @@ export default function PlayerModule() {
             >
               <Scroll color={activeTab === 'spells' ? '#E6C280' : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'spells' && styles.tabBtnTextActive]}>
-                Pergaminhos Arcane ({selectedChar.spellSlots.length})
+                Magias ({selectedChar.spellSlots.length})
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -514,7 +583,7 @@ export default function PlayerModule() {
             >
               <Sword color={activeTab === 'abilities' ? '#E6C280' : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'abilities' && styles.tabBtnTextActive]}>
-                Dons & Poderes ({selectedChar.abilities.length})
+                Habilidades ({selectedChar.abilities.length})
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -523,7 +592,7 @@ export default function PlayerModule() {
             >
               <Award color={activeTab === 'skills' ? '#E6C280' : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'skills' && styles.tabBtnTextActive]}>
-                Perícias Medievais (18)
+                Perícias (18)
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -543,14 +612,19 @@ export default function PlayerModule() {
             {activeTab === 'spells' && (
               <View>
                 {selectedChar.spellSlots.length === 0 ? (
-                  <Text style={styles.emptyText}>Este herói não possui pergaminhos de magia no seu grimório.</Text>
+                  <Text style={styles.emptyText}>Este herói não possui magias ou espaços cadastrados no seu grimório.</Text>
                 ) : (
                   <View style={styles.slotsGrid}>
                     {selectedChar.spellSlots.map(slot => (
                       <View key={slot.id} style={styles.slotCard}>
                         <View style={styles.slotHeader}>
-                          <Text style={styles.slotLevel}>PERGAMINHO DE {slot.level}º NÍVEL</Text>
-                          <Text style={styles.slotCount}>{slot.total - slot.used} / {slot.total} Intactos</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.slotLevel}>MAGIAS DE {slot.level}º NÍVEL (ESPAÇOS)</Text>
+                            <Text style={styles.slotCount}>{slot.total - slot.used} / {slot.total} Intactos</Text>
+                          </View>
+                          <TouchableOpacity style={styles.delItemBtn} onPress={() => removeSpellSlot(slot.id)}>
+                            <Trash2 color="#80776C" size={16} />
+                          </TouchableOpacity>
                         </View>
                         <View style={styles.slotTokensRow}>
                           {Array.from({ length: slot.total }).map((_, idx) => {
@@ -570,66 +644,179 @@ export default function PlayerModule() {
                     ))}
                   </View>
                 )}
+
+                {/* Cadastrar Nova Magia / Espaço */}
+                <View style={[styles.addItemBox, { marginTop: 24 }]}>
+                  <Text style={styles.addItemHeading}>➕ CADASTRAR ESPAÇOS DE MAGIA</Text>
+                  <View style={styles.addItemForm}>
+                    <View style={styles.addInputRow}>
+                      <TextInput
+                        style={[styles.addInput, { flex: 1 }]}
+                        placeholder="Nível da Magia (1 a 9)"
+                        placeholderTextColor="#80776C"
+                        keyboardType="numeric"
+                        value={newSpellLevel}
+                        onChangeText={setNewSpellLevel}
+                      />
+                      <TextInput
+                        style={[styles.addInput, { flex: 1 }]}
+                        placeholder="Qtd de Espaços (ex: 2, 4)"
+                        placeholderTextColor="#80776C"
+                        keyboardType="numeric"
+                        value={newSpellTotal}
+                        onChangeText={setNewSpellTotal}
+                      />
+                    </View>
+                    <TouchableOpacity style={styles.addItemBtn} onPress={addSpellSlot}>
+                      <Plus color="#E6C280" size={18} />
+                      <Text style={styles.addItemBtnText}>Cadastrar Magia</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             )}
 
             {/* ABA: Habilidades e Poderes */}
             {activeTab === 'abilities' && (
-              <View style={styles.abilitiesList}>
-                {selectedChar.abilities.map(ab => (
-                  <View key={ab.id} style={styles.abilityCard}>
-                    <View style={styles.abilityHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.abilityName}>{ab.name}</Text>
-                        <Text style={styles.abilityDesc}>{ab.description}</Text>
-                      </View>
-                      <View style={[styles.resetBadge, ab.resetType === 'LONG_REST' && styles.resetLongBadge]}>
-                        <Text style={styles.resetBadgeText}>
-                          {ab.resetType === 'SHORT_REST' ? '⚡ Ritual Curto' : ab.resetType === 'LONG_REST' ? '💤 Ritual Longo' : 'Poder Passivo'}
-                        </Text>
-                      </View>
-                    </View>
+              <View>
+                <View style={styles.abilitiesList}>
+                  {selectedChar.abilities.length === 0 ? (
+                    <Text style={styles.emptyText}>Este herói não possui habilidades ou poderes cadastrados.</Text>
+                  ) : (
+                    selectedChar.abilities.map(ab => (
+                      <View key={ab.id} style={styles.abilityCard}>
+                        <View style={styles.abilityHeader}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.abilityName}>{ab.name}</Text>
+                            {ab.description ? <Text style={styles.abilityDesc}>{ab.description}</Text> : null}
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <View style={[styles.resetBadge, ab.resetType === 'LONG_REST' && styles.resetLongBadge]}>
+                              <Text style={styles.resetBadgeText}>
+                                {ab.resetType === 'SHORT_REST' ? '⚡ Ritual Curto' : ab.resetType === 'LONG_REST' ? '💤 Ritual Longo' : 'Poder Passivo'}
+                              </Text>
+                            </View>
+                            <TouchableOpacity style={styles.delItemBtn} onPress={() => removeAbility(ab.id)}>
+                              <Trash2 color="#80776C" size={16} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
 
-                    {ab.maxUses < 90 && (
-                      <View style={styles.abilityFooter}>
-                        <Text style={styles.abilityUses}>
-                          Usos Disponíveis: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{ab.currentUses} / {ab.maxUses}</Text>
-                        </Text>
+                        {ab.maxUses < 90 && (
+                          <View style={styles.abilityFooter}>
+                            <Text style={styles.abilityUses}>
+                              Usos Disponíveis: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{ab.currentUses} / {ab.maxUses}</Text>
+                            </Text>
+                            <TouchableOpacity
+                              style={[styles.useBtn, ab.currentUses <= 0 && styles.useBtnDisabled]}
+                              disabled={ab.currentUses <= 0}
+                              onPress={() => useAbility(ab.id, ab.currentUses)}
+                            >
+                              <Text style={styles.useBtnText}>{ab.currentUses > 0 ? 'Invocar Poder' : 'Esgotado'}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
+                    ))
+                  )}
+                </View>
+
+                {/* Cadastrar Nova Habilidade */}
+                <View style={[styles.addItemBox, { marginTop: 24 }]}>
+                  <Text style={styles.addItemHeading}>➕ CADASTRAR NOVA HABILIDADE / PODER</Text>
+                  <View style={styles.addItemForm}>
+                    <View style={styles.addInputRow}>
+                      <TextInput
+                        style={[styles.addInput, { flex: 2 }]}
+                        placeholder="Nome da Habilidade (ex: Fúria, Visão no Escuro...)"
+                        placeholderTextColor="#80776C"
+                        value={newAbName}
+                        onChangeText={setNewAbName}
+                      />
+                      <TextInput
+                        style={[styles.addInput, { flex: 1 }]}
+                        placeholder="Usos Máx (ex: 3, ou 99 para Infinito)"
+                        placeholderTextColor="#80776C"
+                        keyboardType="numeric"
+                        value={newAbUses}
+                        onChangeText={setNewAbUses}
+                      />
+                    </View>
+                    <View style={styles.addInputRow}>
+                      <TextInput
+                        style={[styles.addInput, { flex: 1 }]}
+                        placeholder="Descrição do poder e efeitos..."
+                        placeholderTextColor="#80776C"
+                        value={newAbDesc}
+                        onChangeText={setNewAbDesc}
+                      />
+                    </View>
+                    <View style={[styles.addInputRow, { alignItems: 'center' }]}>
+                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
                         <TouchableOpacity
-                          style={[styles.useBtn, ab.currentUses <= 0 && styles.useBtnDisabled]}
-                          disabled={ab.currentUses <= 0}
-                          onPress={() => useAbility(ab.id, ab.currentUses)}
+                          style={[styles.coinBtn, newAbReset === 'SHORT_REST' && { backgroundColor: '#6B4A70', borderColor: '#E6C280' }]}
+                          onPress={() => setNewAbReset('SHORT_REST')}
                         >
-                          <Text style={styles.useBtnText}>{ab.currentUses > 0 ? 'Invocar Poder' : 'Esgotado'}</Text>
+                          <Text style={[styles.coinBtnText, newAbReset === 'SHORT_REST' && { color: '#FFF' }]}>⚡ Descanso Curto</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.coinBtn, newAbReset === 'LONG_REST' && { backgroundColor: '#C5A059', borderColor: '#FFF' }]}
+                          onPress={() => setNewAbReset('LONG_REST')}
+                        >
+                          <Text style={[styles.coinBtnText, newAbReset === 'LONG_REST' && { color: '#FFF' }]}>💤 Descanso Longo</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.coinBtn, newAbReset === 'NONE' && { backgroundColor: '#3D342C', borderColor: '#E6C280' }]}
+                          onPress={() => setNewAbReset('NONE')}
+                        >
+                          <Text style={[styles.coinBtnText, newAbReset === 'NONE' && { color: '#FFF' }]}>✨ Passivo / Contínuo</Text>
                         </TouchableOpacity>
                       </View>
-                    )}
+                    </View>
+                    <TouchableOpacity style={styles.addItemBtn} onPress={addAbility}>
+                      <Plus color="#E6C280" size={18} />
+                      <Text style={styles.addItemBtnText}>Cadastrar Habilidade</Text>
+                    </TouchableOpacity>
                   </View>
-                ))}
+                </View>
               </View>
             )}
 
             {/* ABA: Perícias */}
             {activeTab === 'skills' && (
-              <View style={styles.skillsGrid}>
-                {SKILLS_LIST.map(skill => {
-                  const score = (selectedChar as any)[skill.attr] || 10;
-                  const mod = getMod(score);
-                  const isProf = selectedChar.proficientSkills.includes(skill.name);
-                  const total = mod + (isProf ? profBonus : 0);
-                  return (
-                    <View key={skill.name} style={styles.skillItem}>
-                      <View style={styles.skillLeft}>
-                        <View style={[styles.saveDot, isProf && styles.saveDotProf]} />
-                        <Text style={styles.skillName}>{skill.name}</Text>
-                        <Text style={styles.skillAttr}>({skill.label})</Text>
-                      </View>
-                      <Text style={[styles.skillTotal, isProf && { color: '#E6C280', fontWeight: '700' }]}>
-                        {total >= 0 ? `+${total}` : total}
-                      </Text>
-                    </View>
-                  );
-                })}
+              <View>
+                <View style={styles.skillsBanner}>
+                  <Text style={styles.skillsBannerTitle}>✨ TREINAMENTO & PROFICIÊNCIAS MEDIEVAIS</Text>
+                  <Text style={styles.skillsBannerSub}>Toque em qualquer perícia abaixo para adicionar ou remover sua proficiência no grimório do aventureiro (+{profBonus} no teste).</Text>
+                </View>
+                <View style={styles.skillsGrid}>
+                  {SKILLS_LIST.map(skill => {
+                    const score = (selectedChar as any)[skill.attr] || 10;
+                    const mod = getMod(score);
+                    const isProf = selectedChar.proficientSkills ? selectedChar.proficientSkills.includes(skill.name) : false;
+                    const total = mod + (isProf ? profBonus : 0);
+                    return (
+                      <TouchableOpacity
+                        key={skill.name}
+                        style={[styles.skillItem, isProf && { borderColor: '#C5A059', backgroundColor: 'rgba(197, 160, 89, 0.12)' }]}
+                        onPress={() => toggleSkillProficiency(skill.name)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.skillLeft}>
+                          <View style={[styles.saveDot, isProf && styles.saveDotProf]} />
+                          <Text style={[styles.skillName, isProf && { color: '#E2D8C3', fontWeight: '700' }]}>{skill.name}</Text>
+                          <Text style={styles.skillAttr}>({skill.label})</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {isProf && <Text style={{ color: '#C5A059', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>PROFICIENTE</Text>}
+                          <Text style={[styles.skillTotal, isProf && { color: '#E6C280', fontWeight: '700' }]}>
+                            {total >= 0 ? `+${total}` : total}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
             )}
 
@@ -1008,8 +1195,9 @@ const styles = StyleSheet.create({
   },
   charName: {
     color: '#E2D8C3',
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: '700',
+    flexShrink: 1,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", "Garamond", serif' : undefined,
   },
   charMeta: {
@@ -1020,6 +1208,7 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   actionBtn: {
@@ -1056,6 +1245,8 @@ const styles = StyleSheet.create({
   },
   ribbonItem: {
     alignItems: 'center',
+    minWidth: 70,
+    flexGrow: 1,
   },
   ribbonLabel: {
     color: '#80776C',
@@ -1089,13 +1280,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 16,
   },
   hpTitle: {
     color: '#B82828',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+    flexShrink: 1,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   tempHpBadge: {
@@ -1186,10 +1380,13 @@ const styles = StyleSheet.create({
   },
   customHpRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   customHpInput: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 120,
+    minWidth: 120,
     backgroundColor: '#1A1714',
     borderWidth: 1,
     borderColor: '#3D342C',
@@ -1201,11 +1398,13 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   customBtn: {
-    paddingHorizontal: 16,
+    flexGrow: 1,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
     borderWidth: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   deathAndRestSection: {
     flex: 1,
@@ -1223,7 +1422,8 @@ const styles = StyleSheet.create({
     color: '#E2D8C3',
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+    flexShrink: 1,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   deathRow: {
@@ -1257,10 +1457,13 @@ const styles = StyleSheet.create({
   },
   restButtonsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   shortRestBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 130,
+    minWidth: 130,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -1271,7 +1474,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   longRestBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 130,
+    minWidth: 130,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -1285,11 +1490,13 @@ const styles = StyleSheet.create({
     color: '#E2D8C3',
     fontSize: 13,
     fontWeight: '700',
+    flexShrink: 1,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   restBtnSub: {
     color: '#BAAFA0',
     fontSize: 9,
+    flexShrink: 1,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   sectionHeader: {
@@ -1525,6 +1732,28 @@ const styles = StyleSheet.create({
     color: '#E2D8C3',
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  skillsBanner: {
+    backgroundColor: '#110F0D',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  skillsBannerTitle: {
+    color: '#C5A059',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  skillsBannerSub: {
+    color: '#BAAFA0',
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   skillsGrid: {
