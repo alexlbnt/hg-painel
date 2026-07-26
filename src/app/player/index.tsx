@@ -345,7 +345,7 @@ export default function PlayerModule() {
             <View style={{ flexShrink: 1, minWidth: isMobile ? '100%' : 180 }}>
               <View style={styles.levelBadge}>
                 <Scroll color="#C5A059" size={14} />
-                <Text style={styles.levelText}>HERÓI NÍVEL {selectedChar.level} • {selectedChar.race.toUpperCase()}</Text>
+                <Text style={styles.levelText}>NÍVEL {selectedChar.level} • {selectedChar.race.toUpperCase()}</Text>
               </View>
               <Text style={[styles.charName, isMobile && { fontSize: 24 }]}>{selectedChar.name}</Text>
               <Text style={styles.charMeta}>
@@ -532,12 +532,9 @@ export default function PlayerModule() {
 
           {/* Grid de Atributos Ancestrais (FOR, DES, CON, INT, SAB, CAR) */}
           <View style={{ marginBottom: 12 }}>
-            <Text style={styles.sectionHeader}>ATRIBUTOS ANCESTRAIS & TESTES DE RESISTÊNCIA</Text>
-            <Text style={{ color: '#BAAFA0', fontSize: 12, marginTop: 4 }}>
-              As proficiências em testes de resistência são configuradas na criação ou em "Reescrever Grimório" e são indicadas pela borda em ouro antigo (+{profBonus}).
-            </Text>
+            <Text style={styles.sectionHeader}>ATRIBUTOS</Text>
           </View>
-          <View style={styles.attributesGrid}>
+          <View style={[styles.attributesGrid, isMobile && { gap: 8 }]}>
             {[
               { name: 'FORÇA', score: selectedChar.str, prof: selectedChar.strProf },
               { name: 'DESTREZA', score: selectedChar.dex, prof: selectedChar.dexProf },
@@ -551,15 +548,29 @@ export default function PlayerModule() {
               return (
                 <View
                   key={attr.name}
-                  style={[styles.attrCard, attr.prof && { borderColor: '#C5A059' }]}
+                  style={[
+                    styles.attrCard,
+                    isMobile && { minWidth: '30%', padding: 10, paddingVertical: 12 },
+                    attr.prof && { borderColor: '#C5A059' }
+                  ]}
                 >
-                  <Text style={[styles.attrName, attr.prof && { color: '#E2D8C3', fontWeight: '700' }]}>{attr.name}</Text>
-                  <Text style={styles.attrMod}>{formatMod(attr.score)}</Text>
-                  <Text style={styles.attrScore}>Score: {attr.score}</Text>
-                  <View style={styles.saveRow}>
-                    <View style={[styles.saveDot, attr.prof && styles.saveDotProf]} />
-                    <Text style={styles.saveText}>
-                      Resistência: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
+                  <Text
+                    style={[
+                      styles.attrName,
+                      isMobile && { fontSize: 9.5, letterSpacing: 0.5, marginBottom: 4 },
+                      attr.prof && { color: '#E2D8C3', fontWeight: '700' }
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    {attr.name}
+                  </Text>
+                  <Text style={[styles.attrMod, isMobile && { fontSize: 24, marginBottom: 2 }]}>{formatMod(attr.score)}</Text>
+                  <Text style={[styles.attrScore, isMobile && { fontSize: 11, marginBottom: 6 }]}>Score: {attr.score}</Text>
+                  <View style={[styles.saveRow, isMobile && { paddingTop: 6, gap: 4 }]}>
+                    <View style={[styles.saveDot, attr.prof && styles.saveDotProf, isMobile && { width: 6, height: 6 }]} />
+                    <Text style={[styles.saveText, isMobile && { fontSize: 10 }]}>
+                      Bônus: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
                     </Text>
                   </View>
                 </View>
@@ -1500,11 +1511,11 @@ const styles = StyleSheet.create({
   attributesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
   },
   attrCard: {
     flex: 1,
-    minWidth: 140,
+    minWidth: 105,
     backgroundColor: '#110F0D',
     borderRadius: 6,
     borderWidth: 1,
