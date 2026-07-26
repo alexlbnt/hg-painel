@@ -415,7 +415,7 @@ export default function PlayerModule() {
               <View style={styles.hpHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, flexWrap: 'wrap' }}>
                   <Heart color="#B82828" size={24} />
-                  <Text style={styles.hpTitle}>SINAIS VITAIS • PONTOS DE VIDA</Text>
+                  <Text style={styles.hpTitle}>PONTOS DE VIDA</Text>
                 </View>
                 {selectedChar.tempHp > 0 && (
                   <View style={styles.tempHpBadge}>
@@ -450,28 +450,6 @@ export default function PlayerModule() {
                 <Text style={styles.hitDiceText}>
                   Dados de Vida (Ritual): <Text style={{ color: '#C5A059' }}>{selectedChar.hitDiceTotal - selectedChar.hitDiceSpent}/{selectedChar.hitDiceTotal}</Text> ({selectedChar.hitDiceType})
                 </Text>
-              </View>
-
-              {/* Controles Rápido de Sangramento e Poção */}
-              <View style={styles.hpButtonsRow}>
-                <TouchableOpacity style={[styles.hpBtn, styles.dmgBtn]} onPress={() => modifyHp(-1)}>
-                  <Text style={styles.dmgBtnText}>-1 Dano</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.hpBtn, styles.dmgBtn]} onPress={() => modifyHp(-5)}>
-                  <Text style={styles.dmgBtnText}>-5 Dano</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.hpBtn, styles.dmgBtn]} onPress={() => modifyHp(-10)}>
-                  <Text style={styles.dmgBtnText}>-10 Dano</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.hpBtn, styles.healBtn]} onPress={() => modifyHp(1)}>
-                  <Text style={styles.healBtnText}>+1 Cura</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.hpBtn, styles.healBtn]} onPress={() => modifyHp(5)}>
-                  <Text style={styles.healBtnText}>+5 Cura</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.hpBtn, styles.healBtn]} onPress={() => modifyHp(10)}>
-                  <Text style={styles.healBtnText}>+10 Cura</Text>
-                </TouchableOpacity>
               </View>
 
               {/* Input Customizado de Dano / Poção */}
@@ -1369,20 +1347,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
-  hpButtonsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 14,
-  },
-  hpBtn: {
-    flex: 1,
-    minWidth: 70,
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
+
   dmgBtn: {
     backgroundColor: 'rgba(184, 40, 40, 0.15)',
     borderColor: 'rgba(184, 40, 40, 0.5)',
