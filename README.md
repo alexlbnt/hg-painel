@@ -1,22 +1,56 @@
-# Sistema **Honra e Egoísmo** 
-(D&D 5e, Dark Fantasy, Neon + Prisma, Vercel) 
+# Welcome to your Expo app 👋
 
----
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-#### 1. 🏰 Módulo Grimório do Jogador (`/player`)
-* **CRUD Completo de Grimórios:** Criar novos personagens com atributos personalizados, visualizar fichas interativas, editar dados ("Reescrever Grimório") e excluir personagens com confirmação.
-* **Automação D&D 5e:** Cálculo automático em tempo real de modificadores de atributos, Bônus de Proficiência (escalável por nível), Classe de Armadura (CA), Iniciativa, Percepção Passiva e tabela com as **18 Perícias Medievais** com soma de proficiências.
-* **Gestão de Combate & Sinais Vitais:** Barra de vida dinâmica com cores imersivas (Verde floresta, Ouro envelhecido e Vermelho sangue), HP Atual, Máximo e Temporário, botões de dano/cura rápidos (`-10`, `-5`, `-1`, `+1`, `+5`, `+10`), além de campo manual de dano/cura.
-* **Resistência contra a Morte:** Contadores interativos de 0 a 3 sucessos e falhas.
-* **Rituais de Descanso:** Botões de **Descanso Curto** (gasta dado de vida para curar e restaura dons marciais) e **Descanso Longo** (recupera 100% da vida e todos os feitiços).
-* **Pergaminhos Arcanos & Dons:** Abas interativas para gerenciar spell slots de 1º a 9º nível com tokens clicáveis e contadores de habilidades de classe.
+## Get started
 
-#### 2. 👁️ Módulo Escudo do Mestre (`/dm`)
-* **Visão Panorâmica em Tempo Real:** Polling automático de 2 em 2 segundos que mantém a tela do Mestre sincronizada com a vida, CA, magias e condições de todos os jogadores da mesa.
-* **Intervenção Remota Divina:** Modal de intervenção onde o Mestre altera a vida de um jogador à distância ou aplica maldições e bênções (condições sombrias) que aparecem de imediato na ficha do jogador.
-* **Controles em Lote (Rituais em Massa):** Botões para "Descanso Curto em Massa", "Descanso Longo em Massa" e o temido "Praga de Sangue (-10 HP em todos)".
+1. Install dependencies
 
-#### 3. ⚙️ Infraestrutura & Design Dark Fantasy
-* **Estética Premium Medieval:** Substituição total de neons futuristas pela paleta autêntica de *Dark Fantasy* (Obsidiana `#110F0D`, Madeira Escura `#1A1714`, Ouro Antigo `#C5A059`, Bronze `#80776C` e Sangue `#B82828`) e tipografia serifada clássica.
-* **Banco de Dados Real no Neon (PostgreSQL):** ORM Prisma gerando schemas e tabelas reais conectadas à nuvem (`hg-painel`).
-* **Deploy Universal para Vercel:** Build universal que exporta o HTML estático na raiz de `dist/` e APIs Serverless na pasta raiz `/api`, garantindo compatibilidade total com o preset "Other" ou qualquer outro no Vercel.
+   ```bash
+   npm install
+   ```
+
+2. Start the app
+
+   ```bash
+   npx expo start
+   ```
+
+In the output, you'll find options to open the app in a
+
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+
+## Get a fresh project
+
+When you're ready, run:
+
+```bash
+npm run reset-project
+```
+
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+
+### Other setup steps
+
+- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
+- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
+- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+
+## Learn more
+
+To learn more about developing your project with Expo, look at the following resources:
+
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+
+## Join the community
+
+Join our community of developers creating universal apps.
+
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
