@@ -4,6 +4,7 @@ import { ApiService } from '@/services/api';
 import { CharacterData } from '@/lib/mockData';
 import CharacterModal from '@/components/player/CharacterModal';
 import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins } from 'lucide-react-native';
+import { useResponsive } from '@/hooks/useResponsive';
 
 const SKILLS_LIST = [
   { name: 'Acrobacia', attr: 'dex', label: 'DES' },
@@ -27,6 +28,7 @@ const SKILLS_LIST = [
 ];
 
 export default function PlayerModule() {
+  const { isMobile } = useResponsive();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -337,23 +339,62 @@ export default function PlayerModule() {
 
       {/* Conteúdo Principal do Grimório do Aventureiro */}
       {selectedChar ? (
-        <View style={styles.mainSheet}>
+        <View style={[styles.mainSheet, isMobile && { padding: 14, gap: 16 }]}>
           {/* Header Medieval da Ficha */}
-          <View style={styles.sheetHeader}>
-            <View>
+          <View style={[styles.sheetHeader, isMobile && { gap: 12, paddingBottom: 14 }]}>
+            <View style={{ flexShrink: 1, minWidth: isMobile ? '100%' : 180 }}>
               <View style={styles.levelBadge}>
                 <Scroll color="#C5A059" size={14} />
                 <Text style={styles.levelText}>HERÓI NÍVEL {selectedChar.level} • {selectedChar.race.toUpperCase()}</Text>
               </View>
-              <Text style={styles.charName}>{selectedChar.name}</Text>
+              <Text style={[styles.charName, isMobile && { fontSize: 24 }]}>{selectedChar.name}</Text>
               <Text style={styles.charMeta}>
                 {selectedChar.class} • Jogador: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{selectedChar.playerName}</Text>
               </Text>
             </View>
 
-            <View style={styles.headerActions}>
+            {/* Estatísticas resumidas e compactas no centro do Header */}
+            <View style={[
+              styles.headerStatsRibbon,
+              isMobile && {
+                width: '100%',
+                maxWidth: '100%',
+                justifyContent: 'space-around',
+                gap: 4,
+                paddingVertical: 6,
+              }
+            ]}>
+              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
+                <Text style={styles.headerStatLabel}>PROF.</Text>
+                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#C5A059' }]}>+{profBonus}</Text>
+              </View>
+              <View style={styles.headerStatDivider} />
+              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
+                <Text style={styles.headerStatLabel}>CA</Text>
+                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#8C6C90' }]}>{selectedChar.armorClass}</Text>
+              </View>
+              <View style={styles.headerStatDivider} />
+              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
+                <Text style={styles.headerStatLabel}>INIC.</Text>
+                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }]}>
+                  {selectedChar.initiativeBonus >= 0 ? `+${selectedChar.initiativeBonus}` : selectedChar.initiativeBonus}
+                </Text>
+              </View>
+              <View style={styles.headerStatDivider} />
+              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
+                <Text style={styles.headerStatLabel}>PERC.</Text>
+                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#38783C' }]}>{passivePerception}</Text>
+              </View>
+              <View style={styles.headerStatDivider} />
+              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
+                <Text style={styles.headerStatLabel}>DESL.</Text>
+                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }]}>{selectedChar.speed}</Text>
+              </View>
+            </View>
+
+            <View style={[styles.headerActions, isMobile && { width: '100%', justifyContent: 'flex-end', marginTop: 4 }]}>
               <TouchableOpacity
-                style={styles.actionBtn}
+                style={[styles.actionBtn, isMobile && { flex: 1, justifyContent: 'center' }]}
                 onPress={() => { setEditingChar(selectedChar); setModalVisible(true); }}
               >
                 <Edit color="#C5A059" size={16} />
@@ -365,32 +406,6 @@ export default function PlayerModule() {
               >
                 <Trash2 color="#B82828" size={16} />
               </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Ribbon de Estatísticas (Ouro Envelhecido e Bronze) */}
-          <View style={styles.statsRibbon}>
-            <View style={styles.ribbonItem}>
-              <Text style={styles.ribbonLabel}>PROFICIÊNCIA</Text>
-              <Text style={[styles.ribbonVal, { color: '#C5A059' }]}>+{profBonus}</Text>
-            </View>
-            <View style={styles.ribbonItem}>
-              <Text style={styles.ribbonLabel}>CLASSE ARMADURA</Text>
-              <Text style={[styles.ribbonVal, { color: '#8C6C90' }]}>{selectedChar.armorClass}</Text>
-            </View>
-            <View style={styles.ribbonItem}>
-              <Text style={styles.ribbonLabel}>INICIATIVA</Text>
-              <Text style={styles.ribbonVal}>
-                {selectedChar.initiativeBonus >= 0 ? `+${selectedChar.initiativeBonus}` : selectedChar.initiativeBonus}
-              </Text>
-            </View>
-            <View style={styles.ribbonItem}>
-              <Text style={styles.ribbonLabel}>PERCEPÇÃO PASSIVA</Text>
-              <Text style={[styles.ribbonVal, { color: '#38783C' }]}>{passivePerception}</Text>
-            </View>
-            <View style={styles.ribbonItem}>
-              <Text style={styles.ribbonLabel}>DESLOCAMENTO</Text>
-              <Text style={styles.ribbonVal}>{selectedChar.speed}</Text>
             </View>
           </View>
 
@@ -675,9 +690,9 @@ export default function PlayerModule() {
                         onChangeText={setNewSpellTotal}
                       />
                     </View>
-                    <TouchableOpacity style={styles.addItemBtn} onPress={addSpellSlot}>
-                      <Plus color="#E6C280" size={18} />
-                      <Text style={styles.addItemBtnText}>Cadastrar Magia</Text>
+                    <TouchableOpacity style={styles.addItemSubmitBtn} onPress={addSpellSlot}>
+                      <Plus color="#110F0D" size={18} />
+                      <Text style={styles.addItemSubmitText}>Cadastrar Magia</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -781,9 +796,9 @@ export default function PlayerModule() {
                         </TouchableOpacity>
                       </View>
                     </View>
-                    <TouchableOpacity style={styles.addItemBtn} onPress={addAbility}>
-                      <Plus color="#E6C280" size={18} />
-                      <Text style={styles.addItemBtnText}>Cadastrar Habilidade</Text>
+                    <TouchableOpacity style={styles.addItemSubmitBtn} onPress={addAbility}>
+                      <Plus color="#110F0D" size={18} />
+                      <Text style={styles.addItemSubmitText}>Cadastrar Habilidade</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1181,12 +1196,12 @@ const styles = StyleSheet.create({
   sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     flexWrap: 'wrap',
     gap: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#3D342C',
-    paddingBottom: 22,
+    paddingBottom: 20,
   },
   levelBadge: {
     flexDirection: 'row',
@@ -1240,35 +1255,37 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(184, 40, 40, 0.4)',
     backgroundColor: 'rgba(184, 40, 40, 0.1)',
   },
-  statsRibbon: {
+  headerStatsRibbon: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    backgroundColor: '#110F0D',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 18,
-    justifyContent: 'space-around',
-    gap: 16,
-  },
-  ribbonItem: {
     alignItems: 'center',
-    minWidth: 70,
-    flexGrow: 1,
+    gap: 12,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    maxWidth: '100%',
   },
-  ribbonLabel: {
+  headerStatItem: {
+    alignItems: 'center',
+    minWidth: 36,
+    flexShrink: 1,
+  },
+  headerStatLabel: {
     color: '#80776C',
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 4,
+    letterSpacing: 0.5,
+    marginBottom: 2,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
-  ribbonVal: {
+  headerStatVal: {
     color: '#E2D8C3',
-    fontSize: 26,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
+  },
+  headerStatDivider: {
+    width: 1,
+    height: 26,
+    backgroundColor: '#2D251E',
   },
   combatPanel: {
     flexDirection: 'row',
