@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
-import { ApiService } from '@/services/api';
-import { CharacterData } from '@/lib/mockData';
+import InitiativeTracker from '@/components/dm/InitiativeTracker';
 import InterventionModal from '@/components/dm/InterventionModal';
-import { Crown, Users, RefreshCw, Moon, Sun, Skull, Shield, Heart, Scroll, Sword, Zap, AlertTriangle, Package } from 'lucide-react-native';
+import WhispersModal from '@/components/dm/WhispersModal';
+import { CharacterData } from '@/lib/mockData';
+import { ApiService } from '@/services/api';
+import { AlertTriangle, Crown, Moon, RefreshCw, Shield, Skull, Sun, Sword, Users } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function DmModule() {
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedChar, setSelectedChar] = useState<CharacterData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [whispersModalVisible, setWhispersModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<'monitor' | 'initiative'>('monitor');
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<string>('Conectando ao Escudo do Mestre...');
 
@@ -141,11 +145,36 @@ export default function DmModule() {
         </View>
       </View>
 
-      {/* Rituais Divinos em Massa */}
-      <View style={styles.massActionsBox}>
+      {/* Abas de Navegação do Mestre */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'monitor' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('monitor')}
+        >
+          <Users color={activeTab === 'monitor' ? '#E6C280' : '#80776C'} size={18} />
+          <Text style={[styles.tabText, activeTab === 'monitor' && styles.tabTextActive]}>
+            Personagens da Campanha
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'initiative' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('initiative')}
+        >
+          <Sword color={activeTab === 'initiative' ? '#E6C280' : '#80776C'} size={18} />
+          <Text style={[styles.tabText, activeTab === 'initiative' && styles.tabTextActive]}>
+            Rastreio de Iniciativa & Combate
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* SEÇÃO 1: MONITORAMENTO EM TEMPO REAL DA MESA */}
+      <View style={{ display: activeTab === 'monitor' ? 'flex' : 'none', gap: 24, width: '100%' }}>
+        {/* Rituais Divinos em Massa */}
+        <View style={styles.massActionsBox}>
         <View style={styles.massLeft}>
           <Shield color="#C5A059" size={20} />
-          <Text style={styles.massTitle}>RITUAIS DIVINOS EM MASSA DA MESA</Text>
+          <Text style={styles.massTitle}>RITUAIS EM MASSA</Text>
         </View>
 
         <View style={styles.massButtonsRow}>
@@ -157,15 +186,15 @@ export default function DmModule() {
             <Sun color="#C5A059" size={16} />
             <Text style={styles.massBtnText}>Ritual Descanso Longo</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.massBtn, styles.shadowBtn]} onPress={confirmShadowRain}>
+          <TouchableOpacity style={[styles.massBtn, styles.shadowBtn]} onPress={() => setWhispersModalVisible(true)}>
             <Skull color="#B82828" size={16} />
-            <Text style={styles.shadowBtnText}>Praga de Sangue (-10 HP)</Text>
+            <Text style={styles.shadowBtnText}>Sussurros</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Grade de Aventureiros Conectados */}
-      <Text style={styles.gridTitle}>HERÓIS CONECTADOS À CAMPANHA ({characters.length})</Text>
+      <Text style={styles.gridTitle}>PERSONAGENS DA CAMPANHA ({characters.length})</Text>
       
       {characters.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -284,13 +313,25 @@ export default function DmModule() {
                   onPress={() => handleInterveneClick(char)}
                 >
                   <Crown color="#110F0D" size={16} />
-                  <Text style={styles.interveneBtnText}>Invocar Intervenção Divina</Text>
+                  <Text style={styles.interveneBtnText}>Intervenção</Text>
                 </TouchableOpacity>
               </View>
             );
           })}
         </View>
       )}
+      </View>
+
+      {/* SEÇÃO 2: RASTREIO DE INICIATIVA E COMBATE */}
+      <View style={{ display: activeTab === 'initiative' ? 'flex' : 'none', width: '100%' }}>
+        <InitiativeTracker
+          characters={characters}
+          onInterveneCharacter={async (id, action) => {
+            await ApiService.dmIntervene(id, action);
+            fetchTableData(true);
+          }}
+        />
+      </View>
 
       {/* Modal de Intervenção Remota */}
       <InterventionModal
@@ -302,6 +343,29 @@ export default function DmModule() {
             await ApiService.dmIntervene(selectedChar.id, action);
             fetchTableData(true);
           }
+        }}
+      />
+
+      {/* Modal de Sussurros (Intervenção em Massa) */}
+      <WhispersModal
+        visible={whispersModalVisible}
+        onClose={() => setWhispersModalVisible(false)}
+        characters={characters}
+        onApplyMassAction={async (action) => {
+          for (const char of characters) {
+            await ApiService.dmIntervene(char.id, action as any);
+          }
+          fetchTableData(true);
+        }}
+        onClearAllConditions={async () => {
+          for (const char of characters) {
+            if (char.conditions && char.conditions.length > 0) {
+              for (const cond of char.conditions) {
+                await ApiService.dmIntervene(char.id, { type: 'REMOVE_CONDITION', conditionName: cond.name });
+              }
+            }
+          }
+          fetchTableData(true);
         }}
       />
     </View>
@@ -352,6 +416,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3D342C',
+    paddingBottom: 12,
+    flexWrap: 'wrap',
+  },
+  tabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#1A1714',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 6,
+  },
+  tabBtnActive: {
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+    borderColor: '#C5A059',
+  },
+  tabText: {
+    color: '#80776C',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  tabTextActive: {
+    color: '#E6C280',
+    fontWeight: '700',
   },
   headerRight: {
     flexDirection: 'row',
