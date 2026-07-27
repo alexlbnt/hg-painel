@@ -332,7 +332,7 @@ export default function PlayerModule() {
             onPress={() => { setEditingChar(null); setModalVisible(true); }}
           >
             <Plus color="#C5A059" size={18} />
-            <Text style={styles.newCharText}>Criar Aventureiro</Text>
+            <Text style={styles.newCharText}>Criar Personagem</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -398,7 +398,7 @@ export default function PlayerModule() {
                 onPress={() => { setEditingChar(selectedChar); setModalVisible(true); }}
               >
                 <Edit color="#C5A059" size={16} />
-                <Text style={styles.actionBtnText}>Reescrever Grimório</Text>
+                <Text style={styles.actionBtnText}>Editar Ficha</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.deleteBtn]}
@@ -410,22 +410,30 @@ export default function PlayerModule() {
           </View>
 
           {/* Painel de Sinais Vitais (HP) e Combate Medieval */}
-          <View style={styles.combatPanel}>
-            <View style={styles.hpSection}>
+          <View style={[styles.combatPanel, isMobile && { gap: 12 }]}>
+            <View style={[styles.hpSection, isMobile && { padding: 14, minWidth: '100%' }]}>
+              {/* Header Compacto com HP Inline */}
               <View style={styles.hpHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, flexWrap: 'wrap' }}>
-                  <Heart color="#B82828" size={24} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+                  <Heart color="#B82828" size={18} />
                   <Text style={styles.hpTitle}>PONTOS DE VIDA</Text>
+                  {selectedChar.tempHp > 0 && (
+                    <View style={styles.tempHpBadge}>
+                      <Shield color="#C5A059" size={12} />
+                      <Text style={styles.tempHpText}>+{selectedChar.tempHp} TEMP</Text>
+                    </View>
+                  )}
                 </View>
-                {selectedChar.tempHp > 0 && (
-                  <View style={styles.tempHpBadge}>
-                    <Shield color="#C5A059" size={14} />
-                    <Text style={styles.tempHpText}>+{selectedChar.tempHp} TEMP HP</Text>
-                  </View>
-                )}
+
+                {/* Números de HP Direto no Header */}
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+                  <Text style={[styles.hpCurrent, isMobile && { fontSize: 24 }]}>
+                    {selectedChar.currentHp} <Text style={[styles.hpMax, isMobile && { fontSize: 15 }]}>/ {selectedChar.maxHp}</Text>
+                  </Text>
+                </View>
               </View>
 
-              {/* Barra de Vida Medieval */}
+              {/* Barra de Vida Medieval Compacta */}
               <View style={styles.hpBarBg}>
                 <View
                   style={[
@@ -443,86 +451,90 @@ export default function PlayerModule() {
                 />
               </View>
               
-              <View style={styles.hpNumbers}>
-                <Text style={styles.hpCurrent}>
-                  {selectedChar.currentHp} <Text style={styles.hpMax}>/ {selectedChar.maxHp}</Text>
-                </Text>
+              <View style={[styles.hpNumbers, { marginBottom: 12 }]}>
                 <Text style={styles.hitDiceText}>
-                  Dados de Vida (Ritual): <Text style={{ color: '#C5A059' }}>{selectedChar.hitDiceTotal - selectedChar.hitDiceSpent}/{selectedChar.hitDiceTotal}</Text> ({selectedChar.hitDiceType})
+                  Dados de Vida: <Text style={{ color: '#C5A059', fontWeight: '700' }}>{selectedChar.hitDiceTotal - selectedChar.hitDiceSpent}/{selectedChar.hitDiceTotal}</Text> ({selectedChar.hitDiceType})
                 </Text>
               </View>
 
-              {/* Input Customizado de Dano / Poção */}
+              {/* Input Customizado de Dano / Poção mais elegante e compacto */}
               <View style={styles.customHpRow}>
                 <TextInput
-                  style={styles.customHpInput}
+                  style={[styles.customHpInput, isMobile && { paddingVertical: 6, fontSize: 12 }]}
                   value={customHp}
                   onChangeText={setCustomHp}
                   placeholder="Qtd Dano / Cura"
                   placeholderTextColor="#80776C"
                   keyboardType="numeric"
                 />
-                <TouchableOpacity style={[styles.customBtn, styles.dmgBtn]} onPress={() => handleCustomHpAction(true)}>
-                  <Text style={styles.dmgBtnText}>Ferir</Text>
+                <TouchableOpacity style={[styles.customBtn, styles.dmgBtn, isMobile && { paddingVertical: 6 }]} onPress={() => handleCustomHpAction(true)}>
+                  <Text style={styles.dmgBtnText}>- Ferir</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.customBtn, styles.healBtn]} onPress={() => handleCustomHpAction(false)}>
-                  <Text style={styles.healBtnText}>Curar</Text>
+                <TouchableOpacity style={[styles.customBtn, styles.healBtn, isMobile && { paddingVertical: 6 }]} onPress={() => handleCustomHpAction(false)}>
+                  <Text style={styles.healBtnText}>+ Curar</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Testes contra a Morte e Rituais de Descanso */}
-            <View style={styles.deathAndRestSection}>
-              {/* Testes contra a Morte */}
-              <View style={styles.deathBox}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, flexShrink: 1, flexWrap: 'wrap' }}>
-                  <Skull color="#B82828" size={18} />
-                  <Text style={styles.deathTitle}>RESISTÊNCIA CONTRA A MORTE</Text>
+            <View style={[styles.deathAndRestSection, isMobile && { minWidth: '100%', gap: 12 }]}>
+              {/* Testes contra a Morte (Sempre visível, mas ultra compacto) */}
+              <View style={[styles.deathBox, isMobile && { padding: 12 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Skull color="#B82828" size={16} />
+                    <Text style={styles.deathTitle}>RESISTÊNCIA À MORTE</Text>
+                  </View>
+                  {selectedChar.currentHp === 0 && (
+                    <Text style={{ color: '#B82828', fontSize: 10, fontWeight: '700' }}>⚠️ INCONSCIENTE</Text>
+                  )}
                 </View>
 
-                <View style={styles.deathRow}>
-                  <Text style={[styles.deathLabel, { color: '#38783C' }]}>SUCESSOS:</Text>
-                  {[0, 1, 2].map(idx => (
-                    <TouchableOpacity key={`suc-${idx}`} onPress={() => toggleDeathSave('success', idx)}>
-                      {selectedChar.deathSaveSuccesses > idx ? (
-                        <CheckCircle color="#38783C" size={20} />
-                      ) : (
-                        <Circle color="#3D342C" size={20} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <View style={styles.deathRow}>
+                    <Text style={[styles.deathLabel, { color: '#38783C' }]}>SUCESSOS:</Text>
+                    {[0, 1, 2].map(idx => (
+                      <TouchableOpacity key={`suc-${idx}`} onPress={() => toggleDeathSave('success', idx)}>
+                        {selectedChar.deathSaveSuccesses > idx ? (
+                          <CheckCircle color="#38783C" size={16} />
+                        ) : (
+                          <Circle color="#3D342C" size={16} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
 
-                <View style={styles.deathRow}>
-                  <Text style={[styles.deathLabel, { color: '#B82828' }]}>FALHAS:</Text>
-                  {[0, 1, 2].map(idx => (
-                    <TouchableOpacity key={`fail-${idx}`} onPress={() => toggleDeathSave('fail', idx)}>
-                      {selectedChar.deathSaveFailures > idx ? (
-                        <XCircleIcon color="#B82828" size={20} />
-                      ) : (
-                        <Circle color="#3D342C" size={20} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                  <View style={styles.deathRow}>
+                    <Text style={[styles.deathLabel, { color: '#B82828' }]}>FALHAS:</Text>
+                    {[0, 1, 2].map(idx => (
+                      <TouchableOpacity key={`fail-${idx}`} onPress={() => toggleDeathSave('fail', idx)}>
+                        {selectedChar.deathSaveFailures > idx ? (
+                          <XCircleIcon color="#B82828" size={16} />
+                        ) : (
+                          <Circle color="#3D342C" size={16} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
               </View>
 
-              {/* Botões de Ritual de Descanso */}
-              <View style={styles.restBox}>
-                <Text style={styles.restTitle}>RITUAIS DE DESCANSO</Text>
+              {/* Botões de Ritual de Descanso Compactos */}
+              <View style={[styles.restBox, isMobile && { padding: 12 }]}>
+                <Text style={[styles.restTitle, { marginBottom: 8 }]}>RITUAIS DE DESCANSO</Text>
                 <View style={styles.restButtonsRow}>
-                  <TouchableOpacity style={styles.shortRestBtn} onPress={triggerShortRest}>
-                    <Moon color="#6B4A70" size={18} />
+                  <TouchableOpacity style={[styles.shortRestBtn, isMobile && { padding: 10, minWidth: '48%' }]} onPress={triggerShortRest}>
+                    <Moon color="#6B4A70" size={16} />
                     <View style={{ flexShrink: 1 }}>
                       <Text style={styles.restBtnTitle}>Descanso Curto</Text>
-                      <Text style={styles.restBtnSub}>Curar & Hab. Marciais</Text>
+                      <Text style={styles.restBtnSub}>Curar & Hab.</Text>
                     </View>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.longRestBtn} onPress={triggerLongRest}>
-                    <Sun color="#C5A059" size={18} />
+                  <TouchableOpacity style={[styles.longRestBtn, isMobile && { padding: 10, minWidth: '48%' }]} onPress={triggerLongRest}>
+                    <Sun color="#C5A059" size={16} />
                     <View style={{ flexShrink: 1 }}>
                       <Text style={styles.restBtnTitle}>Descanso Longo</Text>
-                      <Text style={styles.restBtnSub}>Restaura Vida & Magias</Text>
+                      <Text style={styles.restBtnSub}>Vida & Magias</Text>
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -1080,10 +1092,10 @@ export default function PlayerModule() {
         </View>
       ) : (
         <View style={styles.noCharBox}>
-          <Text style={styles.noCharText}>Nenhum grimório selecionado ou encontrado na taverna.</Text>
+          <Text style={styles.noCharText}>Nenhum personagem selecionado ou encontrado na taverna.</Text>
           <TouchableOpacity style={styles.createBtnLarge} onPress={() => { setEditingChar(null); setModalVisible(true); }}>
             <Plus color="#110F0D" size={20} />
-            <Text style={styles.createBtnLargeText}>Escrever Primeiro Grimório</Text>
+            <Text style={styles.createBtnLargeText}>Criar Primeiro Personagem</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -1279,7 +1291,7 @@ const styles = StyleSheet.create({
   combatPanel: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 22,
+    gap: 16,
   },
   hpSection: {
     flex: 2,
@@ -1288,7 +1300,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#3D342C',
-    padding: 22,
+    padding: 16,
   },
   hpHeader: {
     flexDirection: 'row',
@@ -1296,11 +1308,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   hpTitle: {
     color: '#B82828',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.5,
     flexShrink: 1,
@@ -1311,51 +1323,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#8C704F',
   },
   tempHpText: {
     color: '#E6C280',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   hpBarBg: {
-    height: 22,
+    height: 12,
     backgroundColor: '#24201C',
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: 'hidden',
-    marginBottom: 14,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#3D342C',
   },
   hpBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 6,
   },
   hpNumbers: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 18,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   hpCurrent: {
     color: '#E2D8C3',
-    fontSize: 38,
+    fontSize: 26,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
   },
   hpMax: {
     color: '#80776C',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
   },
   hitDiceText: {
     color: '#BAAFA0',
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
 
@@ -1366,7 +1377,7 @@ const styles = StyleSheet.create({
   dmgBtnText: {
     color: '#B82828',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   healBtn: {
@@ -1376,7 +1387,7 @@ const styles = StyleSheet.create({
   healBtnText: {
     color: '#38783C',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   customHpRow: {
@@ -1386,22 +1397,22 @@ const styles = StyleSheet.create({
   },
   customHpInput: {
     flexGrow: 1,
-    flexBasis: 120,
-    minWidth: 120,
+    flexBasis: 100,
+    minWidth: 100,
     backgroundColor: '#1A1714',
     borderWidth: 1,
     borderColor: '#3D342C',
     borderRadius: 6,
     color: '#E2D8C3',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 13,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   customBtn: {
     flexGrow: 1,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: 6,
     borderWidth: 1,
     justifyContent: 'center',
@@ -1410,18 +1421,18 @@ const styles = StyleSheet.create({
   deathAndRestSection: {
     flex: 1,
     minWidth: 260,
-    gap: 18,
+    gap: 12,
   },
   deathBox: {
     backgroundColor: '#110F0D',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#3D342C',
-    padding: 18,
+    padding: 14,
   },
   deathTitle: {
     color: '#E2D8C3',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.5,
     flexShrink: 1,
@@ -1430,13 +1441,12 @@ const styles = StyleSheet.create({
   deathRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
+    gap: 6,
   },
   deathLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    width: 80,
+    marginRight: 2,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   restBox: {
@@ -1444,52 +1454,51 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#3D342C',
-    padding: 18,
+    padding: 14,
     flex: 1,
     justifyContent: 'space-between',
   },
   restTitle: {
     color: '#C5A059',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
-    marginBottom: 12,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   restButtonsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   shortRestBtn: {
     flexGrow: 1,
-    flexBasis: 130,
-    minWidth: 130,
+    flexBasis: 120,
+    minWidth: 120,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: 'rgba(107, 74, 112, 0.15)',
     borderWidth: 1,
     borderColor: '#6B4A70',
-    padding: 12,
+    padding: 10,
     borderRadius: 6,
   },
   longRestBtn: {
     flexGrow: 1,
-    flexBasis: 130,
-    minWidth: 130,
+    flexBasis: 120,
+    minWidth: 120,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: 'rgba(197, 160, 89, 0.15)',
     borderWidth: 1,
     borderColor: '#8C704F',
-    padding: 12,
+    padding: 10,
     borderRadius: 6,
   },
   restBtnTitle: {
     color: '#E2D8C3',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     flexShrink: 1,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
@@ -1502,47 +1511,47 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     color: '#C5A059',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     letterSpacing: 1,
-    marginTop: 10,
+    marginTop: 8,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
   },
   attributesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
   },
   attrCard: {
     flex: 1,
-    minWidth: 105,
+    minWidth: 95,
     backgroundColor: '#110F0D',
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#3D342C',
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
   },
   attrName: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 1.5,
-    marginBottom: 6,
+    letterSpacing: 1.2,
+    marginBottom: 4,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   attrMod: {
     color: '#E2D8C3',
-    fontSize: 34,
+    fontSize: 26,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 2,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
   },
   attrScore: {
     color: '#80776C',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   saveRow: {
     flexDirection: 'row',

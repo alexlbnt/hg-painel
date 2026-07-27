@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Linking } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Shield, Crown, Sparkles, Home, Scroll, Sword } from 'lucide-react-native';
@@ -55,12 +55,13 @@ export default function HeaderNav() {
         </View>
 
         {/* Emblema de Campanha */}
-        {!isMobile && (
-          <View style={styles.roomBadge}>
-            <Text style={styles.roomLabel}>MESA EM SESSÃO</Text>
-            <Text style={styles.roomCode}>⚔️ #HONRA-5E</Text>
-          </View>
-        )}
+        {/* Emblema de Campanha / Link Externo */}
+        <TouchableOpacity
+          style={styles.roomBadge}
+          onPress={() => Linking.openURL('https://hg.a11y.host')}
+        >
+          <Text style={[styles.roomCode, { marginTop: 0 }]}>Mundo de HG</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

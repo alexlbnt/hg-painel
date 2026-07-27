@@ -119,7 +119,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <Sword color="#C5A059" size={20} />
-              <Text style={styles.title}>{initialData ? 'REESCREVER GRIMÓRIO DO HERÓI' : 'ESCREVER NOVO GRIMÓRIO'}</Text>
+              <Text style={styles.title}>{initialData ? 'EDITAR FICHA DO PERSONAGEM' : 'CRIAR NOVO PERSONAGEM'}</Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
               <X color="#BAAFA0" size={20} />
@@ -132,7 +132,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
             
             <View style={styles.row}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Nome do Aventureiro *</Text>
+                <Text style={styles.label}>Nome do Personagem *</Text>
                 <TextInput
                   style={styles.input}
                   value={name}
