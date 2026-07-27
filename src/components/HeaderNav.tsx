@@ -16,22 +16,74 @@ export default function HeaderNav() {
     { name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown },
   ];
 
+  if (isMobile) {
+    return (
+      <View style={[styles.container, { paddingVertical: 10, paddingHorizontal: 12 }]}>
+        <View style={{ width: '100%', gap: 10 }}>
+          {/* Top Row: Logo compacta à esquerda e Botão Mundo de HG à direita */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }} onPress={() => router.push('/')}>
+              <View style={[styles.iconContainer, { width: 34, height: 34, borderRadius: 6 }]}>
+                <Sword color={Colors.fantasy.gold} size={18} />
+              </View>
+              <View style={{ flexShrink: 1 }}>
+                <Text style={[styles.title, { fontSize: 14, letterSpacing: 1 }]} numberOfLines={1}>HONRA & EGOÍSMO</Text>
+                <Text style={[styles.subtitle, { fontSize: 8, letterSpacing: 0.5 }]} numberOfLines={1}>GRIMÓRIO D&D 5E</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 6, flexShrink: 0 }]}
+              onPress={() => Linking.openURL('https://hg.a11y.host')}
+            >
+              <Text style={[styles.roomCode, { marginTop: 0, fontSize: 11 }]}>Mundo de HG ↗</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bottom Row: Tabs de Navegação em Barra Segmentada horizontal compacta */}
+          <View style={[styles.navLinks, { width: '100%', padding: 4, gap: 4, justifyContent: 'space-between' }]}>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
+              return (
+                <TouchableOpacity
+                  key={item.path}
+                  style={[
+                    styles.navButton,
+                    { flex: 1, justifyContent: 'center', paddingVertical: 6, paddingHorizontal: 4, gap: 4, borderRadius: 4 },
+                    isActive && styles.navButtonActive
+                  ]}
+                  onPress={() => router.push(item.path as any)}
+                >
+                  <Icon color={isActive ? Colors.fantasy.goldBright : Colors.fantasy.textSecondary} size={14} />
+                  <Text style={[styles.navText, { fontSize: 11 }, isActive && styles.navTextActive]} numberOfLines={1}>
+                    {item.mobileName}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <View style={[styles.inner, isMobile && { justifyContent: 'center' }]}>
+      <View style={styles.inner}>
         {/* Logo & Emblema Medieval */}
-        <TouchableOpacity style={[styles.brand, isMobile && { marginBottom: 8 }]} onPress={() => router.push('/')}>
+        <TouchableOpacity style={styles.brand} onPress={() => router.push('/')}>
           <View style={styles.iconContainer}>
             <Sword color={Colors.fantasy.gold} size={22} />
           </View>
           <View>
-            <Text style={[styles.title, isMobile && { fontSize: 15 }]}>HONRA & EGOÍSMO</Text>
+            <Text style={styles.title}>HONRA & EGOÍSMO</Text>
             <Text style={styles.subtitle}>GRIMÓRIO D&D 5E</Text>
           </View>
         </TouchableOpacity>
 
         {/* Links de Navegação Medieval */}
-        <View style={[styles.navLinks, isMobile && { width: '100%', justifyContent: 'space-around', gap: 2 }]}>
+        <View style={styles.navLinks}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
@@ -40,21 +92,19 @@ export default function HeaderNav() {
                 key={item.path}
                 style={[
                   styles.navButton,
-                  isMobile && { paddingHorizontal: 8, paddingVertical: 6 },
                   isActive && styles.navButtonActive
                 ]}
                 onPress={() => router.push(item.path as any)}
               >
-                <Icon color={isActive ? Colors.fantasy.goldBright : Colors.fantasy.textSecondary} size={isMobile ? 14 : 16} />
-                <Text style={[styles.navText, isMobile && { fontSize: 12 }, isActive && styles.navTextActive]}>
-                  {isMobile ? item.mobileName : item.name}
+                <Icon color={isActive ? Colors.fantasy.goldBright : Colors.fantasy.textSecondary} size={16} />
+                <Text style={[styles.navText, isActive && styles.navTextActive]}>
+                  {item.name}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Emblema de Campanha */}
         {/* Emblema de Campanha / Link Externo */}
         <TouchableOpacity
           style={styles.roomBadge}
