@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Alert, Modal } from 'react-native';
 import { ApiService } from '@/services/api';
+import { ExportService } from '@/services/exportService';
 import { CharacterData, SpellItemData, INITIAL_SPELLS } from '@/lib/mockData';
 import CharacterModal from '@/components/player/CharacterModal';
-import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins, ChevronDown, ChevronUp, Eye, EyeOff, BookOpen, Clock, Crosshair, HelpCircle } from 'lucide-react-native';
+import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins, ChevronDown, ChevronUp, Eye, EyeOff, BookOpen, Clock, Crosshair, HelpCircle, Download, Upload } from 'lucide-react-native';
 import { useResponsive } from '@/hooks/useResponsive';
 
 const SKILLS_LIST = [
@@ -34,6 +35,8 @@ export default function PlayerModule() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingChar, setEditingChar] = useState<CharacterData | null>(null);
+  const [importModalVisible, setImportModalVisible] = useState(false);
+  const [importJsonText, setImportJsonText] = useState('');
   const [activeTab, setActiveTab] = useState<'spells' | 'abilities' | 'skills' | 'inventory'>('spells');
   const [customHp, setCustomHp] = useState('');
   const [newItemName, setNewItemName] = useState('');
@@ -147,6 +150,68 @@ export default function PlayerModule() {
         { text: 'Manter', style: 'cancel' },
         { text: 'Excluir', style: 'destructive', onPress: confirmDelete },
       ]);
+    }
+  };
+
+  const handleExportJson = () => {
+    if (selectedChar) {
+      ExportService.exportCharacterToJson(selectedChar);
+    }
+  };
+
+  const handleExportAllJson = () => {
+    if (characters && characters.length > 0) {
+      ExportService.exportAllCharactersToJson(characters);
+    } else {
+      Alert.alert('Aviso', 'Não há fichas na Taverna para exportar.');
+    }
+  };
+
+  const handleSelectJsonFile = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e: any) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const content = event.target?.result as string;
+            if (content) setImportJsonText(content);
+          };
+          reader.readAsText(file);
+        }
+      };
+      input.click();
+    } else {
+      Alert.alert('Dica', 'No celular ou aplicativo, copie o código JSON da ficha e cole na caixa de texto abaixo.');
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importJsonText.trim()) {
+      Alert.alert('Aviso', 'Cole o código JSON ou selecione um arquivo primeiro.');
+      return;
+    }
+    const res = ExportService.parseImportJson(importJsonText);
+    if (!res.success || !res.characters) {
+      Alert.alert('Erro na Importação', res.error || 'JSON inválido');
+      return;
+    }
+    try {
+      let count = 0;
+      for (const charData of res.characters) {
+        await ApiService.createCharacter(charData);
+        count++;
+      }
+      await loadCharacters();
+      setImportModalVisible(false);
+      setImportJsonText('');
+      Alert.alert('Sucesso!', `${count} ficha(s) importada(s) com sucesso para a Taverna!`);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Erro', 'Ocorreu um erro ao salvar as fichas importadas.');
     }
   };
 
@@ -453,6 +518,13 @@ export default function PlayerModule() {
             <Plus color="#C5A059" size={18} />
             <Text style={styles.newCharText}>Criar Personagem</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.newCharChip, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]}
+            onPress={() => setImportModalVisible(true)}
+          >
+            <Upload color="#4A8C59" size={18} />
+            <Text style={[styles.newCharText, { color: '#4A8C59' }]}>Importar / Backup</Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
 
@@ -512,19 +584,27 @@ export default function PlayerModule() {
               </View>
             </View>
 
-            <View style={[styles.headerActions, isMobile && { width: '100%', justifyContent: 'flex-end', marginTop: 4 }]}>
+            <View style={[styles.headerActions, isMobile && { width: '100%', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6, marginTop: 6 }]}>
+              <TouchableOpacity
+                style={[styles.actionBtn, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]}
+                onPress={handleExportJson}
+                accessibilityLabel="Exportar Ficha em JSON"
+              >
+                <Download color="#78C288" size={15} />
+                <Text style={[styles.actionBtnText, { color: '#78C288' }]}>JSON</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, isMobile && { flex: 1, justifyContent: 'center' }, { borderColor: `${themeColor}66` }]}
                 onPress={() => { setEditingChar(selectedChar); setModalVisible(true); }}
               >
-                <Edit color={themeColor} size={16} />
-                <Text style={[styles.actionBtnText, { color: themeColor }]}>Editar Ficha</Text>
+                <Edit color={themeColor} size={15} />
+                <Text style={[styles.actionBtnText, { color: themeColor }]}>Editar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.deleteBtn]}
                 onPress={() => handleDelete(selectedChar.id)}
               >
-                <Trash2 color="#B82828" size={16} />
+                <Trash2 color="#B82828" size={15} />
               </TouchableOpacity>
             </View>
           </View>
@@ -1468,6 +1548,60 @@ export default function PlayerModule() {
         onSave={handleCreateOrUpdate}
         initialData={editingChar}
       />
+
+      {/* Modal de Importação e Backup */}
+      <Modal
+        visible={importModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImportModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxWidth: 580 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>📤 Backup & Importação de Fichas</Text>
+              <TouchableOpacity onPress={() => setImportModalVisible(false)} style={styles.closeBtn}>
+                <Text style={styles.closeBtnText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.modalSectionDesc}>
+                Guarde suas fichas de D&D 5e com segurança no seu dispositivo ou importe aventureiros salvos anteriormente em formato JSON.
+              </Text>
+              <View style={styles.backupActionsBox}>
+                <TouchableOpacity style={styles.backupBtn} onPress={handleExportAllJson}>
+                  <Download color="#C5A059" size={18} />
+                  <Text style={styles.backupBtnText}>Baixar Backup Completo (Todas as Fichas)</Text>
+                </TouchableOpacity>
+                {Platform.OS === 'web' && (
+                  <TouchableOpacity style={[styles.backupBtn, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]} onPress={handleSelectJsonFile}>
+                    <Upload color="#4A8C59" size={18} />
+                    <Text style={[styles.backupBtnText, { color: '#4A8C59' }]}>Carregar Arquivo .JSON do Computador</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={[styles.modalLabel, { marginTop: 16 }]}>Ou cole o código JSON abaixo:</Text>
+              <TextInput
+                style={[styles.modalInput, { height: 160, textAlignVertical: 'top', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }]}
+                multiline
+                placeholder="Colar conteúdo JSON da ficha aqui..."
+                placeholderTextColor="#80776C"
+                value={importJsonText}
+                onChangeText={setImportJsonText}
+              />
+            </ScrollView>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setImportModalVisible(false); setImportJsonText(''); }}>
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleConfirmImport}>
+                <Upload color="#110F0D" size={18} />
+                <Text style={styles.saveBtnText}>Importar para Taverna</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2774,5 +2908,132 @@ const styles = StyleSheet.create({
     color: '#80776C',
     fontSize: 12,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(17, 15, 13, 0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalContent: {
+    backgroundColor: '#1A1714',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 8,
+    width: '100%',
+    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.8,
+    shadowRadius: 25,
+    elevation: 20,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3D342C',
+    backgroundColor: '#110F0D',
+  },
+  modalTitle: {
+    color: '#C5A059',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 1,
+    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
+  },
+  closeBtn: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: '#24201C',
+  },
+  closeBtnText: {
+    color: '#BAAFA0',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  modalBody: {
+    padding: 24,
+    maxHeight: Platform.OS === 'web' ? 550 : 400,
+  },
+  modalSectionDesc: {
+    color: '#BAAFA0',
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  backupActionsBox: {
+    gap: 12,
+    marginBottom: 10,
+  },
+  backupBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    backgroundColor: '#24201C',
+    borderWidth: 1,
+    borderColor: '#C5A059',
+  },
+  backupBtnText: {
+    color: '#C5A059',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  modalLabel: {
+    color: '#E6C280',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  modalInput: {
+    backgroundColor: '#110F0D',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 6,
+    padding: 12,
+    color: '#F4ECE1',
+    fontSize: 13,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#3D342C',
+    backgroundColor: '#110F0D',
+  },
+  cancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+    backgroundColor: '#24201C',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+  },
+  cancelBtnText: {
+    color: '#BAAFA0',
+    fontWeight: '600',
+  },
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 6,
+    backgroundColor: '#C5A059',
+  },
+  saveBtnText: {
+    color: '#110F0D',
+    fontWeight: '700',
   },
 });

@@ -430,7 +430,7 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
         <View style={styles.emptyBox}>
           <Text style={styles.emptyText}>O campo de batalha está em silêncio...</Text>
           <Text style={styles.emptySubText}>
-            Clique em "Importar Jogadores" ou escolha um inimigo acima para começar a rastrear a iniciativa da sessão.
+            Clique em &quot;Importar Jogadores&quot; ou escolha um inimigo acima para começar a rastrear a iniciativa da sessão.
           </Text>
         </View>
       ) : (
@@ -541,11 +541,11 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
 
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       {!comb.isPlayer && (
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => handleDuplicateMonster(comb)} title="Duplicar Inimigo">
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => handleDuplicateMonster(comb)} accessibilityLabel="Duplicar Inimigo">
                           <Copy color="#BAAFA0" size={14} />
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity style={[styles.iconBtn, styles.delBtn]} onPress={() => handleRemoveCombatant(comb.id)} title="Remover da Ordem">
+                      <TouchableOpacity style={[styles.iconBtn, styles.delBtn]} onPress={() => handleRemoveCombatant(comb.id)} accessibilityLabel="Remover da Ordem">
                         <Trash2 color="#B82828" size={14} />
                       </TouchableOpacity>
                     </View>
