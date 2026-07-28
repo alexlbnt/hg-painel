@@ -52,6 +52,7 @@ export async function GET() {
             gold: char.gold || 15,
             silver: char.silver || 10,
             copper: char.copper || 30,
+            themeColor: char.themeColor || '#C5A059',
             spellSlots: {
               create: char.spellSlots.map(s => ({ level: s.level, total: s.total, used: s.used })),
             },
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
         gold: Number(body.gold) || 15,
         silver: Number(body.silver) || 10,
         copper: Number(body.copper) || 30,
+        themeColor: body.themeColor || '#C5A059',
         spellSlots: {
           create: body.spellSlots || [],
         },

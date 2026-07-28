@@ -82,7 +82,19 @@ export interface CharacterData {
   abilities: AbilityData[];
   conditions: ConditionData[];
   items: ItemData[];
+  themeColor?: string;
 }
+
+export const CHARACTER_THEME_COLORS = [
+  { name: 'Padrão Dourado', hex: '#C5A059', bg: 'rgba(197, 160, 89, 0.15)' },
+  { name: 'Vermelho Sangue', hex: '#C95B5B', bg: 'rgba(201, 91, 91, 0.15)' },
+  { name: 'Verde Esmeralda', hex: '#4E9C8E', bg: 'rgba(78, 156, 142, 0.15)' },
+  { name: 'Azul Arcano', hex: '#5B8AC9', bg: 'rgba(91, 138, 201, 0.15)' },
+  { name: 'Roxo Sombrio', hex: '#B280E6', bg: 'rgba(178, 128, 230, 0.15)' },
+  { name: 'Fogo Alaranjado', hex: '#E67E22', bg: 'rgba(230, 126, 34, 0.15)' },
+  { name: 'Prata Celestial', hex: '#A8B8C8', bg: 'rgba(168, 184, 200, 0.15)' },
+  { name: 'Rosa Encantado', hex: '#E84393', bg: 'rgba(232, 67, 147, 0.15)' },
+];
 
 export const INITIAL_CHARACTERS: CharacterData[] = [
   {

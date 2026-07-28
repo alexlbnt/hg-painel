@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, ScrollView, Platform } from 'react-native';
-import { CharacterData } from '@/lib/mockData';
-import { X, Save, Shield, User, Sword } from 'lucide-react-native';
+import { CharacterData, CHARACTER_THEME_COLORS } from '@/lib/mockData';
+import { Save, Sword, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface CharacterModalProps {
   visible: boolean;
@@ -36,6 +36,9 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
   const [wisProf, setWisProf] = useState(false);
   const [chaProf, setChaProf] = useState(false);
 
+  // Cor de Tema da Ficha
+  const [themeColor, setThemeColor] = useState('#C5A059');
+
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
@@ -58,6 +61,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setIntProf(!!initialData.intProf);
       setWisProf(!!initialData.wisProf);
       setChaProf(!!initialData.chaProf);
+      setThemeColor(initialData.themeColor || '#C5A059');
     } else {
       setName('');
       setPlayerName('Alex');
@@ -79,6 +83,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setIntProf(false);
       setWisProf(true);
       setChaProf(true);
+      setThemeColor('#C5A059');
     }
   }, [initialData, visible]);
 
@@ -107,6 +112,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       intProf,
       wisProf,
       chaProf,
+      themeColor,
     });
     onClose();
   };
@@ -185,6 +191,39 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
                   placeholderTextColor="#80776C"
                 />
               </View>
+            </View>
+
+            {/* Personalização & Cor da Ficha */}
+            <Text style={styles.sectionTitle}>🎨 PERSONALIZAÇÃO & COR DA FICHA</Text>
+            <Text style={{ color: '#80776C', fontSize: 12, marginBottom: 10 }}>
+              Escolha a cor de destaque exclusiva para a sua ficha de personagem. Esta cor afetará bordas, ícones e destaques apenas na sua exibição, mantendo o restante do painel no padrão da taverna.
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+              {CHARACTER_THEME_COLORS.map(c => {
+                const isSelected = themeColor === c.hex;
+                return (
+                  <TouchableOpacity
+                    key={c.hex}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 6,
+                      backgroundColor: isSelected ? c.bg : 'rgba(20, 18, 16, 0.6)',
+                      borderWidth: 2,
+                      borderColor: isSelected ? c.hex : '#3D342C',
+                    }}
+                    onPress={() => setThemeColor(c.hex)}
+                  >
+                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: c.hex }} />
+                    <Text style={{ color: isSelected ? '#E2D8C3' : '#80776C', fontSize: 13, fontWeight: isSelected ? '700' : '500' }}>
+                      {c.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Estatísticas de Combate */}

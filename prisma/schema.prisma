@@ -86,6 +86,7 @@ model Character {
   gold               Int         @default(15) // PO
   silver             Int         @default(10) // PP
   copper             Int         @default(30) // PC
+  themeColor         String      @default("#C5A059") // Cor de Personalização da Ficha
 
   // Relations
   roomId             String?

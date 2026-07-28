@@ -112,6 +112,7 @@ export const ApiService = {
         { id: `item-${Date.now()}-1`, name: 'Espada Longa', description: 'Arma versátil', weight: 1.5, quantity: 1, isWeapon: true, damage: '1d8 cortante' },
         { id: `item-${Date.now()}-2`, name: 'Mochila de Aventureiro', description: 'Kit de sobrevivência básico', weight: 5.0, quantity: 1, isWeapon: false },
       ],
+      themeColor: data.themeColor || '#C5A059',
     };
 
     try {

@@ -100,6 +100,7 @@ export default function PlayerModule() {
   }, []);
 
   const selectedChar = characters.find(c => c.id === selectedId) || null;
+  const themeColor = selectedChar?.themeColor || '#C5A059';
 
   const getMod = (score: number) => Math.floor((score - 10) / 2);
   const formatMod = (score: number) => {
@@ -430,15 +431,16 @@ export default function PlayerModule() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectorScroll}>
           {characters.map(char => {
             const isSelected = char.id === selectedId;
+            const chipColor = char.themeColor || '#C5A059';
             return (
               <TouchableOpacity
                 key={char.id}
-                style={[styles.charChip, isSelected && styles.charChipSelected]}
+                style={[styles.charChip, isSelected && [styles.charChipSelected, { borderColor: chipColor, backgroundColor: `${chipColor}18` }]]}
                 onPress={() => setSelectedId(char.id)}
               >
-                <Shield color={isSelected ? '#C5A059' : '#80776C'} size={16} />
+                <Shield color={isSelected ? chipColor : '#80776C'} size={16} />
                 <View>
-                  <Text style={[styles.chipName, isSelected && styles.chipNameSelected]}>{char.name}</Text>
+                  <Text style={[styles.chipName, isSelected && [styles.chipNameSelected, { color: chipColor }]]}>{char.name}</Text>
                   <Text style={styles.chipClass}>{char.class} • Nvl {char.level}</Text>
                 </View>
               </TouchableOpacity>
@@ -456,15 +458,15 @@ export default function PlayerModule() {
 
       {/* Conteúdo Principal do Grimório do Aventureiro */}
       {selectedChar ? (
-        <View style={[styles.mainSheet, isMobile && { padding: 14, gap: 16 }]}>
+        <View style={[styles.mainSheet, isMobile && { padding: 14, gap: 16 }, { borderColor: themeColor, borderWidth: 1.5, shadowColor: themeColor, shadowOpacity: 0.2, shadowRadius: 15 }]}>
           {/* Header Medieval da Ficha */}
           <View style={[styles.sheetHeader, isMobile && { gap: 12, paddingBottom: 14 }]}>
             <View style={{ flexShrink: 1, minWidth: isMobile ? '100%' : 180 }}>
-              <View style={styles.levelBadge}>
-                <Scroll color="#C5A059" size={14} />
-                <Text style={styles.levelText}>NÍVEL {selectedChar.level} • {selectedChar.race.toUpperCase()}</Text>
+              <View style={[styles.levelBadge, { borderColor: `${themeColor}66`, backgroundColor: `${themeColor}15` }]}>
+                <Scroll color={themeColor} size={14} />
+                <Text style={[styles.levelText, { color: themeColor }]}>NÍVEL {selectedChar.level} • {selectedChar.race.toUpperCase()}</Text>
               </View>
-              <Text style={[styles.charName, isMobile && { fontSize: 24 }]}>{selectedChar.name}</Text>
+              <Text style={[styles.charName, isMobile && { fontSize: 24 }, { color: themeColor }]}>{selectedChar.name}</Text>
               <Text style={styles.charMeta}>
                 {selectedChar.class} • Jogador: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{selectedChar.playerName}</Text>
               </Text>
@@ -479,11 +481,12 @@ export default function PlayerModule() {
                 justifyContent: 'space-around',
                 gap: 4,
                 paddingVertical: 6,
-              }
+              },
+              { borderColor: `${themeColor}44` }
             ]}>
               <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
                 <Text style={styles.headerStatLabel}>PROF.</Text>
-                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#C5A059' }]}>+{profBonus}</Text>
+                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: themeColor }]}>+{profBonus}</Text>
               </View>
               <View style={styles.headerStatDivider} />
               <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
@@ -511,11 +514,11 @@ export default function PlayerModule() {
 
             <View style={[styles.headerActions, isMobile && { width: '100%', justifyContent: 'flex-end', marginTop: 4 }]}>
               <TouchableOpacity
-                style={[styles.actionBtn, isMobile && { flex: 1, justifyContent: 'center' }]}
+                style={[styles.actionBtn, isMobile && { flex: 1, justifyContent: 'center' }, { borderColor: `${themeColor}66` }]}
                 onPress={() => { setEditingChar(selectedChar); setModalVisible(true); }}
               >
-                <Edit color="#C5A059" size={16} />
-                <Text style={styles.actionBtnText}>Editar Ficha</Text>
+                <Edit color={themeColor} size={16} />
+                <Text style={[styles.actionBtnText, { color: themeColor }]}>Editar Ficha</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.deleteBtn]}
@@ -570,7 +573,7 @@ export default function PlayerModule() {
               
               <View style={[styles.hpNumbers, { marginBottom: 12 }]}>
                 <Text style={styles.hitDiceText}>
-                  Dados de Vida: <Text style={{ color: '#C5A059', fontWeight: '700' }}>{selectedChar.hitDiceTotal - selectedChar.hitDiceSpent}/{selectedChar.hitDiceTotal}</Text> ({selectedChar.hitDiceType})
+                  Dados de Vida: <Text style={{ color: themeColor, fontWeight: '700' }}>{selectedChar.hitDiceTotal - selectedChar.hitDiceSpent}/{selectedChar.hitDiceTotal}</Text> ({selectedChar.hitDiceType})
                 </Text>
               </View>
 
@@ -648,7 +651,7 @@ export default function PlayerModule() {
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.longRestBtn, isMobile && { padding: 10, minWidth: '48%' }]} onPress={triggerLongRest}>
-                    <Sun color="#C5A059" size={16} />
+                    <Sun color={themeColor} size={16} />
                     <View style={{ flexShrink: 1 }}>
                       <Text style={styles.restBtnTitle}>Descanso Longo</Text>
                       <Text style={styles.restBtnSub}>Vida & Magias</Text>
@@ -680,7 +683,7 @@ export default function PlayerModule() {
                   style={[
                     styles.attrCard,
                     isMobile && { minWidth: '30%', padding: 10, paddingVertical: 12 },
-                    attr.prof && { borderColor: '#C5A059' }
+                    attr.prof && { borderColor: themeColor, backgroundColor: `${themeColor}12` }
                   ]}
                 >
                   <Text
@@ -697,9 +700,9 @@ export default function PlayerModule() {
                   <Text style={[styles.attrMod, isMobile && { fontSize: 24, marginBottom: 2 }]}>{formatMod(attr.score)}</Text>
                   <Text style={[styles.attrScore, isMobile && { fontSize: 11, marginBottom: 6 }]}>Score: {attr.score}</Text>
                   <View style={[styles.saveRow, isMobile && { paddingTop: 6, gap: 4 }]}>
-                    <View style={[styles.saveDot, attr.prof && styles.saveDotProf, isMobile && { width: 6, height: 6 }]} />
+                    <View style={[styles.saveDot, attr.prof && [styles.saveDotProf, { backgroundColor: themeColor }], isMobile && { width: 6, height: 6 }]} />
                     <Text style={[styles.saveText, isMobile && { fontSize: 10 }]}>
-                      Bônus: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
+                      Bônus: <Text style={{ color: themeColor, fontWeight: '700' }}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
                     </Text>
                   </View>
                 </View>
@@ -710,38 +713,38 @@ export default function PlayerModule() {
           {/* Abas de Recursos (Pergaminhos, Poderes, Perícias) */}
           <View style={styles.tabsNav}>
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'spells' && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === 'spells' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
               onPress={() => setActiveTab('spells')}
             >
-              <Scroll color={activeTab === 'spells' ? '#E6C280' : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'spells' && styles.tabBtnTextActive]}>
+              <Scroll color={activeTab === 'spells' ? themeColor : '#80776C'} size={18} />
+              <Text style={[styles.tabBtnText, activeTab === 'spells' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
                 Magias ({selectedChar.spellSlots.length})
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'abilities' && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === 'abilities' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
               onPress={() => setActiveTab('abilities')}
             >
-              <Sword color={activeTab === 'abilities' ? '#E6C280' : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'abilities' && styles.tabBtnTextActive]}>
+              <Sword color={activeTab === 'abilities' ? themeColor : '#80776C'} size={18} />
+              <Text style={[styles.tabBtnText, activeTab === 'abilities' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
                 Habilidades ({selectedChar.abilities.length})
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'skills' && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === 'skills' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
               onPress={() => setActiveTab('skills')}
             >
-              <Award color={activeTab === 'skills' ? '#E6C280' : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'skills' && styles.tabBtnTextActive]}>
+              <Award color={activeTab === 'skills' ? themeColor : '#80776C'} size={18} />
+              <Text style={[styles.tabBtnText, activeTab === 'skills' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
                 Perícias (18)
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'inventory' && styles.tabBtnActive]}
+              style={[styles.tabBtn, activeTab === 'inventory' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
               onPress={() => setActiveTab('inventory')}
             >
-              <Package color={activeTab === 'inventory' ? '#E6C280' : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'inventory' && styles.tabBtnTextActive]}>
+              <Package color={activeTab === 'inventory' ? themeColor : '#80776C'} size={18} />
+              <Text style={[styles.tabBtnText, activeTab === 'inventory' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
                 Mochila & Armamento ({(selectedChar.items || []).length})
               </Text>
             </TouchableOpacity>
@@ -766,12 +769,12 @@ export default function PlayerModule() {
               return (
                 <View style={{ gap: 16 }}>
                   {/* 🔮 1. Painel Mágico no Topo */}
-                  <View style={[styles.spellStatsBanner, isMobile && { flexDirection: 'column', gap: 12, padding: 16 }]}>
+                  <View style={[styles.spellStatsBanner, isMobile && { flexDirection: 'column', gap: 12, padding: 16 }, { borderColor: themeColor, backgroundColor: `${themeColor}0A` }]}>
                     <View style={styles.spellStatItem}>
                       <Text style={styles.spellStatLabel}>ATRIBUTO DE CONJURAÇÃO</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                        <Sparkles color="#C5A059" size={18} />
-                        <Text style={styles.spellStatValue}>{spellStats.attrName} ({spellStats.modStr})</Text>
+                        <Sparkles color={themeColor} size={18} />
+                        <Text style={[styles.spellStatValue, { color: themeColor }]}>{spellStats.attrName} ({spellStats.modStr})</Text>
                       </View>
                     </View>
                     {!isMobile && <View style={styles.spellStatDivider} />}
@@ -800,7 +803,7 @@ export default function PlayerModule() {
                       const slotForLevel = selectedChar.spellSlots.find(s => s.level === levelNum);
 
                       return (
-                        <View key={`spell-lvl-${levelNum}`} style={styles.spellAccordionCard}>
+                        <View key={`spell-lvl-${levelNum}`} style={[styles.spellAccordionCard, isExpanded && { borderColor: themeColor }]}>
                           {/* Header do Acordeão */}
                           <TouchableOpacity
                             style={[styles.spellAccordionHeader, isMobile && { flexWrap: 'wrap', gap: 10 }]}
@@ -808,8 +811,8 @@ export default function PlayerModule() {
                             activeOpacity={0.8}
                           >
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: isMobile ? '100%' : 'auto' }}>
-                              <View style={[styles.levelBadgeIcon, levelNum === 0 && { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' }]}>
-                                <BookOpen color={levelNum === 0 ? '#4E9C8E' : '#E6C280'} size={18} />
+                              <View style={[styles.levelBadgeIcon, levelNum === 0 ? { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' } : { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}>
+                                <BookOpen color={levelNum === 0 ? '#4E9C8E' : themeColor} size={18} />
                               </View>
                               <View>
                                 <Text style={styles.spellAccordionTitle}>
@@ -825,7 +828,7 @@ export default function PlayerModule() {
                             {levelNum > 0 && slotForLevel && (
                               <View style={[styles.accordionSlotsBox, isMobile && { width: '100%', justifyContent: 'space-between', marginTop: 4 }]} onStartShouldSetResponder={() => true}>
                                 <Text style={styles.accordionSlotsText}>
-                                  Espaços: <Text style={{ color: '#E6C280', fontWeight: 'bold' }}>{slotForLevel.total - slotForLevel.used}/{slotForLevel.total}</Text>
+                                  Usados: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel.used}</Text> / {slotForLevel.total}
                                 </Text>
                                 <View style={styles.accordionTokensRow}>
                                   {Array.from({ length: slotForLevel.total }).map((_, idx) => {
@@ -833,10 +836,10 @@ export default function PlayerModule() {
                                     return (
                                       <TouchableOpacity
                                         key={`accordion-token-${slotForLevel.id}-${idx}`}
-                                        style={[styles.accordionTokenBtn, isUsed && styles.accordionTokenUsed]}
+                                        style={[styles.accordionTokenBtn, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
                                         onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
                                       >
-                                        <Scroll color={isUsed ? '#3D342C' : '#E6C280'} size={14} />
+                                        <Scroll color={isUsed ? '#3D342C' : themeColor} size={14} />
                                       </TouchableOpacity>
                                     );
                                   })}
@@ -845,7 +848,7 @@ export default function PlayerModule() {
                             )}
 
                             <View style={styles.accordionChevronBox}>
-                              {isExpanded ? <ChevronUp color="#C5A059" size={22} /> : <ChevronDown color="#80776C" size={22} />}
+                              {isExpanded ? <ChevronUp color={themeColor} size={22} /> : <ChevronDown color="#80776C" size={22} />}
                             </View>
                           </TouchableOpacity>
 
@@ -1180,17 +1183,17 @@ export default function PlayerModule() {
                     return (
                       <TouchableOpacity
                         key={skill.name}
-                        style={[styles.skillItem, isProf && { borderColor: '#C5A059', backgroundColor: 'rgba(197, 160, 89, 0.12)' }]}
+                        style={[styles.skillItem, isProf && { borderColor: themeColor, backgroundColor: `${themeColor}15` }]}
                         onPress={() => toggleSkillProficiency(skill.name)}
                         activeOpacity={0.7}
                       >
                         <View style={styles.skillLeft}>
-                          <View style={[styles.saveDot, isProf && styles.saveDotProf]} />
+                          <View style={[styles.saveDot, isProf && [styles.saveDotProf, { backgroundColor: themeColor }]]} />
                           <Text style={[styles.skillName, isProf && { color: '#E2D8C3', fontWeight: '700' }]}>{skill.name}</Text>
                           <Text style={styles.skillAttr}>({skill.label})</Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          {isProf && <Text style={{ color: '#C5A059', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>PROFICIENTE</Text>}
+                          {isProf && <Text style={{ color: themeColor, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>PROFICIENTE</Text>}
                           <Text style={[styles.skillTotal, isProf && { color: '#E6C280', fontWeight: '700' }]}>
                             {total >= 0 ? `+${total}` : total}
                           </Text>
