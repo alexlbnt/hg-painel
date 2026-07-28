@@ -5,6 +5,18 @@ export interface SpellSlotData {
   used: number;
 }
 
+export interface SpellItemData {
+  id: string;
+  name: string;
+  level: number;
+  castingTime: string;
+  range: string;
+  duration: string;
+  components?: string;
+  isPrepared: boolean;
+  description?: string;
+}
+
 export interface AbilityData {
   id: string;
   name: string;
@@ -282,3 +294,29 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     ],
   }
 ];
+
+export const INITIAL_SPELLS: Record<string, SpellItemData[]> = {
+  'char-1': [
+    { id: 'sp-1-1', name: 'Bênção (Bless)', level: 1, castingTime: '1 Ação', range: '9m', duration: 'Concentração (1h)', components: 'V, S, M', isPrepared: true, description: '+1d4 em jogadas de ataque e testes de resistência para 3 aliados.' },
+    { id: 'sp-1-2', name: 'Destruição Colérica', level: 1, castingTime: 'Bônus', range: 'Pessoal', duration: 'Concentração (1m)', components: 'V', isPrepared: true, description: '+1d6 de dano psíquico e alvo fica amedrontado.' },
+    { id: 'sp-1-3', name: 'Escudo da Fé', level: 1, castingTime: 'Bônus', range: '18m', duration: 'Concentração (10m)', components: 'V, S, M', isPrepared: true, description: '+2 na CA de uma criatura.' },
+    { id: 'sp-1-4', name: 'Passo Nebuloso (Misty Step)', level: 2, castingTime: 'Bônus', range: 'Pessoal', duration: 'Instantânea', components: 'V', isPrepared: true, description: 'Teleporte de 9m para espaço livre visível.' },
+    { id: 'sp-1-5', name: 'Montaria Mágica', level: 2, castingTime: '10 Minutos', range: '9m', duration: 'Instantânea', components: 'V, S', isPrepared: false, description: 'Invoca um corcel leal de energia celestial.' },
+  ],
+  'char-2': [
+    { id: 'sp-2-1', name: 'Rajada Mística (Eldritch Blast)', level: 0, castingTime: '1 Ação', range: '36m', duration: 'Instantânea', components: 'V, S', isPrepared: true, description: 'Dois raios de 1d10+4 de dano de energia cósmica.' },
+    { id: 'sp-2-2', name: 'Toque Arrepiante', level: 0, castingTime: '1 Ação', range: '36m', duration: '1 Rodada', components: 'V, S', isPrepared: true, description: '1d8 necrótico e impede cura no alvo.' },
+    { id: 'sp-2-3', name: 'Bola de Fogo (Fireball)', level: 3, castingTime: '1 Ação', range: '45m', duration: 'Instantânea', components: 'V, S, M', isPrepared: true, description: 'Esfera de fogo de 6m de raio causa 8d6 de dano igneo (CD Ref).' },
+    { id: 'sp-2-4', name: 'Contra-feitiço (Counterspell)', level: 3, castingTime: 'Reação', range: '18m', duration: 'Instantânea', components: 'S', isPrepared: true, description: 'Interrompe a conjuração de uma magia inimiga de até 3º nível.' },
+    { id: 'sp-2-5', name: 'Fome de Hadar', level: 3, castingTime: '1 Ação', range: '45m', duration: 'Concentração (1m)', components: 'V, S, M', isPrepared: true, description: 'Esfera de escuridão e tentáculos causa dano congelante e ácido.' },
+  ],
+  'char-3': [
+    { id: 'sp-3-1', name: 'Chama Sagrada (Sacred Flame)', level: 0, castingTime: '1 Ação', range: '18m', duration: 'Instantânea', components: 'V, S', isPrepared: true, description: 'Descarga radiante causa 2d8 de dano (CD Des).' },
+    { id: 'sp-3-2', name: 'Orientação (Guidance)', level: 0, castingTime: '1 Ação', range: 'Toque', duration: 'Concentração (1m)', components: 'V, S', isPrepared: true, description: '+1d4 em um teste de atributo à escolha.' },
+    { id: 'sp-3-3', name: 'Palavra de Cura (Healing Word)', level: 1, castingTime: 'Bônus', range: '18m', duration: 'Instantânea', components: 'V', isPrepared: true, description: 'Cura 1d4 + mod. SAB à distância.' },
+    { id: 'sp-3-4', name: 'Raio Guiador (Guiding Bolt)', level: 1, castingTime: '1 Ação', range: '36m', duration: '1 Rodada', components: 'V, S', isPrepared: true, description: '4d6 radiante e próximo ataque contra o alvo tem vantagem.' },
+    { id: 'sp-3-5', name: 'Arma Espiritual', level: 2, castingTime: 'Bônus', range: '18m', duration: '1 Minuto', components: 'V, S', isPrepared: true, description: 'Arma espectral flutuante causa 1d8 + mod dano como ação bônus.' },
+    { id: 'sp-3-6', name: 'Espíritos Guardiões', level: 3, castingTime: '1 Ação', range: 'Pessoal (4.5m)', duration: 'Concentração (10m)', components: 'V, S, M', isPrepared: true, description: 'Espíritos cercam você, causando 3d8 de dano radiante ou necrótico.' },
+    { id: 'sp-3-7', name: 'Reviver (Revivify)', level: 3, castingTime: '1 Ação', range: 'Toque', duration: 'Instantânea', components: 'V, S, M', isPrepared: true, description: 'Trás de volta à vida uma criatura que morreu no último minuto (gasta diamante 300gp).' },
+  ]
+};

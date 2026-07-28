@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Alert } from 'react-native';
 import { ApiService } from '@/services/api';
-import { CharacterData } from '@/lib/mockData';
+import { CharacterData, SpellItemData, INITIAL_SPELLS } from '@/lib/mockData';
 import CharacterModal from '@/components/player/CharacterModal';
-import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins } from 'lucide-react-native';
+import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins, ChevronDown, ChevronUp, Eye, EyeOff, BookOpen, Clock, Crosshair, HelpCircle } from 'lucide-react-native';
 import { useResponsive } from '@/hooks/useResponsive';
 
 const SKILLS_LIST = [
@@ -48,6 +48,25 @@ export default function PlayerModule() {
   const [newAbDesc, setNewAbDesc] = useState('');
   const [newAbUses, setNewAbUses] = useState('1');
   const [newAbReset, setNewAbReset] = useState<'SHORT_REST' | 'LONG_REST' | 'NONE'>('SHORT_REST');
+
+  // Grimório Interativo (Magias e Acordeões)
+  const [spellsMap, setSpellsMap] = useState<Record<string, SpellItemData[]>>(() => {
+    if (Platform.OS === 'web') {
+      const saved = localStorage.getItem('hg_character_spells');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+    }
+    return INITIAL_SPELLS;
+  });
+  const [expandedLevels, setExpandedLevels] = useState<number[]>([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const [addingSpellForLevel, setAddingSpellForLevel] = useState<number | null>(null);
+  const [newSpellName, setNewSpellName] = useState('');
+  const [newSpellCastTime, setNewSpellCastTime] = useState('1 Ação');
+  const [newSpellRange, setNewSpellRange] = useState('9m');
+  const [newSpellDuration, setNewSpellDuration] = useState('Instantânea');
+  const [newSpellDesc, setNewSpellDesc] = useState('');
+  const [showManageSlots, setShowManageSlots] = useState(false);
 
   const loadCharacters = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -279,6 +298,104 @@ export default function PlayerModule() {
     const updatedSlots = selectedChar.spellSlots.filter(s => s.id !== slotId);
     await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
     loadCharacters(true);
+  };
+
+  // --- GRIMÓRIO INTERATIVO: FUNÇÕES AUXILIARES ---
+  const getSpellcastingStats = (char: CharacterData) => {
+    const cls = (char.class || '').toLowerCase();
+    let attrName = 'INTELIGÊNCIA';
+    let attrScore = char.int;
+    if (cls.includes('clérigo') || cls.includes('clerigo') || cls.includes('druida') || cls.includes('patrulheiro') || cls.includes('monge')) {
+      attrName = 'SABEDORIA';
+      attrScore = char.wis;
+    } else if (cls.includes('bardo') || cls.includes('bruxo') || cls.includes('feiticeiro') || cls.includes('paladino')) {
+      attrName = 'CARISMA';
+      attrScore = char.cha;
+    } else if (cls.includes('mago') || cls.includes('artífice') || cls.includes('artifice')) {
+      attrName = 'INTELIGÊNCIA';
+      attrScore = char.int;
+    } else {
+      if (char.wis >= char.int && char.wis >= char.cha) {
+        attrName = 'SABEDORIA';
+        attrScore = char.wis;
+      } else if (char.cha >= char.int && char.cha >= char.wis) {
+        attrName = 'CARISMA';
+        attrScore = char.cha;
+      }
+    }
+    const mod = Math.floor((attrScore - 10) / 2);
+    const prof = Math.floor(((char.level || 1) - 1) / 4) + 2;
+    const saveDc = 8 + prof + mod;
+    const attackBonus = mod + prof >= 0 ? `+${mod + prof}` : `${mod + prof}`;
+    const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+    return { attrName, attrScore, modStr, saveDc, attackBonus };
+  };
+
+  const toggleLevelAccordion = (lvl: number) => {
+    setExpandedLevels(prev => prev.includes(lvl) ? prev.filter(x => x !== lvl) : [...prev, lvl]);
+  };
+
+  const updateSpellsForChar = (charId: string, newSpells: SpellItemData[]) => {
+    setSpellsMap(prev => {
+      const updated = { ...prev, [charId]: newSpells };
+      if (Platform.OS === 'web') {
+        try { localStorage.setItem('hg_character_spells', JSON.stringify(updated)); } catch (e) {}
+      }
+      return updated;
+    });
+  };
+
+  const toggleSpellPrepared = (charId: string, spellId: string) => {
+    const current = spellsMap[charId] || [];
+    const updated = current.map(sp => sp.id === spellId ? { ...sp, isPrepared: !sp.isPrepared } : sp);
+    updateSpellsForChar(charId, updated);
+  };
+
+  const removeSpellItem = (charId: string, spellId: string) => {
+    const current = spellsMap[charId] || [];
+    const updated = current.filter(sp => sp.id !== spellId);
+    updateSpellsForChar(charId, updated);
+  };
+
+  const addSpellItem = (charId: string, level: number) => {
+    if (!newSpellName.trim()) return;
+    const newSp: SpellItemData = {
+      id: `sp-${Date.now()}`,
+      name: newSpellName.trim(),
+      level: level,
+      castingTime: newSpellCastTime.trim() || '1 Ação',
+      range: newSpellRange.trim() || '9m',
+      duration: newSpellDuration.trim() || 'Instantânea',
+      components: 'V, S',
+      isPrepared: true,
+      description: newSpellDesc.trim() || undefined,
+    };
+    const current = spellsMap[charId] || [];
+    updateSpellsForChar(charId, [...current, newSp]);
+    setNewSpellName('');
+    setNewSpellDesc('');
+    setAddingSpellForLevel(null);
+  };
+
+  const castSpellItem = (char: CharacterData, spell: SpellItemData) => {
+    if (spell.level === 0) {
+      Alert.alert('⚡ Truque Conjurado!', `${char.name} conjurou ${spell.name}!\n(Truques são ilimitados e não consomem espaços de magia)`);
+      return;
+    }
+    const targetSlot = char.spellSlots.find(s => s.level === spell.level);
+    if (!targetSlot) {
+      Alert.alert('⚠️ Espaço de Magia Inexistente', `Seu personagem não possui espaços de ${spell.level}º Nível cadastrados!`);
+      return;
+    }
+    if (targetSlot.used >= targetSlot.total) {
+      Alert.alert(
+        '⚠️ Sem Espaços de Magia',
+        `Você gastou todos os espaços de ${spell.level}º Nível!\nRealize um descanso para recuperar ou utilize um espaço de nível superior.`
+      );
+      return;
+    }
+    toggleSpellSlot(targetSlot.id, targetSlot.used + 1, targetSlot.total);
+    Alert.alert('⚡ Magia Conjurada!', `${char.name} conjurou ${spell.name}!\n(1 espaço de ${spell.level}º Nível foi consumido automaticamente)`);
   };
 
   const addAbility = async () => {
@@ -633,72 +750,313 @@ export default function PlayerModule() {
           {/* Conteúdo das Abas */}
           <View style={styles.tabContent}>
             {/* ABA: Pergaminhos de Magia */}
-            {activeTab === 'spells' && (
-              <View>
-                {selectedChar.spellSlots.length === 0 ? (
-                  <Text style={styles.emptyText}>Este herói não possui magias ou espaços cadastrados no seu grimório.</Text>
-                ) : (
-                  <View style={styles.slotsGrid}>
-                    {selectedChar.spellSlots.map(slot => (
-                      <View key={slot.id} style={styles.slotCard}>
-                        <View style={styles.slotHeader}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.slotLevel}>MAGIAS DE {slot.level}º NÍVEL (ESPAÇOS)</Text>
-                            <Text style={styles.slotCount}>{slot.total - slot.used} / {slot.total} Intactos</Text>
+            {/* ABA: Pergaminhos de Magia */}
+            {activeTab === 'spells' && (() => {
+              const spellStats = getSpellcastingStats(selectedChar);
+              const charSpells = spellsMap[selectedChar.id] || [];
+              const availableLevelsSet = new Set<number>();
+              charSpells.forEach(s => availableLevelsSet.add(s.level));
+              selectedChar.spellSlots.forEach(s => availableLevelsSet.add(s.level));
+              if (availableLevelsSet.size === 0) {
+                availableLevelsSet.add(0);
+                availableLevelsSet.add(1);
+              }
+              const sortedLevels = Array.from(availableLevelsSet).sort((a, b) => a - b);
+
+              return (
+                <View style={{ gap: 16 }}>
+                  {/* 🔮 1. Painel Mágico no Topo */}
+                  <View style={[styles.spellStatsBanner, isMobile && { flexDirection: 'column', gap: 12, padding: 16 }]}>
+                    <View style={styles.spellStatItem}>
+                      <Text style={styles.spellStatLabel}>ATRIBUTO DE CONJURAÇÃO</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <Sparkles color="#C5A059" size={18} />
+                        <Text style={styles.spellStatValue}>{spellStats.attrName} ({spellStats.modStr})</Text>
+                      </View>
+                    </View>
+                    {!isMobile && <View style={styles.spellStatDivider} />}
+                    <View style={styles.spellStatItem}>
+                      <Text style={styles.spellStatLabel}>CD DE RESISTÊNCIA</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <Shield color="#E6C280" size={18} />
+                        <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 22 }]}>{spellStats.saveDc}</Text>
+                      </View>
+                    </View>
+                    {!isMobile && <View style={styles.spellStatDivider} />}
+                    <View style={styles.spellStatItem}>
+                      <Text style={styles.spellStatLabel}>BÔNUS DE ATAQUE</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <Crosshair color="#4E9C8E" size={18} />
+                        <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: 22 }]}>{spellStats.attackBonus}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* 📜 2. Acordeões de Níveis de Magia */}
+                  <View style={{ gap: 12 }}>
+                    {sortedLevels.map(levelNum => {
+                      const isExpanded = expandedLevels.includes(levelNum);
+                      const spellsInThisLevel = charSpells.filter(sp => sp.level === levelNum);
+                      const slotForLevel = selectedChar.spellSlots.find(s => s.level === levelNum);
+
+                      return (
+                        <View key={`spell-lvl-${levelNum}`} style={styles.spellAccordionCard}>
+                          {/* Header do Acordeão */}
+                          <TouchableOpacity
+                            style={[styles.spellAccordionHeader, isMobile && { flexWrap: 'wrap', gap: 10 }]}
+                            onPress={() => toggleLevelAccordion(levelNum)}
+                            activeOpacity={0.8}
+                          >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: isMobile ? '100%' : 'auto' }}>
+                              <View style={[styles.levelBadgeIcon, levelNum === 0 && { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' }]}>
+                                <BookOpen color={levelNum === 0 ? '#4E9C8E' : '#E6C280'} size={18} />
+                              </View>
+                              <View>
+                                <Text style={styles.spellAccordionTitle}>
+                                  {levelNum === 0 ? '✨ TRUQUES (CANTRIPS - NÍVEL 0)' : `📜 MAGIAS DE ${levelNum}º NÍVEL`}
+                                </Text>
+                                <Text style={styles.spellAccordionSub}>
+                                  {spellsInThisLevel.length} {spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas'}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {/* Tokens de Espaço no Header (se for nível 1+) */}
+                            {levelNum > 0 && slotForLevel && (
+                              <View style={[styles.accordionSlotsBox, isMobile && { width: '100%', justifyContent: 'space-between', marginTop: 4 }]} onStartShouldSetResponder={() => true}>
+                                <Text style={styles.accordionSlotsText}>
+                                  Espaços: <Text style={{ color: '#E6C280', fontWeight: 'bold' }}>{slotForLevel.total - slotForLevel.used}/{slotForLevel.total}</Text>
+                                </Text>
+                                <View style={styles.accordionTokensRow}>
+                                  {Array.from({ length: slotForLevel.total }).map((_, idx) => {
+                                    const isUsed = idx < slotForLevel.used;
+                                    return (
+                                      <TouchableOpacity
+                                        key={`accordion-token-${slotForLevel.id}-${idx}`}
+                                        style={[styles.accordionTokenBtn, isUsed && styles.accordionTokenUsed]}
+                                        onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
+                                      >
+                                        <Scroll color={isUsed ? '#3D342C' : '#E6C280'} size={14} />
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                </View>
+                              </View>
+                            )}
+
+                            <View style={styles.accordionChevronBox}>
+                              {isExpanded ? <ChevronUp color="#C5A059" size={22} /> : <ChevronDown color="#80776C" size={22} />}
+                            </View>
+                          </TouchableOpacity>
+
+                          {/* Corpo do Acordeão */}
+                          {isExpanded && (
+                            <View style={styles.spellAccordionBody}>
+                              {spellsInThisLevel.length === 0 ? (
+                                <View style={styles.emptyLevelBox}>
+                                  <Text style={styles.emptyLevelText}>Nenhuma magia cadastrada neste nível.</Text>
+                                </View>
+                              ) : (
+                                <View style={{ gap: 10 }}>
+                                  {spellsInThisLevel.map(sp => (
+                                    <View key={sp.id} style={[styles.spellItemCard, !sp.isPrepared && sp.level > 0 && styles.spellItemUnprepared]}>
+                                      <View style={[styles.spellItemTop, isMobile && { flexDirection: 'column', alignItems: 'flex-start', gap: 8 }]}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                                          {sp.level > 0 && (
+                                            <TouchableOpacity
+                                              style={[styles.prepBtn, sp.isPrepared ? styles.prepBtnActive : styles.prepBtnInactive]}
+                                              onPress={() => toggleSpellPrepared(selectedChar.id, sp.id)}
+                                            >
+                                              {sp.isPrepared ? <Eye color="#110F0D" size={15} /> : <EyeOff color="#80776C" size={15} />}
+                                            </TouchableOpacity>
+                                          )}
+                                          <Text style={[styles.spellItemName, !sp.isPrepared && sp.level > 0 && { color: '#80776C' }]}>
+                                            {sp.name}
+                                          </Text>
+                                        </View>
+
+                                        <View style={styles.spellActionsRow}>
+                                          <TouchableOpacity
+                                            style={[styles.castSpellBtn, (!sp.isPrepared && sp.level > 0) && { opacity: 0.5 }]}
+                                            onPress={() => castSpellItem(selectedChar, sp)}
+                                          >
+                                            <Zap color="#110F0D" size={14} />
+                                            <Text style={styles.castSpellBtnText}>
+                                              {sp.level === 0 ? '⚡ Conjurar Truque' : '⚡ Conjurar (1 Espaço)'}
+                                            </Text>
+                                          </TouchableOpacity>
+                                          <TouchableOpacity
+                                            style={styles.delSpellBtn}
+                                            onPress={() => removeSpellItem(selectedChar.id, sp.id)}
+                                          >
+                                            <Trash2 color="#C95B5B" size={15} />
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
+
+                                      <View style={[styles.spellBadgesRow, isMobile && { flexWrap: 'wrap', gap: 6 }]}>
+                                        <View style={styles.spellBadge}>
+                                          <Clock color="#C5A059" size={12} />
+                                          <Text style={styles.spellBadgeText}>Tempo: {sp.castingTime}</Text>
+                                        </View>
+                                        <View style={styles.spellBadge}>
+                                          <Crosshair color="#4E9C8E" size={12} />
+                                          <Text style={styles.spellBadgeText}>Alcance: {sp.range}</Text>
+                                        </View>
+                                        <View style={styles.spellBadge}>
+                                          <Sparkles color="#B280E6" size={12} />
+                                          <Text style={styles.spellBadgeText}>Duração: {sp.duration}</Text>
+                                        </View>
+                                        {sp.components && (
+                                          <View style={styles.spellBadge}>
+                                            <Text style={styles.spellBadgeText}>Comp: {sp.components}</Text>
+                                          </View>
+                                        )}
+                                      </View>
+
+                                      {sp.description ? (
+                                        <Text style={styles.spellItemDesc}>{sp.description}</Text>
+                                      ) : null}
+                                    </View>
+                                  ))}
+                                </View>
+                              )}
+
+                              {/* Botão / Formulário para Adicionar Magia Neste Nível */}
+                              {addingSpellForLevel === levelNum ? (
+                                <View style={styles.addSpellInlineForm}>
+                                  <Text style={styles.addSpellFormHeading}>➕ Cadastrar Nova Magia de {levelNum === 0 ? 'Truque (Nível 0)' : `${levelNum}º Nível`}</Text>
+                                  <TextInput
+                                    style={styles.addInput}
+                                    placeholder="Nome da Magia (ex: Bola de Fogo)"
+                                    placeholderTextColor="#80776C"
+                                    value={newSpellName}
+                                    onChangeText={setNewSpellName}
+                                  />
+                                  <View style={[styles.addInputRow, isMobile && { flexDirection: 'column', gap: 8 }]}>
+                                    <TextInput
+                                      style={[styles.addInput, { flex: 1 }]}
+                                      placeholder="Tempo (ex: 1 Ação, Bônus)"
+                                      placeholderTextColor="#80776C"
+                                      value={newSpellCastTime}
+                                      onChangeText={setNewSpellCastTime}
+                                    />
+                                    <TextInput
+                                      style={[styles.addInput, { flex: 1 }]}
+                                      placeholder="Alcance (ex: 9m, Toque)"
+                                      placeholderTextColor="#80776C"
+                                      value={newSpellRange}
+                                      onChangeText={setNewSpellRange}
+                                    />
+                                    <TextInput
+                                      style={[styles.addInput, { flex: 1 }]}
+                                      placeholder="Duração (ex: Instantânea, 1h)"
+                                      placeholderTextColor="#80776C"
+                                      value={newSpellDuration}
+                                      onChangeText={setNewSpellDuration}
+                                    />
+                                  </View>
+                                  <TextInput
+                                    style={[styles.addInput, { height: 60, textAlignVertical: 'top' }]}
+                                    placeholder="Descrição ou efeito da magia..."
+                                    placeholderTextColor="#80776C"
+                                    multiline
+                                    value={newSpellDesc}
+                                    onChangeText={setNewSpellDesc}
+                                  />
+                                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+                                    <TouchableOpacity style={styles.cancelFormBtn} onPress={() => setAddingSpellForLevel(null)}>
+                                      <Text style={styles.cancelFormBtnText}>Cancelar</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.addItemSubmitBtn} onPress={() => addSpellItem(selectedChar.id, levelNum)}>
+                                      <Plus color="#110F0D" size={16} />
+                                      <Text style={styles.addItemSubmitText}>Salvar Magia</Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+                              ) : (
+                                <TouchableOpacity
+                                  style={styles.openAddSpellBtn}
+                                  onPress={() => {
+                                    setAddingSpellForLevel(levelNum);
+                                    setNewSpellCastTime('1 Ação');
+                                    setNewSpellRange('9m');
+                                    setNewSpellDuration('Instantânea');
+                                  }}
+                                >
+                                  <Plus color="#C5A059" size={16} />
+                                  <Text style={styles.openAddSpellBtnText}>
+                                    Adicionar Magia de {levelNum === 0 ? 'Truque' : `${levelNum}º Nível`}
+                                  </Text>
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {/* ⚙️ Gerenciar Quantidade de Espaços de Magia por Nível */}
+                  <View style={{ marginTop: 12 }}>
+                    <TouchableOpacity
+                      style={styles.manageSlotsToggleBtn}
+                      onPress={() => setShowManageSlots(!showManageSlots)}
+                    >
+                      <Text style={styles.manageSlotsToggleText}>
+                        {showManageSlots ? '▲ Ocultar Gerenciador de Espaços' : '⚙️ Gerenciar Quantidade Total de Espaços por Nível ▼'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {showManageSlots && (
+                      <View style={[styles.addItemBox, { marginTop: 12 }]}>
+                        <Text style={styles.addItemHeading}>➕ CADASTRAR / AJUSTAR ESPAÇOS DE MAGIA</Text>
+                        <View style={styles.addItemForm}>
+                          <View style={styles.addInputRow}>
+                            <TextInput
+                              style={[styles.addInput, { flex: 1 }]}
+                              placeholder="Nível da Magia (1 a 9)"
+                              placeholderTextColor="#80776C"
+                              keyboardType="numeric"
+                              value={newSpellLevel}
+                              onChangeText={setNewSpellLevel}
+                            />
+                            <TextInput
+                              style={[styles.addInput, { flex: 1 }]}
+                              placeholder="Qtd de Espaços (ex: 2, 4)"
+                              placeholderTextColor="#80776C"
+                              keyboardType="numeric"
+                              value={newSpellTotal}
+                              onChangeText={setNewSpellTotal}
+                            />
                           </View>
-                          <TouchableOpacity style={styles.delItemBtn} onPress={() => removeSpellSlot(slot.id)}>
-                            <Trash2 color="#80776C" size={16} />
+                          <TouchableOpacity style={styles.addItemSubmitBtn} onPress={addSpellSlot}>
+                            <Plus color="#110F0D" size={18} />
+                            <Text style={styles.addItemSubmitText}>Cadastrar Espaços</Text>
                           </TouchableOpacity>
                         </View>
-                        <View style={styles.slotTokensRow}>
-                          {Array.from({ length: slot.total }).map((_, idx) => {
-                            const isUsed = idx < slot.used;
-                            return (
-                              <TouchableOpacity
-                                key={`token-${slot.id}-${idx}`}
-                                style={[styles.slotToken, isUsed && styles.slotTokenUsed]}
-                                onPress={() => toggleSpellSlot(slot.id, slot.used, slot.total)}
-                              >
-                                <Scroll color={isUsed ? '#3D342C' : '#E6C280'} size={16} />
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
 
-                {/* Cadastrar Nova Magia / Espaço */}
-                <View style={[styles.addItemBox, { marginTop: 24 }]}>
-                  <Text style={styles.addItemHeading}>➕ CADASTRAR ESPAÇOS DE MAGIA</Text>
-                  <View style={styles.addItemForm}>
-                    <View style={styles.addInputRow}>
-                      <TextInput
-                        style={[styles.addInput, { flex: 1 }]}
-                        placeholder="Nível da Magia (1 a 9)"
-                        placeholderTextColor="#80776C"
-                        keyboardType="numeric"
-                        value={newSpellLevel}
-                        onChangeText={setNewSpellLevel}
-                      />
-                      <TextInput
-                        style={[styles.addInput, { flex: 1 }]}
-                        placeholder="Qtd de Espaços (ex: 2, 4)"
-                        placeholderTextColor="#80776C"
-                        keyboardType="numeric"
-                        value={newSpellTotal}
-                        onChangeText={setNewSpellTotal}
-                      />
-                    </View>
-                    <TouchableOpacity style={styles.addItemSubmitBtn} onPress={addSpellSlot}>
-                      <Plus color="#110F0D" size={18} />
-                      <Text style={styles.addItemSubmitText}>Cadastrar Magia</Text>
-                    </TouchableOpacity>
+                        {selectedChar.spellSlots.length > 0 && (
+                          <View style={{ marginTop: 16 }}>
+                            <Text style={[styles.addItemHeading, { fontSize: 13, marginBottom: 8 }]}>Espaços Atualmente Cadastrados:</Text>
+                            <View style={{ gap: 8 }}>
+                              {selectedChar.spellSlots.map(slot => (
+                                <View key={`manage-slot-${slot.id}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(26, 22, 19, 0.6)', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#3D342C' }}>
+                                  <Text style={{ color: '#E6C280', fontWeight: '600' }}>{slot.level}º Nível ({slot.total} espaços totais)</Text>
+                                  <TouchableOpacity style={styles.delItemBtn} onPress={() => removeSpellSlot(slot.id)}>
+                                    <Trash2 color="#C95B5B" size={16} />
+                                  </TouchableOpacity>
+                                </View>
+                              ))}
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    )}
                   </View>
                 </View>
-              </View>
-            )}
+              );
+            })()}
 
             {/* ABA: Habilidades e Poderes */}
             {activeTab === 'abilities' && (
@@ -2141,5 +2499,277 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  spellStatsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(22, 19, 17, 0.85)',
+    borderWidth: 1,
+    borderColor: '#C5A059',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  spellStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  spellStatLabel: {
+    color: '#80776C',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  spellStatValue: {
+    color: '#E2D8C3',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
+  },
+  spellStatDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#3D342C',
+  },
+  spellAccordionCard: {
+    backgroundColor: '#161311',
+    borderWidth: 1,
+    borderColor: '#2D251E',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  spellAccordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1C1815',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2D251E',
+  },
+  levelBadgeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+    borderWidth: 1,
+    borderColor: '#C5A059',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spellAccordionTitle: {
+    color: '#E6C280',
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
+  },
+  spellAccordionSub: {
+    color: '#80776C',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  accordionSlotsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(10, 9, 8, 0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#3D342C',
+  },
+  accordionSlotsText: {
+    color: '#E2D8C3',
+    fontSize: 12,
+  },
+  accordionTokensRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  accordionTokenBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 4,
+    backgroundColor: 'rgba(230, 194, 128, 0.15)',
+    borderWidth: 1,
+    borderColor: '#C5A059',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accordionTokenUsed: {
+    backgroundColor: 'rgba(20, 18, 16, 0.8)',
+    borderColor: '#3D342C',
+  },
+  accordionChevronBox: {
+    paddingLeft: 6,
+  },
+  spellAccordionBody: {
+    padding: 14,
+    backgroundColor: '#110F0D',
+  },
+  emptyLevelBox: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyLevelText: {
+    color: '#80776C',
+    fontSize: 13,
+    fontStyle: 'italic',
+  },
+  spellItemCard: {
+    backgroundColor: 'rgba(26, 22, 19, 0.7)',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+  },
+  spellItemUnprepared: {
+    opacity: 0.55,
+    borderColor: '#2D251E',
+    backgroundColor: 'rgba(15, 13, 11, 0.4)',
+  },
+  spellItemTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  prepBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  prepBtnActive: {
+    backgroundColor: '#C5A059',
+    borderColor: '#E6C280',
+  },
+  prepBtnInactive: {
+    backgroundColor: 'transparent',
+    borderColor: '#524B43',
+  },
+  spellItemName: {
+    color: '#E2D8C3',
+    fontSize: 15,
+    fontWeight: '700',
+    flex: 1,
+  },
+  spellActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  castSpellBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#C5A059',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 5,
+  },
+  castSpellBtnText: {
+    color: '#110F0D',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  delSpellBtn: {
+    padding: 6,
+  },
+  spellBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  spellBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(10, 9, 8, 0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#2D251E',
+  },
+  spellBadgeText: {
+    color: '#BAAFA0',
+    fontSize: 11,
+  },
+  spellItemDesc: {
+    color: '#D1C7B7',
+    fontSize: 13,
+    lineHeight: 18,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(61, 52, 44, 0.4)',
+    paddingTop: 8,
+    marginTop: 2,
+  },
+  addSpellInlineForm: {
+    backgroundColor: '#191613',
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C5A059',
+    marginTop: 12,
+    gap: 10,
+  },
+  addSpellFormHeading: {
+    color: '#C5A059',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  cancelFormBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#524B43',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelFormBtnText: {
+    color: '#BAAFA0',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  openAddSpellBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(197, 160, 89, 0.1)',
+    borderWidth: 1,
+    borderColor: '#C5A059',
+    borderStyle: 'dashed',
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginTop: 12,
+  },
+  openAddSpellBtnText: {
+    color: '#C5A059',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  manageSlotsToggleBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(26, 22, 19, 0.5)',
+    borderWidth: 1,
+    borderColor: '#2D251E',
+    borderRadius: 6,
+  },
+  manageSlotsToggleText: {
+    color: '#80776C',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
