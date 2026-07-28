@@ -163,7 +163,7 @@ export default function DmModule() {
         >
           <Sword color={activeTab === 'initiative' ? '#E6C280' : '#80776C'} size={18} />
           <Text style={[styles.tabText, activeTab === 'initiative' && styles.tabTextActive]}>
-            Rastreio de Iniciativa & Combate
+            Iniciativa & Combate
           </Text>
         </TouchableOpacity>
       </View>
