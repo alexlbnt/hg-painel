@@ -168,6 +168,8 @@ export default function DmModule() {
         </TouchableOpacity>
       </View>
 
+      
+
       {/* SEÇÃO 1: MONITORAMENTO EM TEMPO REAL DA MESA */}
       <View style={{ display: activeTab === 'monitor' ? 'flex' : 'none', gap: 24, width: '100%' }}>
         {/* Rituais Divinos em Massa */}
