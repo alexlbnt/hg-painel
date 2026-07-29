@@ -83,6 +83,7 @@ export const ApiService = {
       hitDiceType: data.hitDiceType || '1d10',
       hitDiceTotal: data.level || 1,
       hitDiceSpent: 0,
+      username: data.username || '',
       deathSaveSuccesses: 0,
       deathSaveFailures: 0,
       str: data.str || 10,
