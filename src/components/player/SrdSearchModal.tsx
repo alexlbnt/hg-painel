@@ -26,35 +26,36 @@ export function SrdSearchModal({ visible, type, onClose, onSelect, themeColor = 
   // Debounced search
   useEffect(() => {
     if (!query || query.length < 3) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       return;
     }
+
+    const handleSearch = async () => {
+      setLoadingList(true);
+      setError('');
+      try {
+        const endpoint = type === 'spell' ? 'spells' : 'features';
+        // Busca aproximada pelo nome
+        const res = await fetch(`https://www.dnd5eapi.co/api/${endpoint}/?name=${encodeURIComponent(query)}`);
+        
+        if (!res.ok) throw new Error('Erro na busca');
+        
+        const data = await res.json();
+        setResults(data.results || []);
+      } catch {
+        setError('Erro ao buscar dados do SRD.');
+      } finally {
+        setLoadingList(false);
+      }
+    };
 
     const timer = setTimeout(() => {
       handleSearch();
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [query]);
-
-  const handleSearch = async () => {
-    setLoadingList(true);
-    setError('');
-    try {
-      const endpoint = type === 'spell' ? 'spells' : 'features';
-      // Busca aproximada pelo nome
-      const res = await fetch(`https://www.dnd5eapi.co/api/${endpoint}/?name=${encodeURIComponent(query)}`);
-      
-      if (!res.ok) throw new Error('Erro na busca');
-      
-      const data = await res.json();
-      setResults(data.results || []);
-    } catch (err: any) {
-      setError('Erro ao buscar dados do SRD.');
-    } finally {
-      setLoadingList(false);
-    }
-  };
+  }, [query, type]);
 
   const handleSelect = async (item: SrdSearchResult) => {
     setLoadingDetail(item.index);
@@ -89,7 +90,7 @@ export function SrdSearchModal({ visible, type, onClose, onSelect, themeColor = 
         };
         onSelect(abilityData);
       }
-    } catch (err: any) {
+    } catch {
       setError('Erro ao baixar detalhes completos.');
     } finally {
       setLoadingDetail(null);

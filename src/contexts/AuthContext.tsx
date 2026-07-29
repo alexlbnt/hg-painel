@@ -39,6 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const storedUser = localStorage.getItem('@hg_user');
         if (storedUser) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setUser(JSON.parse(storedUser));
         }
       } catch (e) {

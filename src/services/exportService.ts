@@ -83,7 +83,7 @@ export const ExportService = {
         return { success: false, characters: [], error: 'Nenhum dado válido de personagem foi encontrado no JSON.' };
       }
       return { success: true, characters: validChars };
-    } catch (_e: any) {
+    } catch {
       return { success: false, characters: [], error: 'Formato JSON inválido. Verifique o arquivo e tente novamente.' };
     }
   },
