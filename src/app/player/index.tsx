@@ -887,14 +887,14 @@ export default function PlayerModule() {
           </View>
 
           {/* Abas de Recursos (Pergaminhos, Poderes, Perícias) */}
-          <View style={styles.tabsNav}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }} contentContainerStyle={[styles.tabsNav, isMobile && { flexWrap: 'nowrap' }]}>
             <TouchableOpacity
               style={[styles.tabBtn, activeTab === 'spells' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
               onPress={() => setActiveTab('spells')}
             >
               <Scroll color={activeTab === 'spells' ? themeColor : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'spells' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Magias ({selectedChar.spellSlots.length})
+                Magias
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -903,7 +903,7 @@ export default function PlayerModule() {
             >
               <Sword color={activeTab === 'abilities' ? themeColor : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'abilities' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Habilidades ({selectedChar.abilities.length})
+                Habilidades
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -912,7 +912,7 @@ export default function PlayerModule() {
             >
               <Award color={activeTab === 'skills' ? themeColor : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'skills' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Perícias (18)
+                Perícias
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -921,10 +921,10 @@ export default function PlayerModule() {
             >
               <Package color={activeTab === 'inventory' ? themeColor : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'inventory' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Mochila & Armamento ({(selectedChar.items || []).length})
+                Mochila & Armamento
               </Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
 
           {/* Conteúdo das Abas */}
           <View style={styles.tabContent}>
@@ -945,12 +945,12 @@ export default function PlayerModule() {
               return (
                 <View style={{ gap: 16 }}>
                   {/* 🔮 1. Painel Mágico no Topo */}
-                  <View style={[styles.spellStatsBanner, isMobile && { flexDirection: 'column', gap: 12, padding: 16 }, { borderColor: themeColor, backgroundColor: `${themeColor}0A` }]}>
+                  <View style={[styles.spellStatsBanner, isMobile && { padding: 10, gap: 8 }, { borderColor: themeColor, backgroundColor: `${themeColor}0A` }]}>
                     <View style={styles.spellStatItem}>
                       <Text style={styles.spellStatLabel}>ATRIBUTO DE CONJURAÇÃO</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                         <Sparkles color={themeColor} size={18} />
-                        <Text style={[styles.spellStatValue, { color: themeColor }]}>{spellStats.attrName} ({spellStats.modStr})</Text>
+                        <Text style={[styles.spellStatValue, { color: themeColor }, isMobile && { fontSize: 14 }]}>{spellStats.attrName} ({spellStats.modStr})</Text>
                       </View>
                     </View>
                     {!isMobile && <View style={styles.spellStatDivider} />}
@@ -958,7 +958,7 @@ export default function PlayerModule() {
                       <Text style={styles.spellStatLabel}>CD DE RESISTÊNCIA</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                         <Shield color="#E6C280" size={18} />
-                        <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 22 }]}>{spellStats.saveDc}</Text>
+                        <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: isMobile ? 18 : 22 }]}>{spellStats.saveDc}</Text>
                       </View>
                     </View>
                     {!isMobile && <View style={styles.spellStatDivider} />}
@@ -966,7 +966,7 @@ export default function PlayerModule() {
                       <Text style={styles.spellStatLabel}>BÔNUS DE ATAQUE</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                         <Crosshair color="#4E9C8E" size={18} />
-                        <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: 22 }]}>{spellStats.attackBonus}</Text>
+                        <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: isMobile ? 18 : 22 }]}>{spellStats.attackBonus}</Text>
                       </View>
                     </View>
                   </View>
@@ -982,31 +982,31 @@ export default function PlayerModule() {
                         <View key={`spell-lvl-${levelNum}`} style={[styles.spellAccordionCard, isExpanded && { borderColor: themeColor }]}>
                           {/* Header do Acordeão */}
                           <TouchableOpacity
-                            style={[styles.spellAccordionHeader, isMobile && { flexWrap: 'wrap', gap: 10 }]}
+                            style={styles.spellAccordionHeader}
                             onPress={() => toggleLevelAccordion(levelNum)}
                             activeOpacity={0.8}
                           >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: isMobile ? '100%' : 'auto' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
                               <View style={[styles.levelBadgeIcon, levelNum === 0 ? { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' } : { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}>
                                 <BookOpen color={levelNum === 0 ? '#4E9C8E' : themeColor} size={18} />
                               </View>
-                              <View>
-                                <Text style={styles.spellAccordionTitle}>
-                                  {levelNum === 0 ? '✨ TRUQUES (CANTRIPS - NÍVEL 0)' : `📜 MAGIAS DE ${levelNum}º NÍVEL`}
+                              <View style={{ flex: 1 }}>
+                                <Text style={[styles.spellAccordionTitle, isMobile && { fontSize: 13 }]} numberOfLines={1}>
+                                  {levelNum === 0 ? (isMobile ? '✨ TRUQUES' : '✨ TRUQUES (CANTRIPS - NÍVEL 0)') : (isMobile ? `📜 MAGIAS ${levelNum}º NÍVEL` : `📜 MAGIAS DE ${levelNum}º NÍVEL`)}
                                 </Text>
                                 <Text style={styles.spellAccordionSub}>
-                                  {spellsInThisLevel.length} {spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas'}
+                                  {spellsInThisLevel.length} {isMobile ? 'cadastrada(s)' : (spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas')}
                                 </Text>
                               </View>
                             </View>
 
                             {/* Tokens de Espaço no Header (se for nível 1+) */}
                             {levelNum > 0 && slotForLevel && (
-                              <View style={[styles.accordionSlotsBox, isMobile && { width: '100%', justifyContent: 'space-between', marginTop: 4 }]} onStartShouldSetResponder={() => true}>
-                                <Text style={styles.accordionSlotsText}>
-                                  Usados: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel.used}</Text> / {slotForLevel.total}
+                              <View style={[styles.accordionSlotsBox, isMobile && { paddingHorizontal: 6, paddingVertical: 4, gap: 4 }]} onStartShouldSetResponder={() => true}>
+                                <Text style={[styles.accordionSlotsText, isMobile && { fontSize: 10 }]}>
+                                  {isMobile ? '' : 'Usados: '}<Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel.used}</Text> / {slotForLevel.total}
                                 </Text>
-                                <View style={styles.accordionTokensRow}>
+                                <View style={[styles.accordionTokensRow, isMobile && { gap: 2 }]}>
                                   {Array.from({ length: slotForLevel.total }).map((_, idx) => {
                                     const isUsed = idx < slotForLevel.used;
                                     return (
@@ -1015,7 +1015,7 @@ export default function PlayerModule() {
                                         style={[styles.accordionTokenBtn, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
                                         onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
                                       >
-                                        <Scroll color={isUsed ? '#3D342C' : themeColor} size={14} />
+                                        <Scroll color={isUsed ? '#3D342C' : themeColor} size={isMobile ? 12 : 14} />
                                       </TouchableOpacity>
                                     );
                                   })}
@@ -1398,10 +1398,6 @@ export default function PlayerModule() {
             {/* ABA: Perícias */}
             {activeTab === 'skills' && (
               <View>
-                <View style={styles.skillsBanner}>
-                  <Text style={styles.skillsBannerTitle}>✨ TREINAMENTO & PROFICIÊNCIAS MEDIEVAIS</Text>
-                  <Text style={styles.skillsBannerSub}>Toque em qualquer perícia abaixo para adicionar ou remover sua proficiência no grimório do aventureiro (+{profBonus} no teste).</Text>
-                </View>
                 <View style={styles.skillsGrid}>
                   {SKILLS_LIST.map(skill => {
                     const score = (selectedChar as any)[skill.attr] || 10;
@@ -1411,17 +1407,17 @@ export default function PlayerModule() {
                     return (
                       <TouchableOpacity
                         key={skill.name}
-                        style={[styles.skillItem, isProf && { borderColor: themeColor, backgroundColor: `${themeColor}15` }]}
+                        style={[styles.skillItem, isProf && { borderColor: themeColor, backgroundColor: `${themeColor}15` }, isMobile && { paddingHorizontal: 6, paddingVertical: 8 }]}
                         onPress={() => toggleSkillProficiency(skill.name)}
                         activeOpacity={0.7}
                       >
-                        <View style={styles.skillLeft}>
+                        <View style={[styles.skillLeft, { flex: 1, flexShrink: 1 }, isMobile && { gap: 4 }]}>
                           <View style={[styles.saveDot, isProf && [styles.saveDotProf, { backgroundColor: themeColor }]]} />
-                          <Text style={[styles.skillName, isProf && { color: '#E2D8C3', fontWeight: '700' }]}>{skill.name}</Text>
-                          <Text style={styles.skillAttr}>({skill.label})</Text>
+                          <Text style={[styles.skillName, { flexShrink: 1 }, isProf && { color: '#E2D8C3', fontWeight: '700' }, isMobile && { fontSize: 11 }]}>{skill.name}</Text>
+                          <Text style={[styles.skillAttr, isMobile && { fontSize: 9 }]}>({skill.label})</Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          {isProf && <Text style={{ color: themeColor, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>PROFICIENTE</Text>}
+                          {isProf && !isMobile && <Text style={{ color: themeColor, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>PROFICIENTE</Text>}
                           <Text style={[styles.skillTotal, isProf && { color: '#E6C280', fontWeight: '700' }]}>
                             {total >= 0 ? `+${total}` : total}
                           </Text>
@@ -2439,8 +2435,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   skillItem: {
-    width: Platform.OS === 'web' ? '31%' : '100%',
-    minWidth: 240,
+    width: Platform.OS === 'web' ? '31%' : '47%',
+    minWidth: 130,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
