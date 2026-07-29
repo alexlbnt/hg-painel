@@ -46,6 +46,7 @@ export interface CharacterData {
   id: string;
   name: string;
   playerName: string;
+  username?: string;
   race: string;
   class: string;
   level: number;

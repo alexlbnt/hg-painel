@@ -7,20 +7,24 @@ import HeaderNav from '@/components/HeaderNav';
 
 SplashScreen.preventAutoHideAsync();
 
+import { AuthProvider } from '@/contexts/AuthContext';
+
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
 
   return (
-    <ThemeProvider value={DarkTheme}>
-      <View style={styles.container}>
-        <HeaderNav />
-        <ScrollView style={styles.mainScroll} contentContainerStyle={styles.mainContent}>
-          <Slot />
-        </ScrollView>
-      </View>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={DarkTheme}>
+        <View style={styles.container}>
+          <HeaderNav />
+          <ScrollView style={styles.mainScroll} contentContainerStyle={styles.mainContent}>
+            <Slot />
+          </ScrollView>
+        </View>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

@@ -2,13 +2,38 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Linking } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { Shield, Crown, Sparkles, Home, Scroll, Sword } from 'lucide-react-native';
+import { Shield, Crown, Sparkles, Home, Scroll, Sword, X } from 'lucide-react-native';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { Modal, TextInput } from 'react-native';
 
 export default function HeaderNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { isMobile } = useResponsive();
+  const { user, login, logout } = useAuth();
+  
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  const handleLogin = () => {
+    if (!username.trim() || !password.trim()) {
+      setLoginError('Preencha os campos.');
+      return;
+    }
+    const success = login(username, password);
+    if (!success) {
+      setLoginError('Usuário ou senha inválidos.');
+    } else {
+      setLoginError('');
+      setUsername('');
+      setPassword('');
+      setShowLoginModal(false);
+    }
+  };
 
   const navItems = [
     { name: 'Portal da Taverna', mobileName: 'Taverna', path: '/', icon: Home },
@@ -32,12 +57,24 @@ export default function HeaderNav() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 6, flexShrink: 0 }]}
-              onPress={() => Linking.openURL('https://hg.a11y.host')}
-            >
-              <Text style={[styles.roomCode, { marginTop: 0, fontSize: 11 }]}>Mundo de HG ↗</Text>
-            </TouchableOpacity>
+            {user ? (
+              <TouchableOpacity
+                style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 6, flexShrink: 0 }]}
+                onPress={() => {
+                  logout();
+                  router.push('/');
+                }}
+              >
+                <Text style={[styles.roomCode, { marginTop: 0, fontSize: 11 }]}>SAIR ↗</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 6, flexShrink: 0 }]}
+                onPress={() => setShowLoginModal(true)}
+              >
+                <Text style={[styles.roomCode, { marginTop: 0, fontSize: 11 }]}>LOGIN ↗</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Bottom Row: Tabs de Navegação em Barra Segmentada horizontal compacta */}
@@ -105,14 +142,70 @@ export default function HeaderNav() {
           })}
         </View>
 
-        {/* Emblema de Campanha / Link Externo */}
-        <TouchableOpacity
-          style={styles.roomBadge}
-          onPress={() => Linking.openURL('https://hg.a11y.host')}
-        >
-          <Text style={[styles.roomCode, { marginTop: 0 }]}>Mundo de HG</Text>
-        </TouchableOpacity>
+        {/* Emblema de Campanha / Login */}
+        {user ? (
+          <TouchableOpacity
+            style={styles.roomBadge}
+            onPress={() => {
+              logout();
+              router.push('/');
+            }}
+          >
+            <Text style={[styles.roomCode, { marginTop: 0 }]}>SAIR</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.roomBadge}
+            onPress={() => setShowLoginModal(true)}
+          >
+            <Text style={[styles.roomCode, { marginTop: 0 }]}>LOGIN</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* MODAL DE LOGIN */}
+      <Modal visible={showLoginModal} transparent animationType="fade" onRequestClose={() => setShowLoginModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.loginContainer}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setShowLoginModal(false)}>
+              <X color="#8C704F" size={24} />
+            </TouchableOpacity>
+
+            <Text style={styles.loginTitle}>Acesso à Mesa</Text>
+            <Text style={styles.loginSubtitle}>Identifique-se para acessar seu grimório</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Usuário</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: joao.c"
+                placeholderTextColor="#666"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Senha</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Sua senha"
+                placeholderTextColor="#666"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+
+            {!!loginError && <Text style={styles.errorText}>{loginError}</Text>}
+
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} activeOpacity={0.8}>
+              <Text style={styles.loginButtonText}>Entrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -226,4 +319,78 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: 1,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loginContainer: {
+    backgroundColor: '#1A1714',
+    padding: 30,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    maxWidth: 400,
+    width: '100%',
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    zIndex: 10,
+    padding: 5,
+  },
+  loginTitle: {
+    color: '#C5A059',
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
+  },
+  loginSubtitle: {
+    color: '#BAAFA0',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    color: '#E2D8C3',
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  input: {
+    backgroundColor: '#110F0D',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    color: '#E2D8C3',
+    padding: 12,
+    borderRadius: 6,
+    fontSize: 16,
+  },
+  loginButton: {
+    backgroundColor: '#C5A059',
+    padding: 14,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  loginButtonText: {
+    color: '#110F0D',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: '#E8A0A0',
+    fontSize: 14,
+    marginBottom: 12,
+    textAlign: 'center',
+  }
 });

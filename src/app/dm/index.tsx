@@ -5,9 +5,20 @@ import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { AlertTriangle, Crown, Moon, RefreshCw, Shield, Skull, Sun, Sword, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 export default function DmModule() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user || user.role !== 'DM') {
+      router.replace('/');
+    }
+  }, [user]);
+
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedChar, setSelectedChar] = useState<CharacterData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -95,6 +106,17 @@ export default function DmModule() {
       if (Platform.OS === 'web') {
         window.alert('Praga de Sangue invocada! -10 HP em todos os heróis da mesa.');
       }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAssignUser = async (charId: string, username: string) => {
+    try {
+      await ApiService.updateCharacter(charId, { username: username.toLowerCase().trim() });
+      if (Platform.OS === 'web') window.alert(`Personagem vinculado ao usuário '${username}' com sucesso!`);
+      else Alert.alert('Sucesso', `Vinculado ao usuário '${username}'`);
+      fetchTableData(true);
     } catch (e) {
       console.error(e);
     }
@@ -225,6 +247,16 @@ export default function DmModule() {
                       {char.class} • Nvl {char.level}
                     </Text>
                     <Text style={styles.playerName}>Jogador: {char.playerName}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                      <Text style={{ color: '#80776C', fontSize: 10, marginRight: 4 }}>Usuário:</Text>
+                      <TextInput 
+                        style={{ backgroundColor: '#110F0D', borderWidth: 1, borderColor: '#3D342C', color: '#BAAFA0', fontSize: 10, padding: 2, paddingHorizontal: 6, borderRadius: 4, minWidth: 80 }}
+                        defaultValue={char.username || ''}
+                        placeholder="Vincular usuário..."
+                        placeholderTextColor="#4A3333"
+                        onSubmitEditing={(e) => handleAssignUser(char.id, e.nativeEvent.text)}
+                      />
+                    </View>
                   </View>
                   
                   <View style={styles.acBadge}>

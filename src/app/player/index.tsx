@@ -8,6 +8,8 @@ import { SrdSearchModal } from '@/components/player/SrdSearchModal';
 import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal';
 import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins, ChevronDown, ChevronUp, Eye, EyeOff, BookOpen, Clock, Crosshair, HelpCircle, Download, Upload } from 'lucide-react-native';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 const SKILLS_LIST = [
   { name: 'Acrobacia', attr: 'dex', label: 'DES' },
@@ -31,6 +33,15 @@ const SKILLS_LIST = [
 ];
 
 export default function PlayerModule() {
+  const { user } = useAuth();
+  const router = useRouter();
+  
+  useEffect(() => {
+    if (!user) {
+      router.replace('/');
+    }
+  }, [user]);
+
   const { isMobile } = useResponsive();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -73,7 +84,12 @@ export default function PlayerModule() {
     if (!silent) setLoading(true);
     try {
       const data = await ApiService.getCharacters();
-      setCharacters(data);
+      // Filtra apenas as fichas que pertencem a este usuário
+      const myChars = user?.role === 'DM' ? data : data.filter((c: CharacterData) => c.username === user?.username);
+      setCharacters(myChars);
+      if (myChars.length > 0 && !selectedId && !silent) {
+        setSelectedId(myChars[0].id);
+      }
     } catch (e) {
       console.error('Erro ao carregar fichas medievais', e);
     } finally {
@@ -122,7 +138,10 @@ export default function PlayerModule() {
       if (editingChar) {
         await ApiService.updateCharacter(editingChar.id, data);
       } else {
-        const newChar = await ApiService.createCharacter(data);
+        const newChar = await ApiService.createCharacter({
+          ...data,
+          username: user?.username || ''
+        });
         setSelectedId(newChar.id);
       }
       loadCharacters();

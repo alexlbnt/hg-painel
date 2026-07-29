@@ -107,6 +107,7 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
         copper: body.copper !== undefined ? Number(body.copper) : undefined,
         themeColor: body.themeColor !== undefined ? String(body.themeColor) : undefined,
         proficientSkills: body.proficientSkills !== undefined ? String(body.proficientSkills) : undefined,
+        username: body.username !== undefined ? String(body.username) : undefined,
         str: body.str !== undefined ? Number(body.str) : undefined,
         dex: body.dex !== undefined ? Number(body.dex) : undefined,
         con: body.con !== undefined ? Number(body.con) : undefined,

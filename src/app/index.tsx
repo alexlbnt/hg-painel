@@ -3,7 +3,8 @@ import { ApiService } from '@/services/api';
 import { useRouter } from 'expo-router';
 import { BookOpen, Crown, ExternalLink, Folder, Globe, Moon, Scroll, Shield, Sparkles, Sword, Zap } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Linking, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput, ActivityIndicator } from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -32,6 +33,16 @@ export default function HomeScreen() {
       setResetting(false);
     }
   };
+
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#C5A059" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -62,10 +73,9 @@ export default function HomeScreen() {
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardTag}>PLAYERS</Text>
-            <Text style={styles.cardTitle}>Grimório do Jogador</Text>
+            <Text style={styles.cardTitle}>Grimório {user ? `de ${user.name}` : 'do Jogador'}</Text>
             <Text style={styles.cardDesc}>
-              Criação e leitura de fichas medievais. Automação de CA, Iniciativa, Modificadores e Bônus de Proficiência.
-              Controles táteis para pontos de vida, pergaminhos de magia e gatilhos de Descanso Curto e Longo.
+              Acesse suas fichas, magias e inventário.
             </Text>
           </View>
           <View style={styles.cardAction}>
@@ -73,27 +83,28 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Card Mestre */}
-        <TouchableOpacity
-          style={[styles.moduleCard, styles.dmCard]}
-          activeOpacity={0.8}
-          onPress={() => router.push('/dm')}
-        >
-          <View style={[styles.iconBox, styles.dmIconBox]}>
-            <Crown color="#8C6C90" size={32} />
-          </View>
-          <View style={styles.cardContent}>
-            <Text style={[styles.cardTag, { color: '#8C6C90' }]}>CONTROLE DO MESTRE</Text>
-            <Text style={styles.cardTitle}>Escudo do Mestre</Text>
-            <Text style={styles.cardDesc}>
-              Visão geral da mesa em sessão. Acompanhe os sinais vitais, iniciativa e magias de todos os heróis.
-              Intervenha remotamente para causar dano, conceder cura divina ou aplicar maldições instantaneamente.
-            </Text>
-          </View>
-          <View style={[styles.cardAction, styles.dmCardAction]}>
-            <Text style={[styles.cardActionText, { color: '#8C6C90' }]}>Acessar Escudo do Mestre →</Text>
-          </View>
-        </TouchableOpacity>
+        {/* Card Mestre (Apenas Mestre) */}
+        {(!user || user.role === 'DM') && (
+          <TouchableOpacity
+            style={[styles.moduleCard, styles.dmCard]}
+            activeOpacity={0.8}
+            onPress={() => router.push('/dm')}
+          >
+            <View style={[styles.iconBox, styles.dmIconBox]}>
+              <Crown color="#8C6C90" size={32} />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={[styles.cardTag, { color: '#8C6C90' }]}>CONTROLE DO MESTRE</Text>
+              <Text style={styles.cardTitle}>Escudo do Mestre</Text>
+              <Text style={styles.cardDesc}>
+                Visão geral da mesa em sessão.
+              </Text>
+            </View>
+            <View style={[styles.cardAction, styles.dmCardAction]}>
+              <Text style={[styles.cardActionText, { color: '#8C6C90' }]}>Acessar Escudo →</Text>
+            </View>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* SEÇÃO LORE & ARQUIVOS: O MUNDO DE HONRA & EGOÍSMO */}
@@ -550,3 +561,4 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
 });
+
