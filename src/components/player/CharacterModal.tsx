@@ -3,6 +3,8 @@ import { Save, Sword, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { useAuth } from '@/contexts/AuthContext';
+
 interface CharacterModalProps {
   visible: boolean;
   onClose: () => void;
@@ -11,6 +13,7 @@ interface CharacterModalProps {
 }
 
 export default function CharacterModal({ visible, onClose, onSave, initialData }: CharacterModalProps) {
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [race, setRace] = useState('');
@@ -65,7 +68,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setThemeColor(initialData.themeColor || '#C5A059');
     } else {
       setName('');
-      setPlayerName('Alex');
+      setPlayerName(user?.name || 'Alex');
       setRace('Meio-Elfo');
       setClassName('Paladino');
       setLevel('1');
@@ -86,14 +89,15 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setChaProf(true);
       setThemeColor('#C5A059');
     }
-  }, [initialData, visible]);
+  }, [initialData, visible, user?.name]);
 
   const handleSave = () => {
     if (!name.trim()) return;
 
     onSave({
       name,
-      playerName,
+      playerName: user?.name || playerName,
+      username: user?.username || '',
       race,
       class: className,
       level: parseInt(level, 10) || 1,
@@ -151,10 +155,10 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nome do Jogador</Text>
                 <TextInput
-                  style={styles.input}
-                  value={playerName}
-                  onChangeText={setPlayerName}
-                  placeholder="Ex: Alex"
+                  style={[styles.input, { backgroundColor: '#1A1714', color: '#666' }]}
+                  value={user?.name || playerName}
+                  editable={false}
+                  placeholder="Nome do Jogador"
                   placeholderTextColor="#80776C"
                 />
               </View>

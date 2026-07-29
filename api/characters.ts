@@ -72,6 +72,7 @@ export default async function handler(req: any, res: any) {
         data: {
           name: body.name || 'Novo Herói',
           playerName: body.playerName || 'Jogador',
+          username: body.username || '',
           race: body.race || 'Humano',
           class: body.class || 'Guerreiro',
           level: Number(body.level) || 1,

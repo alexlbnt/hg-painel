@@ -82,6 +82,7 @@ export default async function handler(req: any, res: any) {
           hitDiceTotal: body.hitDiceTotal !== undefined ? Number(body.hitDiceTotal) : undefined,
           name: body.name,
           playerName: body.playerName,
+          username: body.username !== undefined ? String(body.username) : undefined,
           race: body.race !== undefined ? String(body.race) : undefined,
           class: body.class,
           level: body.level !== undefined ? Number(body.level) : undefined,

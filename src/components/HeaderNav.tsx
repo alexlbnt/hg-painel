@@ -39,6 +39,51 @@ export default function HeaderNav() {
     { name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown },
   ];
 
+  const renderLoginModal = () => (
+    <Modal visible={showLoginModal} transparent animationType="fade" onRequestClose={() => setShowLoginModal(false)}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.loginContainer}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setShowLoginModal(false)}>
+            <X color="#8C704F" size={24} />
+          </TouchableOpacity>
+
+          <Text style={styles.loginTitle}>Acesso à Mesa</Text>
+          <Text style={styles.loginSubtitle}>Identifique-se para acessar seu grimório</Text>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Usuário</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: joao.c"
+              placeholderTextColor="#666"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Senha</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Sua senha"
+              placeholderTextColor="#666"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+
+          {!!loginError && <Text style={styles.errorText}>{loginError}</Text>}
+
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin} activeOpacity={0.8}>
+            <Text style={styles.loginButtonText}>Entrar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   if (isMobile) {
     return (
       <View style={[styles.container, { paddingVertical: 10, paddingHorizontal: 12 }]}>
@@ -99,6 +144,7 @@ export default function HeaderNav() {
             })}
           </View>
         </View>
+        {renderLoginModal()}
       </View>
     );
   }
@@ -160,50 +206,7 @@ export default function HeaderNav() {
           </TouchableOpacity>
         )}
       </View>
-
-      {/* MODAL DE LOGIN */}
-      <Modal visible={showLoginModal} transparent animationType="fade" onRequestClose={() => setShowLoginModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.loginContainer}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setShowLoginModal(false)}>
-              <X color="#8C704F" size={24} />
-            </TouchableOpacity>
-
-            <Text style={styles.loginTitle}>Acesso à Mesa</Text>
-            <Text style={styles.loginSubtitle}>Identifique-se para acessar seu grimório</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Usuário</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: joao.c"
-                placeholderTextColor="#666"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Senha</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Sua senha"
-                placeholderTextColor="#666"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
-            </View>
-
-            {!!loginError && <Text style={styles.errorText}>{loginError}</Text>}
-
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} activeOpacity={0.8}>
-              <Text style={styles.loginButtonText}>Entrar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {renderLoginModal()}
     </View>
   );
 }

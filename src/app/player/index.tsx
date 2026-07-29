@@ -6,7 +6,7 @@ import { CharacterData, SpellItemData, INITIAL_SPELLS } from '@/lib/mockData';
 import CharacterModal from '@/components/player/CharacterModal';
 import { SrdSearchModal } from '@/components/player/SrdSearchModal';
 import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal';
-import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins, ChevronDown, ChevronUp, Eye, EyeOff, BookOpen, Clock, Crosshair, HelpCircle, Download, Upload } from 'lucide-react-native';
+import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins, ChevronDown, ChevronUp, Eye, EyeOff, BookOpen, Clock, Crosshair, HelpCircle, Download, Upload, Settings, Droplet, User, Star, Copy, RefreshCw, LogOut, ChevronRight, Target, Beaker } from 'lucide-react-native';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
@@ -40,11 +40,12 @@ export default function PlayerModule() {
     if (!user) {
       router.replace('/');
     }
-  }, [user]);
+  }, [user, router]);
 
   const { isMobile } = useResponsive();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingChar, setEditingChar] = useState<CharacterData | null>(null);
@@ -101,19 +102,23 @@ export default function PlayerModule() {
     if (characters.length > 0) {
       const exists = characters.some(c => c.id === selectedId);
       if (!selectedId || !exists) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedId(characters[0].id);
       }
     } else if (characters.length === 0 && selectedId !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedId(null);
     }
   }, [characters, selectedId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCharacters();
     const interval = setInterval(() => {
       loadCharacters(true);
     }, 2000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedChar = characters.find(c => c.id === selectedId) || null;
