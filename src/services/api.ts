@@ -47,7 +47,13 @@ export const ApiService = {
   async getCharacters(): Promise<CharacterData[]> {
     try {
       if (Platform.OS === 'web') {
-        const res = await fetch('/api/characters');
+        const res = await fetch(`/api/characters?t=${Date.now()}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) return data;
