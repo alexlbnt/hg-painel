@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Modal, TextInput } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { Shield, Crown, Home, Sword, X } from 'lucide-react-native';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/contexts/AuthContext';
+import { useResponsive } from '@/hooks/useResponsive';
+import { usePathname, useRouter } from 'expo-router';
+import { Crown, Home, Shield, Sword, X } from 'lucide-react-native';
+import { useState } from 'react';
+import { Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function HeaderNav() {
   const router = useRouter();
@@ -54,7 +54,7 @@ export default function HeaderNav() {
             <Text style={styles.label}>Usuário</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ex: joao.c"
+              placeholder="Seu usuário"
               placeholderTextColor="#666"
               value={username}
               onChangeText={setUsername}
