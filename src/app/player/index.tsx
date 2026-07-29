@@ -351,17 +351,17 @@ export default function PlayerModule() {
       used: 0,
     };
     const updatedSlots = [...selectedChar.spellSlots, newSlot].sort((a, b) => a.level - b.level);
-    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    const updated = await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
     setNewSpellLevel('1');
     setNewSpellTotal('2');
-    loadCharacters(true);
   };
 
   const removeSpellSlot = async (slotId: string) => {
     if (!selectedChar) return;
     const updatedSlots = selectedChar.spellSlots.filter(s => s.id !== slotId);
-    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-    loadCharacters(true);
+    const updated = await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
   };
 
   // --- GRIMÓRIO INTERATIVO: FUNÇÕES AUXILIARES ---
@@ -537,18 +537,18 @@ export default function PlayerModule() {
       resetType: newAbReset,
     };
     const updatedAbilities = [...selectedChar.abilities, newAb];
-    await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
+    const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
     setNewAbName('');
     setNewAbDesc('');
     setNewAbUses('1');
-    loadCharacters(true);
   };
 
   const removeAbility = async (abId: string) => {
     if (!selectedChar) return;
     const updatedAbilities = selectedChar.abilities.filter(a => a.id !== abId);
-    await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
-    loadCharacters(true);
+    const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
   };
 
   return (
