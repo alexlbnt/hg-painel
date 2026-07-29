@@ -104,6 +104,7 @@ export const ApiService = {
       spellSlots: data.spellSlots || [
         { id: `slot-${Date.now()}-1`, level: 1, total: 2, used: 0 }
       ],
+      spells: data.spells || [],
       abilities: data.abilities || [
         { id: `ab-${Date.now()}-1`, name: 'Ataque Especial', description: 'Habilidade básica.', maxUses: 1, currentUses: 1, resetType: 'SHORT_REST' }
       ],

@@ -95,6 +95,7 @@ model Character {
   abilities          Ability[]
   conditions         Condition[]
   items              Item[]
+  spells             Spell[]
   
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
@@ -136,6 +137,20 @@ model Item {
   quantity    Int       @default(1)
   isWeapon    Boolean   @default(false)
   damage      String    @default("")
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+model Spell {
+  id          String    @id @default(uuid())
+  name        String
+  description String    @default("")
+  level       Int       @default(0)
+  castingTime String    @default("")
+  range       String    @default("")
+  components  String    @default("")
+  duration    String    @default("")
+  isPrepared  Boolean   @default(false)
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }

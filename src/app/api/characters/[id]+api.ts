@@ -62,6 +62,25 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
       });
     }
 
+    if (body.spells && Array.isArray(body.spells)) {
+      await prisma.spell.deleteMany({ where: { characterId: id } });
+      if (body.spells.length > 0) {
+        await prisma.spell.createMany({
+          data: body.spells.map((s: any) => ({
+            name: s.name,
+            level: Number(s.level) || 0,
+            castingTime: s.castingTime || '',
+            range: s.range || '',
+            duration: s.duration || '',
+            components: s.components || '',
+            isPrepared: !!s.isPrepared,
+            description: s.description || '',
+            characterId: id,
+          })),
+        });
+      }
+    }
+
     const updated = await prisma.character.update({
       where: { id },
       data: {
@@ -101,7 +120,7 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
         wisProf: body.wisProf !== undefined ? Boolean(body.wisProf) : undefined,
         chaProf: body.chaProf !== undefined ? Boolean(body.chaProf) : undefined,
       },
-      include: { spellSlots: true, abilities: true, conditions: true, items: true },
+      include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
     });
 
     return Response.json(updated);

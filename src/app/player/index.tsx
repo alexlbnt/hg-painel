@@ -4,6 +4,8 @@ import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
 import { CharacterData, SpellItemData, INITIAL_SPELLS } from '@/lib/mockData';
 import CharacterModal from '@/components/player/CharacterModal';
+import { SrdSearchModal } from '@/components/player/SrdSearchModal';
+import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal';
 import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins, ChevronDown, ChevronUp, Eye, EyeOff, BookOpen, Clock, Crosshair, HelpCircle, Download, Upload } from 'lucide-react-native';
 import { useResponsive } from '@/hooks/useResponsive';
 
@@ -52,16 +54,12 @@ export default function PlayerModule() {
   const [newAbUses, setNewAbUses] = useState('1');
   const [newAbReset, setNewAbReset] = useState<'SHORT_REST' | 'LONG_REST' | 'NONE'>('SHORT_REST');
 
-  // Grimório Interativo (Magias e Acordeões)
-  const [spellsMap, setSpellsMap] = useState<Record<string, SpellItemData[]>>(() => {
-    if (Platform.OS === 'web') {
-      const saved = localStorage.getItem('hg_character_spells');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
-      }
-    }
-    return INITIAL_SPELLS;
-  });
+  const [srdModalVisible, setSrdModalVisible] = useState(false);
+  const [srdModalType, setSrdModalType] = useState<'spell'|'ability'>('spell');
+  
+  const [editEntityVisible, setEditEntityVisible] = useState(false);
+  const [editEntityType, setEditEntityType] = useState<'spell'|'ability'>('spell');
+  const [entityToEdit, setEntityToEdit] = useState<any>(null);
   const [expandedLevels, setExpandedLevels] = useState<number[]>([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const [addingSpellForLevel, setAddingSpellForLevel] = useState<number | null>(null);
   const [newSpellName, setNewSpellName] = useState('');
@@ -401,30 +399,31 @@ export default function PlayerModule() {
     setExpandedLevels(prev => prev.includes(lvl) ? prev.filter(x => x !== lvl) : [...prev, lvl]);
   };
 
-  const updateSpellsForChar = (charId: string, newSpells: SpellItemData[]) => {
-    setSpellsMap(prev => {
-      const updated = { ...prev, [charId]: newSpells };
-      if (Platform.OS === 'web') {
-        try { localStorage.setItem('hg_character_spells', JSON.stringify(updated)); } catch (e) {}
-      }
-      return updated;
-    });
+  const updateSpellsForChar = async (charId: string, newSpells: SpellItemData[]) => {
+    try {
+      const updated = await ApiService.updateCharacter(charId, { spells: newSpells });
+      setCharacters(prev => prev.map(c => c.id === charId ? updated : c));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const toggleSpellPrepared = (charId: string, spellId: string) => {
-    const current = spellsMap[charId] || [];
+    if (!selectedChar) return;
+    const current = selectedChar.spells || [];
     const updated = current.map(sp => sp.id === spellId ? { ...sp, isPrepared: !sp.isPrepared } : sp);
     updateSpellsForChar(charId, updated);
   };
 
   const removeSpellItem = (charId: string, spellId: string) => {
-    const current = spellsMap[charId] || [];
+    if (!selectedChar) return;
+    const current = selectedChar.spells || [];
     const updated = current.filter(sp => sp.id !== spellId);
     updateSpellsForChar(charId, updated);
   };
 
   const addSpellItem = (charId: string, level: number) => {
-    if (!newSpellName.trim()) return;
+    if (!newSpellName.trim() || !selectedChar) return;
     const newSp: SpellItemData = {
       id: `sp-${Date.now()}`,
       name: newSpellName.trim(),
@@ -436,11 +435,74 @@ export default function PlayerModule() {
       isPrepared: true,
       description: newSpellDesc.trim() || undefined,
     };
-    const current = spellsMap[charId] || [];
+    const current = selectedChar.spells || [];
     updateSpellsForChar(charId, [...current, newSp]);
     setNewSpellName('');
     setNewSpellDesc('');
     setAddingSpellForLevel(null);
+  };
+
+  const handleSrdSelect = (data: any) => {
+    if (!selectedChar) return;
+    if (srdModalType === 'spell') {
+      const newSp: SpellItemData = {
+        id: `sp-${Date.now()}`,
+        name: data.name,
+        level: data.level || (addingSpellForLevel || 0),
+        castingTime: data.castingTime,
+        range: data.range,
+        duration: data.duration,
+        components: data.components,
+        isPrepared: true,
+        description: data.description,
+      };
+      const current = selectedChar.spells || [];
+      updateSpellsForChar(selectedChar.id, [...current, newSp]);
+    } else {
+      addAbilityFromSrd(selectedChar.id, data);
+    }
+    setSrdModalVisible(false);
+  };
+
+  const addAbilityFromSrd = async (charId: string, data: any) => {
+    if (!selectedChar) return;
+    const newAb = {
+      id: `ab-${Date.now()}`,
+      name: data.name,
+      description: data.description,
+      maxUses: data.maxUses,
+      currentUses: data.currentUses,
+      resetType: data.resetType as any,
+    };
+    try {
+      const updated = await ApiService.updateCharacter(charId, {
+        abilities: [...selectedChar.abilities, newAb]
+      });
+      setCharacters(prev => prev.map(c => c.id === charId ? updated : c));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveEditedEntity = async (updatedData: any) => {
+    if (!selectedChar) return;
+    try {
+      if (editEntityType === 'spell') {
+        const currentSpells = selectedChar.spells || [];
+        const newSpells = currentSpells.map(s => s.id === updatedData.id ? updatedData : s);
+        const updated = await ApiService.updateCharacter(selectedChar.id, { spells: newSpells });
+        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
+      } else {
+        const currentAbs = selectedChar.abilities || [];
+        const newAbs = currentAbs.map(a => a.id === updatedData.id ? updatedData : a);
+        const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: newAbs });
+        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
+      }
+      setEditEntityVisible(false);
+      setEntityToEdit(null);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const castSpellItem = (char: CharacterData, spell: SpellItemData) => {
@@ -836,7 +898,7 @@ export default function PlayerModule() {
             {/* ABA: Pergaminhos de Magia */}
             {activeTab === 'spells' && (() => {
               const spellStats = getSpellcastingStats(selectedChar);
-              const charSpells = spellsMap[selectedChar.id] || [];
+              const charSpells = selectedChar.spells || [];
               const availableLevelsSet = new Set<number>();
               charSpells.forEach(s => availableLevelsSet.add(s.level));
               selectedChar.spellSlots.forEach(s => availableLevelsSet.add(s.level));
@@ -969,6 +1031,16 @@ export default function PlayerModule() {
                                             </Text>
                                           </TouchableOpacity>
                                           <TouchableOpacity
+                                            style={[styles.delSpellBtn, { backgroundColor: 'transparent', borderColor: '#4E9C8E' }]}
+                                            onPress={() => {
+                                              setEditEntityType('spell');
+                                              setEntityToEdit(sp);
+                                              setEditEntityVisible(true);
+                                            }}
+                                          >
+                                            <Edit color="#4E9C8E" size={15} />
+                                          </TouchableOpacity>
+                                          <TouchableOpacity
                                             style={styles.delSpellBtn}
                                             onPress={() => removeSpellItem(selectedChar.id, sp.id)}
                                           >
@@ -1058,20 +1130,36 @@ export default function PlayerModule() {
                                   </View>
                                 </View>
                               ) : (
-                                <TouchableOpacity
-                                  style={styles.openAddSpellBtn}
-                                  onPress={() => {
-                                    setAddingSpellForLevel(levelNum);
-                                    setNewSpellCastTime('1 Ação');
-                                    setNewSpellRange('9m');
-                                    setNewSpellDuration('Instantânea');
-                                  }}
-                                >
-                                  <Plus color="#C5A059" size={16} />
-                                  <Text style={styles.openAddSpellBtnText}>
-                                    Adicionar Magia de {levelNum === 0 ? 'Truque' : `${levelNum}º Nível`}
-                                  </Text>
-                                </TouchableOpacity>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                  <TouchableOpacity
+                                    style={styles.openAddSpellBtn}
+                                    onPress={() => {
+                                      setAddingSpellForLevel(levelNum);
+                                      setNewSpellCastTime('1 Ação');
+                                      setNewSpellRange('9m');
+                                      setNewSpellDuration('Instantânea');
+                                    }}
+                                  >
+                                    <Plus color="#C5A059" size={16} />
+                                    <Text style={styles.openAddSpellBtnText}>
+                                      Manual
+                                    </Text>
+                                  </TouchableOpacity>
+
+                                  <TouchableOpacity
+                                    style={[styles.openAddSpellBtn, { borderColor: '#4E9C8E', marginLeft: 10 }]}
+                                    onPress={() => {
+                                      setAddingSpellForLevel(levelNum);
+                                      setSrdModalType('spell');
+                                      setSrdModalVisible(true);
+                                    }}
+                                  >
+                                    <BookOpen color="#4E9C8E" size={16} />
+                                    <Text style={[styles.openAddSpellBtnText, { color: '#4E9C8E' }]}>
+                                      Buscar SRD (Oficial)
+                                    </Text>
+                                  </TouchableOpacity>
+                                </View>
                               )}
                             </View>
                           )}
@@ -1150,30 +1238,42 @@ export default function PlayerModule() {
                   ) : (
                     selectedChar.abilities.map(ab => (
                       <View key={ab.id} style={styles.abilityCard}>
-                        <View style={styles.abilityHeader}>
-                          <View style={{ flex: 1 }}>
+                        <View style={[styles.abilityHeader, isMobile && { flexDirection: 'column', alignItems: 'flex-start', gap: 12 }]}>
+                          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={styles.abilityName}>{ab.name}</Text>
-                            {ab.description ? <Text style={styles.abilityDesc}>{ab.description}</Text> : null}
                           </View>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                             <View style={[styles.resetBadge, ab.resetType === 'LONG_REST' && styles.resetLongBadge]}>
                               <Text style={styles.resetBadgeText}>
                                 {ab.resetType === 'SHORT_REST' ? '⚡ Ritual Curto' : ab.resetType === 'LONG_REST' ? '💤 Ritual Longo' : 'Poder Passivo'}
                               </Text>
                             </View>
+                            <TouchableOpacity style={styles.delItemBtn} onPress={() => {
+                              setEditEntityType('ability');
+                              setEntityToEdit(ab);
+                              setEditEntityVisible(true);
+                            }}>
+                              <Edit color="#4E9C8E" size={16} />
+                            </TouchableOpacity>
                             <TouchableOpacity style={styles.delItemBtn} onPress={() => removeAbility(ab.id)}>
                               <Trash2 color="#80776C" size={16} />
                             </TouchableOpacity>
                           </View>
                         </View>
+                        
+                        {ab.description ? (
+                          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                            <Text style={styles.abilityDesc}>{ab.description}</Text>
+                          </View>
+                        ) : null}
 
                         {ab.maxUses < 90 && (
-                          <View style={styles.abilityFooter}>
+                          <View style={[styles.abilityFooter, isMobile && { flexDirection: 'column', gap: 12, alignItems: 'flex-start' }]}>
                             <Text style={styles.abilityUses}>
                               Usos Disponíveis: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{ab.currentUses} / {ab.maxUses}</Text>
                             </Text>
                             <TouchableOpacity
-                              style={[styles.useBtn, ab.currentUses <= 0 && styles.useBtnDisabled]}
+                              style={[styles.useBtn, ab.currentUses <= 0 && styles.useBtnDisabled, isMobile && { width: '100%' }]}
                               disabled={ab.currentUses <= 0}
                               onPress={() => useAbility(ab.id, ab.currentUses)}
                             >
@@ -1188,7 +1288,21 @@ export default function PlayerModule() {
 
                 {/* Cadastrar Nova Habilidade */}
                 <View style={[styles.addItemBox, { marginTop: 24 }]}>
-                  <Text style={styles.addItemHeading}>➕ CADASTRAR NOVA HABILIDADE / PODER</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={styles.addItemHeading}>➕ CADASTRAR NOVA HABILIDADE / PODER</Text>
+                    <TouchableOpacity
+                      style={[styles.openAddSpellBtn, { borderColor: '#4E9C8E', paddingVertical: 6 }]}
+                      onPress={() => {
+                        setSrdModalType('ability');
+                        setSrdModalVisible(true);
+                      }}
+                    >
+                      <BookOpen color="#4E9C8E" size={14} />
+                      <Text style={[styles.openAddSpellBtnText, { color: '#4E9C8E', fontSize: 12 }]}>
+                        Buscar no SRD
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                   <View style={styles.addItemForm}>
                     <View style={styles.addInputRow}>
                       <TextInput
@@ -1548,6 +1662,30 @@ export default function PlayerModule() {
         onSave={handleCreateOrUpdate}
         initialData={editingChar}
       />
+
+      {srdModalVisible && selectedChar && (
+        <SrdSearchModal
+          visible={srdModalVisible}
+          type={srdModalType}
+          onClose={() => setSrdModalVisible(false)}
+          onSelect={handleSrdSelect}
+          themeColor={selectedChar.themeColor}
+        />
+      )}
+
+      {editEntityVisible && selectedChar && entityToEdit && (
+        <EditAbilitySpellModal
+          visible={editEntityVisible}
+          type={editEntityType}
+          initialData={entityToEdit}
+          onClose={() => {
+            setEditEntityVisible(false);
+            setEntityToEdit(null);
+          }}
+          onSave={handleSaveEditedEntity}
+          themeColor={selectedChar.themeColor}
+        />
+      )}
 
       {/* Modal de Importação e Backup */}
       <Modal

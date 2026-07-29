@@ -6,6 +6,7 @@ export async function GET() {
     const characters = await prisma.character.findMany({
       include: {
         spellSlots: true,
+        spells: true,
         abilities: true,
         conditions: true,
         items: true,
@@ -56,6 +57,18 @@ export async function GET() {
             spellSlots: {
               create: char.spellSlots.map(s => ({ level: s.level, total: s.total, used: s.used })),
             },
+            spells: {
+              create: (char.spells || []).map(s => ({
+                name: s.name,
+                level: s.level,
+                castingTime: s.castingTime,
+                range: s.range,
+                duration: s.duration,
+                components: s.components || '',
+                isPrepared: !!s.isPrepared,
+                description: s.description || '',
+              })),
+            },
             abilities: {
               create: char.abilities.map(a => ({
                 name: a.name,
@@ -82,7 +95,7 @@ export async function GET() {
         });
       }
       const newChars = await prisma.character.findMany({
-        include: { spellSlots: true, abilities: true, conditions: true, items: true },
+        include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
       });
       return Response.json(newChars);
     }
@@ -138,11 +151,14 @@ export async function POST(request: Request) {
         abilities: {
           create: body.abilities || [],
         },
+        spells: {
+          create: body.spells || [],
+        },
         items: {
           create: body.items || [],
         },
       },
-      include: { spellSlots: true, abilities: true, conditions: true, items: true },
+      include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
     });
 
     return Response.json(newChar, { status: 201 });
