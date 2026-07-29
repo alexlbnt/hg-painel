@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
-import { X, Sword, Heart, Shield, Award, AlertTriangle, CheckCircle2, Zap, Crown } from 'lucide-react-native';
+import { X, Sword, Heart, Shield, CheckCircle2, Crown } from 'lucide-react-native';
 
 interface InterventionModalProps {
   visible: boolean;

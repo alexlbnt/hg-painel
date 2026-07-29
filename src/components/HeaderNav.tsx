@@ -1,12 +1,10 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Modal, TextInput } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { Shield, Crown, Sparkles, Home, Scroll, Sword, X } from 'lucide-react-native';
+import { Shield, Crown, Home, Sword, X } from 'lucide-react-native';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
-import { Modal, TextInput } from 'react-native';
 
 export default function HeaderNav() {
   const router = useRouter();

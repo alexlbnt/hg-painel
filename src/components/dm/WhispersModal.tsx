@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
-import { X, Sword, Heart, Shield, CheckCircle2, Skull, Sparkles, Users } from 'lucide-react-native';
+import { X, Sword, Heart, Shield, Skull, Sparkles, Users } from 'lucide-react-native';
 
 interface WhispersModalProps {
   visible: boolean;

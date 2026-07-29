@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, Alert } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
-import { Sword, Shield, Skull, Heart, Award, RefreshCw, Plus, Trash2, Copy, Play, SkipForward, SkipBack, RotateCcw, Zap, Users, Dice5 } from 'lucide-react-native';
+import { Sword, Plus, Trash2, Copy, SkipForward, SkipBack, RotateCcw, Users } from 'lucide-react-native';
 
 export interface Combatant {
   id: string;
@@ -25,7 +25,7 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
     if (Platform.OS === 'web') {
       const saved = localStorage.getItem('hg_dm_combatants');
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try { return JSON.parse(saved); } catch {}
       }
     }
     return [];
@@ -69,6 +69,7 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
   // Manter HP de jogadores sincronizado com as fichas reais
   useEffect(() => {
     if (!characters || characters.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCombatants(prev => {
       let changed = false;
       const updated = prev.map(comb => {
@@ -106,9 +107,10 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
   // Garantir um activeTurnId se a lista não estiver vazia e activeTurnId for nulo
   useEffect(() => {
     if (sortedCombatants.length > 0 && (!activeTurnId || currentTurnIndex === -1)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTurnId(sortedCombatants[0].id);
     }
-  }, [sortedCombatants.length, activeTurnId, currentTurnIndex]);
+  }, [sortedCombatants, activeTurnId, currentTurnIndex]);
 
   const handleNextTurn = () => {
     if (sortedCombatants.length === 0) return;

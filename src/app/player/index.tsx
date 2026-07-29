@@ -306,7 +306,7 @@ export default function PlayerModule() {
     loadCharacters(true);
   };
 
-  const useAbility = async (abId: string, currentUses: number) => {
+  const consumeAbility = async (abId: string, currentUses: number) => {
     if (!selectedChar || currentUses <= 0) return;
     const updatedAbilities = selectedChar.abilities.map(a => a.id === abId ? { ...a, currentUses: currentUses - 1 } : a);
     await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
@@ -328,6 +328,7 @@ export default function PlayerModule() {
   const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string }) => {
     if (!selectedChar) return;
     const itemObj = {
+      // eslint-disable-next-line react-hooks/purity
       id: `item-${Date.now()}`,
       ...newItem,
     };
@@ -368,6 +369,7 @@ export default function PlayerModule() {
     const levelNum = parseInt(newSpellLevel, 10) || 1;
     const totalNum = parseInt(newSpellTotal, 10) || 1;
     const newSlot = {
+      // eslint-disable-next-line react-hooks/purity
       id: `slot-${Date.now()}`,
       level: levelNum,
       total: totalNum,
@@ -448,6 +450,7 @@ export default function PlayerModule() {
   const addSpellItem = (charId: string, level: number) => {
     if (!newSpellName.trim() || !selectedChar) return;
     const newSp: SpellItemData = {
+      // eslint-disable-next-line react-hooks/purity
       id: `sp-${Date.now()}`,
       name: newSpellName.trim(),
       level: level,
@@ -469,6 +472,7 @@ export default function PlayerModule() {
     if (!selectedChar) return;
     if (srdModalType === 'spell') {
       const newSp: SpellItemData = {
+        // eslint-disable-next-line react-hooks/purity
         id: `sp-${Date.now()}`,
         name: data.name,
         level: data.level || (addingSpellForLevel || 0),
@@ -490,6 +494,7 @@ export default function PlayerModule() {
   const addAbilityFromSrd = async (charId: string, data: any) => {
     if (!selectedChar) return;
     const newAb = {
+      // eslint-disable-next-line react-hooks/purity
       id: `ab-${Date.now()}`,
       name: data.name,
       description: data.description,
@@ -552,6 +557,7 @@ export default function PlayerModule() {
   const addAbility = async () => {
     if (!selectedChar || !newAbName.trim()) return;
     const newAb = {
+      // eslint-disable-next-line react-hooks/purity
       id: `ab-${Date.now()}`,
       name: newAbName.trim(),
       description: newAbDesc.trim(),
@@ -1298,7 +1304,7 @@ export default function PlayerModule() {
                             <TouchableOpacity
                               style={[styles.useBtn, ab.currentUses <= 0 && styles.useBtnDisabled, isMobile && { width: '100%' }]}
                               disabled={ab.currentUses <= 0}
-                              onPress={() => useAbility(ab.id, ab.currentUses)}
+                              onPress={() => consumeAbility(ab.id, ab.currentUses)}
                             >
                               <Text style={styles.useBtnText}>{ab.currentUses > 0 ? 'Invocar Poder' : 'Esgotado'}</Text>
                             </TouchableOpacity>

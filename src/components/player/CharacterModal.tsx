@@ -41,6 +41,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
 
   useEffect(() => {
     if (initialData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(initialData.name);
       setPlayerName(initialData.playerName);
       setRace(initialData.race);

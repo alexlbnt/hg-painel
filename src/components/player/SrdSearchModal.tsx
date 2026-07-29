@@ -1,6 +1,6 @@
-import { X, Search, Loader2, BookOpen, PlusCircle } from 'lucide-react-native';
+import { X, Search, BookOpen, PlusCircle } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, FlatList, ActivityIndicator, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, FlatList, ActivityIndicator, Platform } from 'react-native';
 
 interface SrdSearchResult {
   index: string;

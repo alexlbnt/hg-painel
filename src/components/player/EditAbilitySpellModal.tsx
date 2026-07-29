@@ -28,6 +28,7 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
 
   useEffect(() => {
     if (initialData && visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(initialData.name || '');
       setDescription(initialData.description || '');
 
