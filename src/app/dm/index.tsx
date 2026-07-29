@@ -376,7 +376,7 @@ export default function DmModule() {
 
 const styles = StyleSheet.create({
   container: {
-    maxWidth: 1200,
+    maxWidth: 1600,
     marginHorizontal: 'auto',
     width: '100%',
     padding: 20,
@@ -560,6 +560,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: 300,
     minWidth: 280,
+    maxWidth: 380,
     backgroundColor: '#1A1714',
     borderRadius: 8,
     borderWidth: 1,
