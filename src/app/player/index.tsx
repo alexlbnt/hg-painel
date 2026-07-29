@@ -137,16 +137,20 @@ export default function PlayerModule() {
     try {
       if (editingChar) {
         await ApiService.updateCharacter(editingChar.id, data);
+        Alert.alert('Sucesso', 'Ficha atualizada!');
       } else {
         const newChar = await ApiService.createCharacter({
           ...data,
           username: user?.username || ''
         });
         setSelectedId(newChar.id);
+        Alert.alert('Sucesso', 'Ficha criada!');
       }
+      setModalVisible(false);
       loadCharacters();
     } catch (e) {
       console.error(e);
+      Alert.alert('Erro', 'Falha ao salvar ficha.');
     }
   };
 
