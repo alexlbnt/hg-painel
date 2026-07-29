@@ -1,4 +1,4 @@
-import { CharacterData, CHARACTER_THEME_COLORS } from '@/lib/mockData';
+import { CharacterData } from '@/lib/mockData';
 import { Save, Sword, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -198,38 +198,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
               </View>
             </View>
 
-            {/* Personalização & Cor da Ficha */}
-            <Text style={styles.sectionTitle}>🎨 PERSONALIZAÇÃO & COR DA FICHA</Text>
-            <Text style={{ color: '#80776C', fontSize: 12, marginBottom: 10 }}>
-              Escolha a cor de destaque exclusiva para a sua ficha de personagem. Esta cor afetará bordas, ícones e destaques apenas na sua exibição, mantendo o restante do painel no padrão da taverna.
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-              {CHARACTER_THEME_COLORS.map(c => {
-                const isSelected = themeColor === c.hex;
-                return (
-                  <TouchableOpacity
-                    key={c.hex}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      borderRadius: 6,
-                      backgroundColor: isSelected ? c.bg : 'rgba(20, 18, 16, 0.6)',
-                      borderWidth: 2,
-                      borderColor: isSelected ? c.hex : '#3D342C',
-                    }}
-                    onPress={() => setThemeColor(c.hex)}
-                  >
-                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: c.hex }} />
-                    <Text style={{ color: isSelected ? '#E2D8C3' : '#80776C', fontSize: 13, fontWeight: isSelected ? '700' : '500' }}>
-                      {c.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+
 
             {/* Estatísticas de Combate */}
             <Text style={styles.sectionTitle}>ESTATÍSTICAS VITAIS DE COMBATE</Text>
