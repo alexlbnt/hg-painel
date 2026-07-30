@@ -873,14 +873,8 @@ export default function PlayerModule() {
                   >
                     {attr.name}
                   </Text>
-                  <Text style={[styles.attrMod, isMobile && { fontSize: 24, marginBottom: 2 }]}>{formatMod(attr.score)}</Text>
+                  <Text style={[styles.attrMod, isMobile && { fontSize: 24, marginBottom: 2 }]}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
                   <Text style={[styles.attrScore, isMobile && { fontSize: 11, marginBottom: 6 }]}>Score: {attr.score}</Text>
-                  <View style={[styles.saveRow, isMobile && { paddingTop: 6, gap: 4 }]}>
-                    <View style={[styles.saveDot, attr.prof && [styles.saveDotProf, { backgroundColor: themeColor }], isMobile && { width: 6, height: 6 }]} />
-                    <Text style={[styles.saveText, isMobile && { fontSize: 10 }]}>
-                      Bônus: <Text style={{ color: themeColor, fontWeight: '700' }}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
-                    </Text>
-                  </View>
                 </View>
               );
             })}
@@ -936,10 +930,8 @@ export default function PlayerModule() {
               const availableLevelsSet = new Set<number>();
               charSpells.forEach(s => availableLevelsSet.add(s.level));
               selectedChar.spellSlots.forEach(s => availableLevelsSet.add(s.level));
-              if (availableLevelsSet.size === 0) {
-                availableLevelsSet.add(0);
-                availableLevelsSet.add(1);
-              }
+              availableLevelsSet.add(0);
+              availableLevelsSet.add(1);
               const sortedLevels = Array.from(availableLevelsSet).sort((a, b) => a - b);
 
               return (
