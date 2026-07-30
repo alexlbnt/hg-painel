@@ -984,7 +984,7 @@ export default function PlayerModule() {
                               </View>
                               <View style={{ flex: 1 }}>
                                 <Text style={[styles.spellAccordionTitle, isMobile && { fontSize: 13 }]} numberOfLines={1}>
-                                  {levelNum === 0 ? (isMobile ? '✨ TRUQUES' : '✨ TRUQUES (CANTRIPS - NÍVEL 0)') : (isMobile ? `📜 MAGIAS ${levelNum}º NÍVEL` : `📜 MAGIAS DE ${levelNum}º NÍVEL`)}
+                                  {levelNum === 0 ? (isMobile ? '✨ TRUQUES' : '✨ TRUQUES') : (isMobile ? `📜 ${levelNum}º NÍVEL` : `📜 ${levelNum}º NÍVEL`)}
                                 </Text>
                                 <Text style={styles.spellAccordionSub}>
                                   {spellsInThisLevel.length} {isMobile ? 'cadastrada(s)' : (spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas')}
@@ -1207,7 +1207,7 @@ export default function PlayerModule() {
 
                     {showManageSlots && (
                       <View style={[styles.addItemBox, { marginTop: 12 }]}>
-                        <Text style={styles.addItemHeading}>➕ CADASTRAR / AJUSTAR ESPAÇOS DE MAGIA</Text>
+                        <Text style={styles.addItemHeading}>➕ CADASTRAR ESPAÇOS DE MAGIA</Text>
                         <View style={styles.addItemForm}>
                           <View style={styles.addInputRow}>
                             <TextInput
@@ -1235,7 +1235,7 @@ export default function PlayerModule() {
 
                         {selectedChar.spellSlots.length > 0 && (
                           <View style={{ marginTop: 16 }}>
-                            <Text style={[styles.addItemHeading, { fontSize: 13, marginBottom: 8 }]}>Espaços Atualmente Cadastrados:</Text>
+                            <Text style={[styles.addItemHeading, { fontSize: 13, marginBottom: 8 }]}>Espaços Cadastrados:</Text>
                             <View style={{ gap: 8 }}>
                               {selectedChar.spellSlots.map(slot => (
                                 <View key={`manage-slot-${slot.id}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(26, 22, 19, 0.6)', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#3D342C' }}>
