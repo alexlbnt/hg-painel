@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Alert, Modal } from 'react-native';
+import CharacterModal from '@/components/player/CharacterModal';
+import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal';
+import { SrdSearchModal } from '@/components/player/SrdSearchModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { useResponsive } from '@/hooks/useResponsive';
+import { CharacterData, SpellItemData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
-import { CharacterData, SpellItemData, INITIAL_SPELLS } from '@/lib/mockData';
-import CharacterModal from '@/components/player/CharacterModal';
-import { SrdSearchModal } from '@/components/player/SrdSearchModal';
-import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal';
-import { Shield, Plus, Edit, Trash2, Heart, Zap, Moon, Sun, Award, Skull, CheckCircle, Circle, Flame, Sparkles, Scroll, Sword, AlertTriangle, Package, Coins, ChevronDown, ChevronUp, Eye, EyeOff, BookOpen, Clock, Crosshair, HelpCircle, Download, Upload, Settings, Droplet, User, Star, Copy, RefreshCw, LogOut, ChevronRight, Target, Beaker } from 'lucide-react-native';
-import { useResponsive } from '@/hooks/useResponsive';
-import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import { AlertTriangle, Award, BookOpen, CheckCircle, ChevronDown, ChevronUp, Circle, Clock, Crosshair, Download, Edit, Eye, EyeOff, Heart, Moon, Package, Plus, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const SKILLS_LIST = [
   { name: 'Acrobacia', attr: 'dex', label: 'DES' },
@@ -921,7 +921,7 @@ export default function PlayerModule() {
             >
               <Package color={activeTab === 'inventory' ? themeColor : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'inventory' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Mochila & Armamento
+                Mochila
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -1437,9 +1437,9 @@ export default function PlayerModule() {
                   <View style={styles.overloadBanner}>
                     <AlertTriangle color="#FF4545" size={24} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.overloadBannerTitle}>⚠️ SOBRECARGA ATIVA ({totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg max)</Text>
+                      <Text style={styles.overloadBannerTitle}>⚠️ SOBRECARGA ({totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg max)</Text>
                       <Text style={styles.overloadBannerDesc}>
-                        O aventureiro está carregando excesso de carga! O deslocamento é reduzido em 3m e o Escudo do Mestre foi notificado em tempo real.
+                        O aventureiro está carregando excesso de carga! O deslocamento é reduzido em 3m.
                       </Text>
                     </View>
                   </View>
@@ -1448,7 +1448,7 @@ export default function PlayerModule() {
                 {/* 2. Barra de Peso / Capacidade de Carga */}
                 <View style={styles.weightSection}>
                   <View style={styles.weightTopRow}>
-                    <Text style={styles.weightTitle}>⚖️ CAPACIDADE DE CARGA DO AVENTUREIRO (FOR x 7.5)</Text>
+                    <Text style={styles.weightTitle}>⚖️ CAPACIDADE</Text>
                     <Text style={[styles.weightVal, isOverloaded && { color: '#FF4545', fontWeight: '700' }]}>
                       {totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg
                     </Text>
@@ -1468,7 +1468,7 @@ export default function PlayerModule() {
 
                 {/* 3. Tesouro da Guilda / Moedas */}
                 <View style={styles.coinsSection}>
-                  <Text style={styles.sectionHeading}>💰 TESOURO DA GUILDA (PORTA-MOEDAS)</Text>
+                  <Text style={styles.sectionHeading}>💰 MOEDAS</Text>
                   <View style={styles.coinsGrid}>
                     {/* Ouro */}
                     <View style={[styles.coinCard, { borderColor: '#E6C280' }]}>
@@ -1534,7 +1534,7 @@ export default function PlayerModule() {
 
                 {/* 4. Lista de Itens & Armas */}
                 <View style={styles.itemsListSection}>
-                  <Text style={styles.sectionHeading}>⚔️ ARMAMENTO & ITENS DA MOCHILA</Text>
+                  <Text style={styles.sectionHeading}>⚔️ ITENS</Text>
                   {(selectedChar.items || []).length === 0 ? (
                     <View style={styles.emptyItems}>
                       <Text style={styles.emptyItemsText}>A mochila do herói está vazia.</Text>
@@ -1570,12 +1570,12 @@ export default function PlayerModule() {
 
                 {/* 5. Adicionar Novo Item */}
                 <View style={styles.addItemBox}>
-                  <Text style={styles.addItemHeading}>➕ ADICIONAR NOVO ITEM / ARMA</Text>
+                  <Text style={styles.addItemHeading}>➕ ADICIONAR</Text>
                   <View style={styles.addItemForm}>
                     <View style={styles.addInputRow}>
                       <TextInput
                         style={[styles.addInput, { flex: 2 }]}
-                        placeholder="Nome do Item (ex: Espada Longa, Poção...)"
+                        placeholder="Nome do Item"
                         placeholderTextColor="#80776C"
                         value={newItemName}
                         onChangeText={setNewItemName}
@@ -1601,7 +1601,7 @@ export default function PlayerModule() {
                     <View style={styles.addInputRow}>
                       <TextInput
                         style={[styles.addInput, { flex: 2 }]}
-                        placeholder="Descrição ou Notas do item..."
+                        placeholder="Descrição do item..."
                         placeholderTextColor="#80776C"
                         value={newItemDesc}
                         onChangeText={setNewItemDesc}
@@ -1620,7 +1620,7 @@ export default function PlayerModule() {
                     {newItemIsWeapon && (
                       <TextInput
                         style={styles.addInput}
-                        placeholder="Dano da Arma (ex: 1d8 cortante, 2d6+4 perfurante...)"
+                        placeholder="Dano da Arma (ex: 2d6+4 cortante)"
                         placeholderTextColor="#80776C"
                         value={newItemDamage}
                         onChangeText={setNewItemDamage}
