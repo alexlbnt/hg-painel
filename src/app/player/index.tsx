@@ -1114,7 +1114,7 @@ export default function PlayerModule() {
                               {/* Botão / Formulário para Adicionar Magia Neste Nível */}
                               {addingSpellForLevel === levelNum ? (
                                 <View style={styles.addSpellInlineForm}>
-                                  <Text style={styles.addSpellFormHeading}>➕ Cadastrar Nova Magia de {levelNum === 0 ? 'Truque (Nível 0)' : `${levelNum}º Nível`}</Text>
+                                  <Text style={styles.addSpellFormHeading}>➕ Cadastrar Magia de {levelNum === 0 ? 'Truque (Nível 0)' : `${levelNum}º Nível`}</Text>
                                   <TextInput
                                     style={styles.addInput}
                                     placeholder="Nome da Magia (ex: Bola de Fogo)"
@@ -1159,7 +1159,7 @@ export default function PlayerModule() {
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.addItemSubmitBtn} onPress={() => addSpellItem(selectedChar.id, levelNum)}>
                                       <Plus color="#110F0D" size={16} />
-                                      <Text style={styles.addItemSubmitText}>Salvar Magia</Text>
+                                      <Text style={styles.addItemSubmitText}>Salvar</Text>
                                     </TouchableOpacity>
                                   </View>
                                 </View>
@@ -1190,7 +1190,7 @@ export default function PlayerModule() {
                                   >
                                     <BookOpen color="#4E9C8E" size={16} />
                                     <Text style={[styles.openAddSpellBtnText, { color: '#4E9C8E' }]}>
-                                      Buscar SRD (Oficial)
+                                      Buscar
                                     </Text>
                                   </TouchableOpacity>
                                 </View>
@@ -1323,7 +1323,7 @@ export default function PlayerModule() {
                 {/* Cadastrar Nova Habilidade */}
                 <View style={[styles.addItemBox, { marginTop: 24 }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={styles.addItemHeading}>➕ CADASTRAR NOVA HABILIDADE / PODER</Text>
+                    <Text style={styles.addItemHeading}>➕ CADASTRAR HABILIDADE</Text>
                     <TouchableOpacity
                       style={[styles.openAddSpellBtn, { borderColor: '#4E9C8E', paddingVertical: 6 }]}
                       onPress={() => {
@@ -1333,7 +1333,7 @@ export default function PlayerModule() {
                     >
                       <BookOpen color="#4E9C8E" size={14} />
                       <Text style={[styles.openAddSpellBtnText, { color: '#4E9C8E', fontSize: 12 }]}>
-                        Buscar no SRD
+                        Buscar
                       </Text>
                     </TouchableOpacity>
                   </View>
