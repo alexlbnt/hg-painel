@@ -131,15 +131,18 @@ model Condition {
 }
 
 model Item {
-  id          String    @id @default(uuid())
-  name        String
-  description String    @default("")
-  weight      Float     @default(1.0)
-  quantity    Int       @default(1)
-  isWeapon    Boolean   @default(false)
-  damage      String    @default("")
-  characterId String
-  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  id              String    @id @default(uuid())
+  name            String
+  description     String    @default("")
+  weight          Float     @default(1.0)
+  quantity        Int       @default(1)
+  isWeapon        Boolean   @default(false)
+  damage          String    @default("")
+  isArmor         Boolean   @default(false)
+  isEquipped      Boolean   @default(false)
+  armorClassBonus Int       @default(0)
+  characterId     String
+  character       Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
 
 model Spell {

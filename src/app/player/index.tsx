@@ -58,6 +58,8 @@ export default function PlayerModule() {
   const [newItemWeight, setNewItemWeight] = useState('');
   const [newItemQty, setNewItemQty] = useState('1');
   const [newItemIsWeapon, setNewItemIsWeapon] = useState(false);
+  const [newItemIsArmor, setNewItemIsArmor] = useState(false);
+  const [newItemArmorBonus, setNewItemArmorBonus] = useState('');
   const [newItemDamage, setNewItemDamage] = useState('');
   const [newSpellLevel, setNewSpellLevel] = useState('1');
   const [newSpellTotal, setNewSpellTotal] = useState('2');
@@ -330,7 +332,14 @@ export default function PlayerModule() {
     loadCharacters(true);
   };
 
-  const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string }) => {
+  const toggleEquip = async (itemId: string, currentState: boolean) => {
+    if (!selectedChar) return;
+    const updatedItems = (selectedChar.items || []).map(i => i.id === itemId ? { ...i, isEquipped: !currentState } : i);
+    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
+    loadCharacters(true);
+  };
+
+  const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string; isArmor?: boolean; isEquipped?: boolean; armorClassBonus?: number }) => {
     if (!selectedChar) return;
     const itemObj = {
       // eslint-disable-next-line react-hooks/purity
@@ -659,7 +668,9 @@ export default function PlayerModule() {
               <View style={styles.headerStatDivider} />
               <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
                 <Text style={styles.headerStatLabel}>CA</Text>
-                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#8C6C90' }]}>{selectedChar.armorClass}</Text>
+                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#8C6C90' }]}>
+                  {Number(selectedChar.armorClass || 10) + (selectedChar.items || []).reduce((acc, i) => acc + (i.isArmor && i.isEquipped ? Number(i.armorClassBonus || 0) : 0), 0)}
+                </Text>
               </View>
               <View style={styles.headerStatDivider} />
               <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
@@ -1537,17 +1548,34 @@ export default function PlayerModule() {
                         <View key={item.id} style={[styles.itemCard, item.isWeapon && styles.weaponCard]}>
                           <View style={styles.itemHeader}>
                             <View style={styles.itemTitleRow}>
-                              {item.isWeapon ? <Sword color="#E6C280" size={18} /> : <Package color="#BAAFA0" size={18} />}
-                              <Text style={[styles.itemName, item.isWeapon && { color: '#E6C280' }]}>{item.name}</Text>
+                              {item.isWeapon ? <Sword color="#E6C280" size={18} /> : item.isArmor ? <Shield color="#7895C2" size={18} /> : <Package color="#BAAFA0" size={18} />}
+                              <Text style={[styles.itemName, item.isWeapon && { color: '#E6C280' }, item.isArmor && { color: '#7895C2' }]}>{item.name}</Text>
                               {item.isWeapon && (
                                 <View style={styles.weaponBadge}>
                                   <Text style={styles.weaponBadgeText}>Arma • {item.damage || '1d6'}</Text>
                                 </View>
                               )}
+                              {item.isArmor && (
+                                <View style={[styles.weaponBadge, { backgroundColor: '#2C3440', borderColor: '#4A5B75' }]}>
+                                  <Text style={[styles.weaponBadgeText, { color: '#7895C2' }]}>Armadura • +{item.armorClassBonus || 0} CA</Text>
+                                </View>
+                              )}
                             </View>
-                            <TouchableOpacity style={styles.delItemBtn} onPress={() => removeItem(item.id)}>
-                              <Trash2 color="#80776C" size={16} />
-                            </TouchableOpacity>
+                            <View style={{ flexDirection: 'row', gap: 8 }}>
+                              {item.isArmor && (
+                                <TouchableOpacity 
+                                  style={[styles.delItemBtn, { backgroundColor: item.isEquipped ? '#38783C' : '#24201C', paddingHorizontal: 8 }]} 
+                                  onPress={() => toggleEquip(item.id, !!item.isEquipped)}
+                                >
+                                  <Text style={{ fontSize: 10, color: item.isEquipped ? '#FFF' : '#80776C', fontWeight: '700' }}>
+                                    {item.isEquipped ? 'EQUIPADO' : 'EQUIPAR'}
+                                  </Text>
+                                </TouchableOpacity>
+                              )}
+                              <TouchableOpacity style={styles.delItemBtn} onPress={() => removeItem(item.id)}>
+                                <Trash2 color="#80776C" size={16} />
+                              </TouchableOpacity>
+                            </View>
                           </View>
                           {item.description ? <Text style={styles.itemDesc}>{item.description}</Text> : null}
                           <View style={styles.itemFooter}>
@@ -1598,14 +1626,29 @@ export default function PlayerModule() {
                         value={newItemDesc}
                         onChangeText={setNewItemDesc}
                       />
+                    </View>
+
+                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                       <TouchableOpacity
-                        style={[styles.weaponToggleBtn, newItemIsWeapon && styles.weaponToggleBtnActive]}
-                        onPress={() => setNewItemIsWeapon(!newItemIsWeapon)}
+                        style={[styles.weaponToggleBtn, { flex: 1 }, !newItemIsWeapon && !newItemIsArmor && styles.weaponToggleBtnActive]}
+                        onPress={() => { setNewItemIsWeapon(false); setNewItemIsArmor(false); }}
                       >
-                        <Sword color={newItemIsWeapon ? '#110F0D' : '#BAAFA0'} size={16} />
-                        <Text style={[styles.weaponToggleText, newItemIsWeapon && { color: '#110F0D' }]}>
-                          {newItemIsWeapon ? 'É uma Arma ⚔️' : 'Item Normal 📦'}
-                        </Text>
+                        <Package color={!newItemIsWeapon && !newItemIsArmor ? '#110F0D' : '#BAAFA0'} size={14} />
+                        <Text style={[styles.weaponToggleText, { fontSize: 11 }, !newItemIsWeapon && !newItemIsArmor && { color: '#110F0D' }]}>Normal</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.weaponToggleBtn, { flex: 1 }, newItemIsWeapon && styles.weaponToggleBtnActive]}
+                        onPress={() => { setNewItemIsWeapon(true); setNewItemIsArmor(false); }}
+                      >
+                        <Sword color={newItemIsWeapon ? '#110F0D' : '#BAAFA0'} size={14} />
+                        <Text style={[styles.weaponToggleText, { fontSize: 11 }, newItemIsWeapon && { color: '#110F0D' }]}>Arma</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.weaponToggleBtn, { flex: 1 }, newItemIsArmor && [styles.weaponToggleBtnActive, { backgroundColor: '#7895C2', borderColor: '#4A5B75' }]]}
+                        onPress={() => { setNewItemIsArmor(true); setNewItemIsWeapon(false); }}
+                      >
+                        <Shield color={newItemIsArmor ? '#110F0D' : '#BAAFA0'} size={14} />
+                        <Text style={[styles.weaponToggleText, { fontSize: 11 }, newItemIsArmor && { color: '#110F0D' }]}>Armadura</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -1616,6 +1659,16 @@ export default function PlayerModule() {
                         placeholderTextColor="#80776C"
                         value={newItemDamage}
                         onChangeText={setNewItemDamage}
+                      />
+                    )}
+                    {newItemIsArmor && (
+                      <TextInput
+                        style={styles.addInput}
+                        placeholder="Bônus de CA (ex: 2, 14, 18)"
+                        placeholderTextColor="#80776C"
+                        value={newItemArmorBonus}
+                        onChangeText={(text) => setNewItemArmorBonus(text.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
                       />
                     )}
 
@@ -1634,13 +1687,18 @@ export default function PlayerModule() {
                           quantity: Number(newItemQty) || 1,
                           isWeapon: newItemIsWeapon,
                           damage: newItemIsWeapon ? (newItemDamage.trim() || '1d6 cortante') : '',
+                          isArmor: newItemIsArmor,
+                          isEquipped: false,
+                          armorClassBonus: newItemIsArmor ? (Number(newItemArmorBonus) || 0) : 0,
                         });
                         setNewItemName('');
                         setNewItemDesc('');
                         setNewItemWeight('');
                         setNewItemQty('1');
                         setNewItemIsWeapon(false);
+                        setNewItemIsArmor(false);
                         setNewItemDamage('');
+                        setNewItemArmorBonus('');
                       }}
                     >
                       <Plus color="#110F0D" size={18} />

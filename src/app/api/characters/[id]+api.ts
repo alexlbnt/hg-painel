@@ -57,6 +57,9 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
           quantity: Number(i.quantity) || 1,
           isWeapon: !!i.isWeapon,
           damage: i.damage || '',
+          isArmor: !!i.isArmor,
+          isEquipped: !!i.isEquipped,
+          armorClassBonus: Number(i.armorClassBonus) || 0,
           characterId: id,
         })),
       });

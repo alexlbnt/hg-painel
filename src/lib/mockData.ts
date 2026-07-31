@@ -40,6 +40,9 @@ export interface ItemData {
   quantity: number;
   isWeapon: boolean;
   damage?: string;
+  isArmor?: boolean;
+  isEquipped?: boolean;
+  armorClassBonus?: number;
 }
 
 export interface CharacterData {
