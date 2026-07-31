@@ -1664,7 +1664,7 @@ export default function PlayerModule() {
                     {newItemIsArmor && (
                       <TextInput
                         style={styles.addInput}
-                        placeholder="Bônus de CA (ex: 2, 14, 18)"
+                        placeholder="Bônus de CA (ex: 2, 4)"
                         placeholderTextColor="#80776C"
                         value={newItemArmorBonus}
                         onChangeText={(text) => setNewItemArmorBonus(text.replace(/[^0-9]/g, ''))}
