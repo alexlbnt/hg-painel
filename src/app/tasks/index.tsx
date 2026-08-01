@@ -14,8 +14,10 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import Markdown from 'react-native-markdown-display';
 
 const POST_IT_COLORS: Record<TaskCategory, string> = {
   LORE: '#Fdfd96',
@@ -25,12 +27,22 @@ const POST_IT_COLORS: Record<TaskCategory, string> = {
   ESPECIAL: '#E1c699',
 };
 
+const TAPE_COLORS = [
+  'rgba(255, 100, 100, 0.4)',
+  'rgba(100, 255, 100, 0.4)',
+  'rgba(100, 150, 255, 0.4)',
+  'rgba(255, 200, 100, 0.4)',
+  'rgba(200, 100, 255, 0.4)',
+];
+
 export default function TasksScreen() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [resolutionModalVisible, setResolutionModalVisible] = useState(false);
+  const [viewResolutionVisible, setViewResolutionVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskData | null>(null);
 
   // Form State
@@ -38,8 +50,11 @@ export default function TasksScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<TaskCategory>('LORE');
   const [reward, setReward] = useState('');
+  const [resolution, setResolution] = useState('');
 
   const isDM = user?.role === 'DM';
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const loadTasks = async () => {
     setLoading(true);
@@ -54,7 +69,9 @@ export default function TasksScreen() {
   };
 
   useEffect(() => {
-    loadTasks();
+    setTimeout(() => {
+      loadTasks();
+    }, 0);
   }, []);
 
   const openNewTaskModal = () => {
@@ -63,6 +80,7 @@ export default function TasksScreen() {
     setDescription('');
     setCategory('LORE');
     setReward('');
+    setResolution('');
     setModalVisible(true);
   };
 
@@ -72,7 +90,13 @@ export default function TasksScreen() {
     setDescription(t.description);
     setCategory(t.category);
     setReward(t.reward);
+    setResolution(t.resolution || '');
     setModalVisible(true);
+  };
+
+  const openViewResolution = (t: TaskData) => {
+    setEditingTask(t);
+    setViewResolutionVisible(true);
   };
 
   const handleSaveTask = async () => {
@@ -81,15 +105,30 @@ export default function TasksScreen() {
     setModalVisible(false);
     try {
       if (editingTask) {
-        await ApiService.updateTask(editingTask.id, { title, description, category, reward });
+        await ApiService.updateTask(editingTask.id, { title, description, category, reward, resolution });
       } else {
-        await ApiService.createTask({ title, description, category, reward, status: 'PARADO' });
+        await ApiService.createTask({ title, description, category, reward, resolution, status: 'PARADO' });
       }
       await loadTasks();
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveResolution = async () => {
+    if (!editingTask) return;
+    setResolutionModalVisible(false);
+    setLoading(true);
+    try {
+      await ApiService.updateTask(editingTask.id, { status: 'FINALIZADO', resolution });
+      await loadTasks();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+      setEditingTask(null);
     }
   };
 
@@ -102,6 +141,14 @@ export default function TasksScreen() {
   };
 
   const handleUpdateStatus = async (task: TaskData, newStatus: TaskStatus) => {
+    // Interceptar FINALIZADO para pedir resolução
+    if (newStatus === 'FINALIZADO' && task.status === 'ANDAMENTO') {
+      setEditingTask(task);
+      setResolution(task.resolution || '');
+      setResolutionModalVisible(true);
+      return;
+    }
+
     setLoading(true);
     try {
       const updates: Partial<TaskData> = { status: newStatus };
@@ -177,7 +224,7 @@ export default function TasksScreen() {
   const renderColumn = (status: TaskStatus, label: string) => {
     const colTasks = tasks.filter(t => t.status === status);
     return (
-      <View style={styles.column}>
+      <View style={[styles.column, isMobile && { flexGrow: 0, flexShrink: 0, width: width - 24, minWidth: width - 24 }]}>
         <View style={styles.columnHeader}>
           <Text style={styles.columnTitle}>{label}</Text>
           <View style={styles.badge}>
@@ -185,40 +232,68 @@ export default function TasksScreen() {
           </View>
         </View>
         <ScrollView style={styles.columnScroll} contentContainerStyle={styles.postitContainer}>
-          {colTasks.map(task => (
-            <View key={task.id} style={[styles.postIt, { backgroundColor: POST_IT_COLORS[task.category] || '#Fdfd96' }]}>
-              <View style={styles.pin} />
-              <View style={styles.postItHeader}>
-                <Text style={styles.postItCategory}>{task.category}</Text>
-                <Text style={styles.postItDate}>{new Date(task.createdAt).toLocaleDateString()}</Text>
-              </View>
-              <Text style={styles.postItTitle}>{task.title}</Text>
-              <Text style={styles.postItDesc}>{task.description}</Text>
-              
-              {!!task.reward && (
-                <View style={styles.rewardBox}>
-                  <Text style={styles.rewardLabel}>Recompensa:</Text>
-                  <Text style={styles.rewardText}>{task.reward}</Text>
-                </View>
-              )}
+          {colTasks.map(task => {
+            const charCode = task.id.charCodeAt(task.id.length - 1);
+            const tapeColor = TAPE_COLORS[charCode % TAPE_COLORS.length];
+            const rotation = (task.id.charCodeAt(0) % 5) - 2;
 
-              {task.assignedTo && (
-                <View style={styles.assignedBox}>
-                  <Text style={styles.assignedText}>Assumido por: <Text style={{ fontWeight: 'bold' }}>{task.assignedTo}</Text></Text>
+            return (
+              <View 
+                key={task.id} 
+                style={[
+                  styles.postIt, 
+                  { backgroundColor: POST_IT_COLORS[task.category] || '#Fdfd96', transform: [{ rotate: `${rotation}deg` }] },
+                  // @ts-ignore
+                  Platform.OS === 'web' && { transition: 'transform 0.2s', cursor: 'pointer' }
+                ]}
+                // @ts-ignore
+                onMouseEnter={(e: any) => { if(Platform.OS==='web') e.currentTarget.style.transform = `scale(1.03) rotate(0deg)`; }}
+                onMouseLeave={(e: any) => { if(Platform.OS==='web') e.currentTarget.style.transform = `scale(1) rotate(${rotation}deg)`; }}
+              >
+                <View style={[styles.tape, { backgroundColor: tapeColor }]} />
+                <View style={styles.postItHeader}>
+                  <Text style={styles.postItCategory}>{task.category}</Text>
+                  <Text style={styles.postItDate}>{new Date(task.createdAt).toLocaleDateString()}</Text>
                 </View>
-              )}
-              
-              {renderActionButtons(task)}
-            </View>
-          ))}
+                <Text style={styles.postItTitle}>{task.title}</Text>
+                
+                <View style={styles.postItDesc}>
+                  <Markdown style={markdownStyles}>
+                    {task.description}
+                  </Markdown>
+                </View>
+
+                {!!task.resolution && (task.status === 'FINALIZADO' || task.status === 'APROVADO') && (
+                  <TouchableOpacity style={styles.viewResolutionBtn} onPress={() => openViewResolution(task)}>
+                    <Text style={styles.viewResolutionText}>📖 Ler Relatório</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {!!task.reward && (
+                  <View style={styles.rewardBox}>
+                    <Text style={styles.rewardLabel}>Recompensa:</Text>
+                    <Text style={styles.rewardText}>{task.reward}</Text>
+                  </View>
+                )}
+
+                {task.assignedTo && (
+                  <View style={styles.assignedBox}>
+                    <Text style={styles.assignedText}>Assumido por: <Text style={{ fontWeight: 'bold' }}>{task.assignedTo}</Text></Text>
+                  </View>
+                )}
+                
+                {renderActionButtons(task)}
+              </View>
+            );
+          })}
         </ScrollView>
       </View>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, isMobile && { padding: 12 }]}>
+      <View style={[styles.header, isMobile && { flexDirection: 'column', gap: 12 }]}>
         <View>
           <Text style={styles.pageTitle}>Tarefas da Mesa</Text>
           <Text style={styles.pageSubtitle}>Quadro de missões e contribuições da Taverna</Text>
@@ -234,7 +309,14 @@ export default function TasksScreen() {
       {loading && tasks.length === 0 ? (
         <ActivityIndicator size="large" color={Colors.fantasy.gold} style={{ marginTop: 50 }} />
       ) : (
-        <ScrollView horizontal style={styles.boardScroll} contentContainerStyle={styles.board}>
+        <ScrollView 
+          horizontal 
+          style={styles.boardScroll} 
+          contentContainerStyle={styles.board}
+          snapToInterval={isMobile ? (width - 24) + 16 : 0} // column width + gap
+          decelerationRate="fast"
+          showsHorizontalScrollIndicator={!isMobile}
+        >
           {renderColumn('PARADO', 'PARADO (ABERTAS)')}
           {renderColumn('ANDAMENTO', 'EM ANDAMENTO')}
           {renderColumn('FINALIZADO', 'FINALIZADO')}
@@ -242,37 +324,45 @@ export default function TasksScreen() {
         </ScrollView>
       )}
 
-      {/* Modal */}
+      {/* Modal Nova/Editar Tarefa */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>{editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}</Text>
+            <ScrollView style={{ maxHeight: 600 }}>
+              <Text style={styles.label}>Título</Text>
+              <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholderTextColor="#666" placeholder="Ex: Criar arte do Rei" />
+
+              <Text style={styles.label}>Descrição detalhada (Aceita Markdown)</Text>
+              <TextInput style={[styles.input, { height: 100, textAlignVertical: 'top' }]} multiline value={description} onChangeText={setDescription} placeholderTextColor="#666" placeholder="Detalhes do que precisa ser feito..." />
+
+              {editingTask && editingTask.status !== 'PARADO' && (
+                <>
+                  <Text style={styles.label}>Resolução / Relatório (Aceita Markdown)</Text>
+                  <TextInput style={[styles.input, { height: 100, textAlignVertical: 'top' }]} multiline value={resolution} onChangeText={setResolution} placeholderTextColor="#666" placeholder="O que foi feito..." />
+                </>
+              )}
+
+              <Text style={styles.label}>Categoria</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={category}
+                  onValueChange={(itemValue: string) => setCategory(itemValue as TaskCategory)}
+                  style={styles.picker}
+                  dropdownIconColor="#E2D8C3"
+                >
+                  <Picker.Item label="Lore (História)" value="LORE" />
+                  <Picker.Item label="Mecânica (Regras)" value="MECANICA" />
+                  <Picker.Item label="Arte (Desenhos/Mapas)" value="ARTE" />
+                  <Picker.Item label="Dev (Painel/Código)" value="DEV" />
+                  <Picker.Item label="Especial" value="ESPECIAL" />
+                </Picker>
+              </View>
+
+              <Text style={styles.label}>Recompensa (Opcional)</Text>
+              <TextInput style={styles.input} value={reward} onChangeText={setReward} placeholderTextColor="#666" placeholder="Ex: 50 PO e Inspiração" />
+            </ScrollView>
             
-            <Text style={styles.label}>Título</Text>
-            <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholderTextColor="#666" placeholder="Ex: Criar arte do Rei" />
-
-            <Text style={styles.label}>Descrição detalhada</Text>
-            <TextInput style={[styles.input, { height: 100, textAlignVertical: 'top' }]} multiline value={description} onChangeText={setDescription} placeholderTextColor="#666" placeholder="Detalhes do que precisa ser feito..." />
-
-            <Text style={styles.label}>Categoria</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={category}
-                onValueChange={(itemValue: string) => setCategory(itemValue as TaskCategory)}
-                style={styles.picker}
-                dropdownIconColor="#E2D8C3"
-              >
-                <Picker.Item label="Lore (História)" value="LORE" />
-                <Picker.Item label="Mecânica (Regras)" value="MECANICA" />
-                <Picker.Item label="Arte (Desenhos/Mapas)" value="ARTE" />
-                <Picker.Item label="Dev (Painel/Código)" value="DEV" />
-                <Picker.Item label="Especial" value="ESPECIAL" />
-              </Picker>
-            </View>
-
-            <Text style={styles.label}>Recompensa (Opcional)</Text>
-            <TextInput style={styles.input} value={reward} onChangeText={setReward} placeholderTextColor="#666" placeholder="Ex: 50 PO e Inspiração" />
-
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.btnCancel} onPress={() => setModalVisible(false)}>
                 <Text style={styles.btnCancelText}>Cancelar</Text>
@@ -284,15 +374,95 @@ export default function TasksScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Conclusão / Relatório (Diário de Missão) */}
+      <Modal visible={resolutionModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Diário de Missão</Text>
+            <Text style={styles.pageSubtitle}>Descreva como você completou "{editingTask?.title}". Você pode usar links, negrito, etc.</Text>
+            
+            <TextInput 
+              style={[styles.input, { height: 160, textAlignVertical: 'top', marginTop: 16 }]} 
+              multiline 
+              value={resolution} 
+              onChangeText={setResolution} 
+              placeholderTextColor="#666" 
+              placeholder="Descreva a solução, links do drive, PR do github, etc..." 
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.btnCancel} onPress={() => setResolutionModalVisible(false)}>
+                <Text style={styles.btnCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.btnSave} onPress={handleSaveResolution}>
+                <Text style={styles.btnSaveText}>Enviar Relatório</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Leitura de Relatório */}
+      <Modal visible={viewResolutionVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Relatório: {editingTask?.title}</Text>
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 8, marginTop: 12, maxHeight: 400 }}>
+              <ScrollView>
+                <Markdown style={darkMarkdownStyles}>
+                  {editingTask?.resolution || 'Nenhum relatório foi escrito para esta tarefa.'}
+                </Markdown>
+              </ScrollView>
+            </View>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.btnSave} onPress={() => setViewResolutionVisible(false)}>
+                <Text style={styles.btnSaveText}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
+
+const markdownStyles = {
+  body: {
+    color: '#333',
+    fontSize: 13,
+    lineHeight: 18,
+    margin: 0,
+    padding: 0,
+  },
+  paragraph: {
+    marginTop: 0,
+    marginBottom: 8,
+  },
+  link: {
+    color: '#0056b3',
+    textDecorationLine: 'underline',
+  }
+} as any;
+
+const darkMarkdownStyles = {
+  body: {
+    color: '#E2D8C3',
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  link: {
+    color: '#E6C280',
+    textDecorationLine: 'underline',
+  }
+} as any;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#161311', // Fundo de madeira escura
+    backgroundColor: '#161311',
   },
   header: {
     flexDirection: 'row',
@@ -332,9 +502,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 16,
     paddingBottom: 20,
+    minWidth: '100%',
   },
   column: {
-    width: 320,
+    flex: 1,
+    minWidth: 280,
+    height: '100%',
     backgroundColor: 'rgba(36, 32, 28, 0.6)',
     borderRadius: 12,
     borderWidth: 1,
@@ -375,32 +548,30 @@ const styles = StyleSheet.create({
   postitContainer: {
     gap: 16,
     paddingBottom: 20,
+    paddingTop: 10,
   },
   postIt: {
     padding: 16,
+    paddingTop: 20,
     borderRadius: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 2, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
     position: 'relative',
-    transform: [{ rotate: '-1deg' }],
   },
-  pin: {
+  tape: {
     position: 'absolute',
-    top: 6,
+    top: -8,
     alignSelf: 'center',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#BAAFA0',
-    borderWidth: 2,
-    borderColor: '#736B60',
+    width: 60,
+    height: 20,
+    transform: [{ rotate: '-2deg' }],
     zIndex: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
   },
   postItHeader: {
     flexDirection: 'row',
@@ -427,10 +598,21 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'web' ? '"Caveat", "Comic Sans MS", cursive' : undefined,
   },
   postItDesc: {
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 18,
     marginBottom: 12,
+  },
+  viewResolutionBtn: {
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    padding: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  viewResolutionText: {
+    color: '#111',
+    fontWeight: 'bold',
+    fontSize: 11,
   },
   rewardBox: {
     backgroundColor: 'rgba(255,255,255,0.4)',
@@ -531,12 +713,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
   },
   modalContainer: {
     backgroundColor: '#1A1714',
     width: '100%',
-    maxWidth: 500,
+    maxWidth: 600,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#3D342C',

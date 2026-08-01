@@ -10,8 +10,8 @@ export default function HomeScreen() {
   const { isMobile } = useResponsive();
   const [driveUrl] = useState<string>(() => {
     const defaultUrl = 'https://drive.google.com/drive/folders/1_Jz1km6fxK8pgtERQqPrMvi1y5wfQlOJ?usp=sharing';
-    if (Platform.OS === 'web') {
-      return localStorage.getItem('hg_drive_url') || defaultUrl;
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem('hg_drive_url') || defaultUrl;
     }
     return defaultUrl;
   });

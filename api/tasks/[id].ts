@@ -75,6 +75,7 @@ export default async function handler(req: any, res: any) {
           category: body.category,
           status: body.status,
           reward: body.reward,
+          resolution: body.resolution,
           assignedTo: body.assignedTo !== undefined ? body.assignedTo : undefined,
         },
       });

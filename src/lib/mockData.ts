@@ -100,6 +100,7 @@ export interface TaskData {
   category: TaskCategory;
   status: TaskStatus;
   reward: string;
+  resolution?: string;
   assignedTo: string | null;
   createdAt: string;
 }

@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Load from local storage
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
       try {
         const storedUser = localStorage.getItem('@hg_user');
         if (storedUser) {
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (foundUser) {
       const userData = { username: foundUser.username, role: foundUser.role, name: foundUser.name };
       setUser(userData);
-      if (Platform.OS === 'web') {
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem('@hg_user', JSON.stringify(userData));
       }
       return true;
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
       localStorage.removeItem('@hg_user');
     }
   };

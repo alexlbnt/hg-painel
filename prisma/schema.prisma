@@ -181,6 +181,7 @@ model Task {
   category    TaskCategory @default(LORE)
   status      TaskStatus   @default(PARADO)
   reward      String       @default("")
+  resolution  String       @default("")
   assignedTo  String?      
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

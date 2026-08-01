@@ -22,8 +22,8 @@ interface InitiativeTrackerProps {
 
 export default function InitiativeTracker({ characters, onInterveneCharacter }: InitiativeTrackerProps) {
   const [combatants, setCombatants] = useState<Combatant[]>(() => {
-    if (Platform.OS === 'web') {
-      const saved = localStorage.getItem('hg_dm_combatants');
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const saved = window.localStorage.getItem('hg_dm_combatants');
       if (saved) {
         try { return JSON.parse(saved); } catch {}
       }
@@ -32,16 +32,16 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
   });
 
   const [round, setRound] = useState<number>(() => {
-    if (Platform.OS === 'web') {
-      const saved = localStorage.getItem('hg_dm_round');
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const saved = window.localStorage.getItem('hg_dm_round');
       if (saved) return parseInt(saved, 10) || 1;
     }
     return 1;
   });
 
   const [activeTurnId, setActiveTurnId] = useState<string | null>(() => {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem('hg_dm_active_turn_id') || null;
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem('hg_dm_active_turn_id') || null;
     }
     return null;
   });
@@ -55,13 +55,13 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
 
   // Salvar no localStorage sempre que o combate mudar
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      localStorage.setItem('hg_dm_combatants', JSON.stringify(combatants));
-      localStorage.setItem('hg_dm_round', round.toString());
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('hg_dm_combatants', JSON.stringify(combatants));
+      window.localStorage.setItem('hg_dm_round', round.toString());
       if (activeTurnId) {
-        localStorage.setItem('hg_dm_active_turn_id', activeTurnId);
+        window.localStorage.setItem('hg_dm_active_turn_id', activeTurnId);
       } else {
-        localStorage.removeItem('hg_dm_active_turn_id');
+        window.localStorage.removeItem('hg_dm_active_turn_id');
       }
     }
   }, [combatants, round, activeTurnId]);
