@@ -1,13 +1,11 @@
-import { DarkTheme, ThemeProvider } from 'expo-router';
-import { Slot } from 'expo-router';
+import { DarkTheme, ThemeProvider, Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import HeaderNav from '@/components/HeaderNav';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
-
-import { AuthProvider } from '@/contexts/AuthContext';
 
 export default function RootLayout() {
   useEffect(() => {

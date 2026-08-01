@@ -17,18 +17,16 @@ export default function DmModule() {
     if (!user || user.role !== 'DM') {
       router.replace('/');
     }
-  }, [user]);
+  }, [user, router]);
 
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedChar, setSelectedChar] = useState<CharacterData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [whispersModalVisible, setWhispersModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'monitor' | 'initiative'>('monitor');
-  const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<string>('Conectando ao Escudo do Mestre...');
 
   const fetchTableData = async (silent = false) => {
-    if (!silent) setLoading(true);
     try {
       const data = await ApiService.getCharacters();
       setCharacters(data);
@@ -37,19 +35,19 @@ export default function DmModule() {
     } catch (e) {
       console.error('Erro no Escudo do Mestre', e);
       setLastSync('Desconectado do Escudo do Mestre');
-    } finally {
-      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     if (selectedChar) {
       const updated = characters.find(c => c.id === selectedChar.id);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (updated) setSelectedChar(updated);
     }
-  }, [characters]);
+  }, [characters, selectedChar]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTableData();
     const timer = setInterval(() => {
       fetchTableData(true);
@@ -97,20 +95,6 @@ export default function DmModule() {
     }
   };
 
-  const triggerShadowRain = async () => {
-    try {
-      for (const char of characters) {
-        await ApiService.dmIntervene(char.id, { type: 'DAMAGE', value: 10 });
-      }
-      fetchTableData(true);
-      if (Platform.OS === 'web') {
-        window.alert('Praga de Sangue invocada! -10 HP em todos os heróis da mesa.');
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const handleAssignUser = async (charId: string, username: string) => {
     try {
       await ApiService.updateCharacter(charId, { username: username.toLowerCase().trim() });
@@ -119,19 +103,6 @@ export default function DmModule() {
       fetchTableData(true);
     } catch (e) {
       console.error(e);
-    }
-  };
-
-  const confirmShadowRain = () => {
-    if (Platform.OS === 'web') {
-      if (window.confirm('INCURSÃO SOMBRIA: Deseja causar 10 de dano a TODOS os aventureiros da mesa?')) {
-        triggerShadowRain();
-      }
-    } else {
-      Alert.alert('Praga de Sangue', 'Causar 10 de dano em todos os heróis?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Amaldiçoar Todos', style: 'destructive', onPress: triggerShadowRain },
-      ]);
     }
   };
 

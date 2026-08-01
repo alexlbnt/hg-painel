@@ -1,38 +1,20 @@
 import { useResponsive } from '@/hooks/useResponsive';
-import { ApiService } from '@/services/api';
 import { useRouter } from 'expo-router';
 import { BookOpen, Crown, ExternalLink, Folder, Globe, Moon, Scroll, Shield, Sparkles, Sword, Zap } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Linking, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput, ActivityIndicator } from 'react-native';
+import { Linking, Platform, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [resetting, setResetting] = useState(false);
   const { isMobile } = useResponsive();
-  const [driveUrl, setDriveUrl] = useState<string>(() => {
+  const [driveUrl] = useState<string>(() => {
     const defaultUrl = 'https://drive.google.com/drive/folders/1_Jz1km6fxK8pgtERQqPrMvi1y5wfQlOJ?usp=sharing';
     if (Platform.OS === 'web') {
       return localStorage.getItem('hg_drive_url') || defaultUrl;
     }
     return defaultUrl;
   });
-
-  const handleResetDemo = async () => {
-    setResetting(true);
-    try {
-      await ApiService.resetToDefaultData();
-      if (Platform.OS === 'web') {
-        window.alert('Grimório restaurado com sucesso para os heróis ancestrais da campanha!');
-      } else {
-        Alert.alert('Sucesso', 'Fichas restauradas para o estado inicial!');
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setResetting(false);
-    }
-  };
 
   const { user, isLoading } = useAuth();
 

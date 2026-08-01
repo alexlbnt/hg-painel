@@ -90,6 +90,20 @@ export interface CharacterData {
   themeColor?: string;
 }
 
+export type TaskCategory = 'LORE' | 'MECANICA' | 'ARTE' | 'DEV' | 'ESPECIAL';
+export type TaskStatus = 'PARADO' | 'ANDAMENTO' | 'FINALIZADO' | 'APROVADO';
+
+export interface TaskData {
+  id: string;
+  title: string;
+  description: string;
+  category: TaskCategory;
+  status: TaskStatus;
+  reward: string;
+  assignedTo: string | null;
+  createdAt: string;
+}
+
 export const CHARACTER_THEME_COLORS = [
   { name: 'Padrão Dourado', hex: '#C5A059', bg: 'rgba(197, 160, 89, 0.15)' },
   { name: 'Vermelho Sangue', hex: '#C95B5B', bg: 'rgba(201, 91, 91, 0.15)' },
@@ -337,3 +351,36 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
 ];
 
 export const INITIAL_SPELLS: Record<string, SpellItemData[]> = {};
+
+export const INITIAL_TASKS: TaskData[] = [
+  {
+    id: 'task-1',
+    title: 'Criar História da Taverna',
+    description: 'Escrever a lore da Taverna do Porco Cego e seus antigos donos.',
+    category: 'LORE',
+    status: 'PARADO',
+    reward: 'Iniciativa +1 na próxima sessão',
+    assignedTo: null,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'task-2',
+    title: 'Mecânica de Fadiga',
+    description: 'Sugerir uma nova regra para viagem exaustiva e testes de constituição.',
+    category: 'MECANICA',
+    status: 'ANDAMENTO',
+    reward: '20 PO',
+    assignedTo: 'Alex',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'task-3',
+    title: 'Arte do Bosque',
+    description: 'Fazer o mapa de batalha para o encontro no bosque das fadas.',
+    category: 'ARTE',
+    status: 'FINALIZADO',
+    reward: 'Inspiração Bárdica',
+    assignedTo: 'Marina',
+    createdAt: new Date().toISOString(),
+  }
+];

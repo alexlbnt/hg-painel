@@ -45,8 +45,6 @@ export default function PlayerModule() {
   const { isMobile } = useResponsive();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingChar, setEditingChar] = useState<CharacterData | null>(null);
   const [importModalVisible, setImportModalVisible] = useState(false);
@@ -84,7 +82,6 @@ export default function PlayerModule() {
   const [showManageSlots, setShowManageSlots] = useState(false);
 
   const loadCharacters = async (silent = false) => {
-    if (!silent) setLoading(true);
     try {
       const data = await ApiService.getCharacters();
       // Filtra apenas as fichas que pertencem a este usuário
@@ -95,8 +92,6 @@ export default function PlayerModule() {
       }
     } catch (e) {
       console.error('Erro ao carregar fichas medievais', e);
-    } finally {
-      if (!silent) setLoading(false);
     }
   };
 
@@ -108,7 +103,6 @@ export default function PlayerModule() {
         setSelectedId(characters[0].id);
       }
     } else if (characters.length === 0 && selectedId !== null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedId(null);
     }
   }, [characters, selectedId]);
@@ -127,10 +121,6 @@ export default function PlayerModule() {
   const themeColor = selectedChar?.themeColor || '#C5A059';
 
   const getMod = (score: number) => Math.floor((score - 10) / 2);
-  const formatMod = (score: number) => {
-    const mod = getMod(score);
-    return mod >= 0 ? `+${mod}` : `${mod}`;
-  };
   const profBonus = selectedChar ? Math.floor((selectedChar.level - 1) / 4) + 2 : 2;
   const passivePerception = selectedChar
     ? 10 + getMod(selectedChar.wis) + (selectedChar.proficientSkills.includes('Percepção') ? profBonus : 0)

@@ -158,3 +158,30 @@ model Spell {
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
+
+enum TaskCategory {
+  LORE
+  MECANICA
+  ARTE
+  DEV
+  ESPECIAL
+}
+
+enum TaskStatus {
+  PARADO
+  ANDAMENTO
+  FINALIZADO
+  APROVADO
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  category    TaskCategory @default(LORE)
+  status      TaskStatus   @default(PARADO)
+  reward      String       @default("")
+  assignedTo  String?      
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}

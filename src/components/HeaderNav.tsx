@@ -2,7 +2,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { usePathname, useRouter } from 'expo-router';
-import { Crown, Home, Shield, Sword, X } from 'lucide-react-native';
+import { ClipboardList, Crown, Home, Shield, Sword, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -35,6 +35,7 @@ export default function HeaderNav() {
 
   const navItems = [
     { name: 'Portal da Taverna', mobileName: 'Taverna', path: '/', icon: Home },
+    { name: 'Tarefas da Mesa', mobileName: 'Tarefas', path: '/tasks', icon: ClipboardList },
     { name: 'Grimório do Jogador', mobileName: 'Jogador', path: '/player', icon: Shield },
     { name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown },
   ];

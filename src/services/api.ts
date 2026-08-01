@@ -1,4 +1,4 @@
-import { CharacterData, ConditionData, INITIAL_CHARACTERS } from '@/lib/mockData';
+import { CharacterData, ConditionData, INITIAL_CHARACTERS, TaskData, INITIAL_TASKS } from '@/lib/mockData';
 import { Platform } from 'react-native';
 
 const STORAGE_KEY = 'honra_egoismo_characters_v1';
@@ -20,6 +20,32 @@ function loadFromStorage(): CharacterData[] {
   return inMemoryCharacters;
 }
 
+const STORAGE_KEY_TASKS = 'honra_egoismo_tasks_v1';
+let inMemoryTasks: TaskData[] = [...INITIAL_TASKS];
+
+function loadTasksFromStorage(): TaskData[] {
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const data = window.localStorage.getItem(STORAGE_KEY_TASKS);
+      if (data) return JSON.parse(data);
+    }
+  } catch (e) {
+    console.warn('Erro ao carregar tasks do localStorage', e);
+  }
+  return inMemoryTasks;
+}
+
+function saveTasksToStorage(tasks: TaskData[]) {
+  inMemoryTasks = tasks;
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar tasks no localStorage', e);
+  }
+}
+
 function saveToStorage(characters: CharacterData[]) {
   inMemoryCharacters = characters;
   try {
@@ -38,12 +64,96 @@ if (inMemoryCharacters.length === 0) {
   saveToStorage(inMemoryCharacters);
 }
 
+inMemoryTasks = loadTasksFromStorage();
+if (inMemoryTasks.length === 0) {
+  inMemoryTasks = [...INITIAL_TASKS];
+  saveTasksToStorage(inMemoryTasks);
+}
+
 /**
  * Serviço de API Híbrido:
  * Tenta comunicar com as rotas serverless do Vercel/Expo (/api/...).
  * Caso não haja servidor ou o banco de dados Neon não esteja configurado, entra em modo fallback interativo em tempo real.
  */
 export const ApiService = {
+  // TASKS
+  async getTasks(): Promise<TaskData[]> {
+    try {
+      if (Platform.OS === 'web') {
+        const res = await fetch(`/api/tasks?t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      }
+    } catch {
+      // Usar fallback
+    }
+    return loadTasksFromStorage();
+  },
+
+  async createTask(data: Partial<TaskData>): Promise<TaskData> {
+    const newTask: TaskData = {
+      id: `task-${Date.now()}`,
+      title: data.title || 'Nova Tarefa',
+      description: data.description || '',
+      category: data.category || 'LORE',
+      status: data.status || 'PARADO',
+      reward: data.reward || '',
+      assignedTo: data.assignedTo || null,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      if (Platform.OS === 'web') {
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTask),
+        });
+        if (res.ok) return await res.json();
+      }
+    } catch {}
+    const tasks = loadTasksFromStorage();
+    tasks.push(newTask);
+    saveTasksToStorage(tasks);
+    return newTask;
+  },
+
+  async updateTask(id: string, updates: Partial<TaskData>): Promise<TaskData> {
+    try {
+      if (Platform.OS === 'web') {
+        const res = await fetch(`/api/tasks/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+        if (res.ok) return await res.json();
+      }
+    } catch {}
+    const tasks = loadTasksFromStorage();
+    const idx = tasks.findIndex(t => t.id === id);
+    if (idx !== -1) {
+      tasks[idx] = { ...tasks[idx], ...updates };
+      saveTasksToStorage(tasks);
+      return tasks[idx];
+    }
+    throw new Error('Task não encontrada');
+  },
+
+  async deleteTask(id: string): Promise<boolean> {
+    try {
+      if (Platform.OS === 'web') {
+        const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+        if (res.ok) return true;
+      }
+    } catch {}
+    let tasks = loadTasksFromStorage();
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasksToStorage(tasks);
+    return true;
+  },
+
+  // CHARACTERS
   async getCharacters(): Promise<CharacterData[]> {
     try {
       if (Platform.OS === 'web') {
