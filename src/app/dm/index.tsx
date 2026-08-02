@@ -3,7 +3,7 @@ import InterventionModal from '@/components/dm/InterventionModal';
 import WhispersModal from '@/components/dm/WhispersModal';
 import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
-import { AlertTriangle, Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users } from 'lucide-react-native';
+import { AlertTriangle, Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +25,8 @@ export default function DmModule() {
   const [whispersModalVisible, setWhispersModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'monitor' | 'initiative'>('monitor');
   const [lastSync, setLastSync] = useState<string>('Conectando ao Escudo do Mestre...');
+  const [isAllExpanded, setIsAllExpanded] = useState<boolean>(false);
+  const [hoveredCond, setHoveredCond] = useState<string | null>(null);
 
   const fetchTableData = async (silent = false) => {
     try {
@@ -196,7 +198,13 @@ export default function DmModule() {
       </View>
 
       {/* Grade de Aventureiros Conectados */}
-      <Text style={styles.gridTitle}>PERSONAGENS DA CAMPANHA ({characters.length})</Text>
+      <View style={styles.gridHeader}>
+        <Text style={styles.gridTitle}>PERSONAGENS DA CAMPANHA ({characters.length})</Text>
+        <TouchableOpacity style={styles.globalExpandBtn} onPress={() => setIsAllExpanded(!isAllExpanded)}>
+          {isAllExpanded ? <ChevronUp color="#C5A059" size={16} /> : <ChevronDown color="#C5A059" size={16} />}
+          <Text style={styles.globalExpandText}>{isAllExpanded ? 'Ocultar Detalhes' : 'Expandir Fichas'}</Text>
+        </TouchableOpacity>
+      </View>
       
       {characters.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -212,6 +220,8 @@ export default function DmModule() {
             const maxWeight = (Number(char.str) || 10) * 7.5;
             const isOverloaded = totalWeight > maxWeight;
 
+            const isExpanded = isAllExpanded;
+
             return (
               <View
                 key={char.id}
@@ -225,16 +235,18 @@ export default function DmModule() {
                       {char.class} • Nvl {char.level}
                     </Text>
                     <Text style={styles.playerName}>Jogador: {char.playerName}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                      <Text style={{ color: '#80776C', fontSize: 10, marginRight: 4 }}>Usuário:</Text>
-                      <TextInput 
-                        style={{ backgroundColor: '#110F0D', borderWidth: 1, borderColor: '#3D342C', color: '#BAAFA0', fontSize: 10, padding: 2, paddingHorizontal: 6, borderRadius: 4, minWidth: 80 }}
-                        defaultValue={char.username || ''}
-                        placeholder="Vincular usuário..."
-                        placeholderTextColor="#4A3333"
-                        onSubmitEditing={(e) => handleAssignUser(char.id, e.nativeEvent.text)}
-                      />
-                    </View>
+                    {isExpanded && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                        <Text style={{ color: '#80776C', fontSize: 10, marginRight: 4 }}>Usuário:</Text>
+                        <TextInput 
+                          style={{ backgroundColor: '#110F0D', borderWidth: 1, borderColor: '#3D342C', color: '#BAAFA0', fontSize: 10, padding: 2, paddingHorizontal: 6, borderRadius: 4, minWidth: 80 }}
+                          defaultValue={char.username || ''}
+                          placeholder="Vincular usuário..."
+                          placeholderTextColor="#4A3333"
+                          onSubmitEditing={(e) => handleAssignUser(char.id, e.nativeEvent.text)}
+                        />
+                      </View>
+                    )}
                   </View>
                   
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
@@ -288,35 +300,48 @@ export default function DmModule() {
                 )}
 
                 {/* Alerta de Sobrecarga de Inventário */}
-                {isOverloaded && (
-                  <View style={styles.overloadBox}>
+                {(isExpanded || isOverloaded) && (
+                  <View style={[styles.weightBox, isOverloaded ? { backgroundColor: 'rgba(255, 69, 69, 0.15)', borderColor: '#FF4545' } : { backgroundColor: '#110F0D', borderColor: '#3D342C' }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <AlertTriangle color="#FF4545" size={16} />
-                      <Text style={styles.overloadTitle}>⚠️ SOBRECARGA ATIVA ({totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg)</Text>
+                      <Scale color={isOverloaded ? "#FF4545" : "#80776C"} size={16} />
+                      <Text style={[styles.overloadTitle, !isOverloaded && { color: '#80776C' }]}>
+                        {isOverloaded ? `⚠️ SOBRECARGA ATIVA` : `PESO DO INVENTÁRIO`} ({totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg)
+                      </Text>
                     </View>
-                    <Text style={styles.overloadDesc}>Deslocamento reduzido em -3m. O herói carrega excesso de peso.</Text>
+                    {isOverloaded && <Text style={styles.overloadDesc}>Deslocamento reduzido em -3m. O herói carrega excesso de peso.</Text>}
                   </View>
                 )}
 
-                {/* Mini Atributos Rápidos */}
-                <View style={styles.miniStatsRow}>
-                  <Text style={styles.miniStat}>FOR {char.str} ({getMod(char.str)})</Text>
-                  <Text style={styles.miniStat}>DES {char.dex} ({getMod(char.dex)})</Text>
-                  <Text style={styles.miniStat}>CON {char.con} ({getMod(char.con)})</Text>
-                  <Text style={styles.miniStat}>INT {char.int} ({getMod(char.int)})</Text>
-                  <Text style={styles.miniStat}>SAB {char.wis} ({getMod(char.wis)})</Text>
-                  <Text style={styles.miniStat}>CAR {char.cha} ({getMod(char.cha)})</Text>
-                </View>
+                {isExpanded && (
+                  <>
+                    {/* Mini Atributos Rápidos */}
+                    <View style={styles.miniStatsRow}>
+                      {[
+                        { label: 'FOR', val: char.str },
+                        { label: 'DES', val: char.dex },
+                        { label: 'CON', val: char.con },
+                        { label: 'INT', val: char.int },
+                        { label: 'SAB', val: char.wis },
+                        { label: 'CAR', val: char.cha },
+                      ].map(attr => (
+                        <View key={attr.label} style={styles.miniStatBox}>
+                          <Text style={styles.miniStatLabel}>{attr.label}</Text>
+                          <Text style={styles.miniStatVal}>{attr.val}</Text>
+                          <View style={styles.miniStatModBox}>
+                            <Text style={styles.miniStatMod}>{getMod(attr.val)}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
 
-                {/* Moedas e Peso */}
-                <View style={styles.coinsRow}>
-                  <Text style={styles.coinBadge}>🥇 {char.gold || 0} PO</Text>
-                  <Text style={styles.coinBadge}>🥈 {char.silver || 0} PP</Text>
-                  <Text style={styles.coinBadge}>🥉 {char.copper || 0} PC</Text>
-                  <Text style={[styles.weightBadge, isOverloaded && { color: '#FF4545', fontWeight: '700' }]}>
-                    ⚖️ {totalWeight.toFixed(1)}/{maxWeight.toFixed(1)} kg
-                  </Text>
-                </View>
+                    {/* Moedas */}
+                    <View style={styles.coinsRow}>
+                      <Text style={styles.coinBadge}>🥇 {char.gold || 0} PO</Text>
+                      <Text style={styles.coinBadge}>🥈 {char.silver || 0} PP</Text>
+                      <Text style={styles.coinBadge}>🥉 {char.copper || 0} PC</Text>
+                    </View>
+                  </>
+                )}
 
                 {/* Condições Ativas */}
                 {char.conditions && char.conditions.length > 0 && (
@@ -324,22 +349,39 @@ export default function DmModule() {
                     <Text style={styles.conditionsLabel}>Condições Sombrias:</Text>
                     <View style={styles.conditionsList}>
                       {char.conditions.map(cond => (
-                        <View key={cond.id} style={styles.condBadge}>
-                          <Text style={styles.condText}>{cond.name}</Text>
-                        </View>
+                        <TouchableOpacity 
+                          key={cond.id} 
+                          style={{ position: 'relative' }}
+                          onPress={() => setHoveredCond(hoveredCond === cond.id ? null : cond.id)}
+                          {...(Platform.OS === 'web' ? {
+                            onMouseEnter: () => setHoveredCond(cond.id),
+                            onMouseLeave: () => setHoveredCond(null),
+                          } as any : {})}
+                        >
+                          <View style={styles.condBadge}>
+                            <Text style={styles.condText}>{cond.name}</Text>
+                          </View>
+                          {hoveredCond === cond.id && (
+                            <View style={styles.tooltipBox}>
+                              <Text style={styles.tooltipText}>{cond.description}</Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
                       ))}
                     </View>
                   </View>
                 )}
 
-                {/* Botão de Intervenção Remota */}
-                <TouchableOpacity
-                  style={styles.interveneBtn}
-                  onPress={() => handleInterveneClick(char)}
-                >
-                  <Crown color="#110F0D" size={16} />
-                  <Text style={styles.interveneBtnText}>Intervenção</Text>
-                </TouchableOpacity>
+                {/* Botões de Ação */}
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.interveneBtn, { flex: 1 }]}
+                    onPress={() => handleInterveneClick(char)}
+                  >
+                    <Crown color="#110F0D" size={16} />
+                    <Text style={styles.interveneBtnText}>Intervenção</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             );
           })}
@@ -571,13 +613,37 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 1,
-    marginTop: 6,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
+  },
+  gridHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  globalExpandBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(197, 160, 89, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(197, 160, 89, 0.3)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  globalExpandText: {
+    color: '#C5A059',
+    fontSize: 12,
+    fontWeight: '700',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 20,
+    alignItems: 'flex-start',
   },
   charCard: {
     flexGrow: 1,
@@ -695,16 +761,44 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     justifyContent: 'space-between',
+  },
+  miniStatBox: {
+    flex: 1,
+    minWidth: 42,
     backgroundColor: '#110F0D',
-    padding: 10,
-    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#3D342C',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  miniStat: {
-    color: '#BAAFA0',
-    fontSize: 11,
-    fontWeight: '600',
+  miniStatLabel: {
+    color: '#80776C',
+    fontSize: 9,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  miniStatVal: {
+    color: '#E2D8C3',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  miniStatModBox: {
+    marginTop: 2,
+    backgroundColor: '#1A1714',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#2D2620',
+  },
+  miniStatMod: {
+    color: '#C5A059',
+    fontSize: 9,
+    fontWeight: '700',
   },
   conditionsBox: {
     gap: 6,
@@ -768,10 +862,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
-  overloadBox: {
-    backgroundColor: 'rgba(255, 69, 69, 0.15)',
+  weightBox: {
     borderWidth: 1,
-    borderColor: '#FF4545',
     padding: 10,
     borderRadius: 6,
     gap: 4,
@@ -799,12 +891,44 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   coinBadge: {
-    color: '#E6C280',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  weightBadge: {
     color: '#BAAFA0',
     fontSize: 12,
+    fontWeight: '700',
+  },
+  weightBadge: {
+    color: '#80776C',
+    fontSize: 11,
+  },
+  expandBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(197, 160, 89, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(197, 160, 89, 0.3)',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+  },
+  tooltipBox: {
+    position: 'absolute',
+    bottom: '120%',
+    left: 0,
+    backgroundColor: '#24201C',
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#8C704F',
+    width: 220,
+    zIndex: 9999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  tooltipText: {
+    color: '#BAAFA0',
+    fontSize: 11,
+    lineHeight: 18,
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
 });

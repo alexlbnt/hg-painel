@@ -3399,6 +3399,6 @@ const styles = StyleSheet.create({
 
 const markdownStyles = {
   body: { color: '#BAAFA0', fontSize: 13, lineHeight: 20 },
-  strong: { color: '#E2D8C3', fontWeight: 'bold' },
-  em: { fontStyle: 'italic', color: '#D4C6AB' },
+  strong: { color: '#E2D8C3', fontWeight: 'bold' as const },
+  em: { fontStyle: 'italic' as const, color: '#D4C6AB' },
 };
