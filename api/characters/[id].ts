@@ -51,6 +51,25 @@ export default async function handler(req: any, res: any) {
         }
       }
 
+      if (body.spells && Array.isArray(body.spells)) {
+        await prisma.spell.deleteMany({ where: { characterId: id } });
+        if (body.spells.length > 0) {
+          await prisma.spell.createMany({
+            data: body.spells.map((s: any) => ({
+              name: s.name,
+              description: s.description || '',
+              level: Number(s.level) || 0,
+              castingTime: s.castingTime || '',
+              range: s.range || '',
+              components: s.components || '',
+              duration: s.duration || '',
+              isPrepared: !!s.isPrepared,
+              characterId: id,
+            })),
+          });
+        }
+      }
+
       if (body.items && Array.isArray(body.items)) {
         console.log(`[API] Updating items for character ${id}:`, body.items);
         await prisma.item.deleteMany({ where: { characterId: id } });
@@ -109,7 +128,7 @@ export default async function handler(req: any, res: any) {
           wisProf: body.wisProf !== undefined ? Boolean(body.wisProf) : undefined,
           chaProf: body.chaProf !== undefined ? Boolean(body.chaProf) : undefined,
         },
-        include: { spellSlots: true, abilities: true, conditions: true, items: true },
+        include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
       });
 
       return res.status(200).json(updated);

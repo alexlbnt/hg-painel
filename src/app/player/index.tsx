@@ -773,70 +773,7 @@ export default function PlayerModule() {
               </View>
             </View>
 
-            {/* Testes contra a Morte e Rituais de Descanso */}
-            <View style={[styles.deathAndRestSection, isMobile && { minWidth: '100%', gap: 12 }]}>
-              {/* Testes contra a Morte (Sempre visível, mas ultra compacto) */}
-              <View style={[styles.deathBox, isMobile && { padding: 12 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Skull color="#B82828" size={16} />
-                    <Text style={styles.deathTitle}>RESISTÊNCIA À MORTE</Text>
-                  </View>
-                  {selectedChar.currentHp === 0 && (
-                    <Text style={{ color: '#B82828', fontSize: 10, fontWeight: '700' }}>⚠️ INCONSCIENTE</Text>
-                  )}
-                </View>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                  <View style={styles.deathRow}>
-                    <Text style={[styles.deathLabel, { color: '#38783C' }]}>SUCESSOS:</Text>
-                    {[0, 1, 2].map(idx => (
-                      <TouchableOpacity key={`suc-${idx}`} onPress={() => toggleDeathSave('success', idx)}>
-                        {selectedChar.deathSaveSuccesses > idx ? (
-                          <CheckCircle color="#38783C" size={16} />
-                        ) : (
-                          <Circle color="#3D342C" size={16} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  <View style={styles.deathRow}>
-                    <Text style={[styles.deathLabel, { color: '#B82828' }]}>FALHAS:</Text>
-                    {[0, 1, 2].map(idx => (
-                      <TouchableOpacity key={`fail-${idx}`} onPress={() => toggleDeathSave('fail', idx)}>
-                        {selectedChar.deathSaveFailures > idx ? (
-                          <XCircleIcon color="#B82828" size={16} />
-                        ) : (
-                          <Circle color="#3D342C" size={16} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              </View>
-
-              {/* Botões de Ritual de Descanso Compactos */}
-              <View style={[styles.restBox, isMobile && { padding: 12 }]}>
-                <Text style={[styles.restTitle, { marginBottom: 8 }]}>RITUAIS DE DESCANSO</Text>
-                <View style={styles.restButtonsRow}>
-                  <TouchableOpacity style={[styles.shortRestBtn, isMobile && { padding: 10, minWidth: '48%' }]} onPress={triggerShortRest}>
-                    <Moon color="#6B4A70" size={16} />
-                    <View style={{ flexShrink: 1 }}>
-                      <Text style={styles.restBtnTitle}>Descanso Curto</Text>
-                      <Text style={styles.restBtnSub}>Curar & Hab.</Text>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.longRestBtn, isMobile && { padding: 10, minWidth: '48%' }]} onPress={triggerLongRest}>
-                    <Sun color={themeColor} size={16} />
-                    <View style={{ flexShrink: 1 }}>
-                      <Text style={styles.restBtnTitle}>Descanso Longo</Text>
-                      <Text style={styles.restBtnSub}>Vida & Magias</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
           </View>
 
           {/* Grid de Atributos Ancestrais (FOR, DES, CON, INT, SAB, CAR) */}

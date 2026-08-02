@@ -5,7 +5,7 @@ export default async function handler(req: any, res: any) {
   if (req.method === 'GET') {
     try {
       const characters = await prisma.character.findMany({
-        include: { spellSlots: true, abilities: true, conditions: true, items: true },
+        include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
         orderBy: { createdAt: 'asc' },
       });
       if (characters.length === 0) {
@@ -104,10 +104,11 @@ export default async function handler(req: any, res: any) {
           silver: Number(body.silver) || 10,
           copper: Number(body.copper) || 30,
           spellSlots: { create: body.spellSlots || [] },
+          spells: { create: body.spells || [] },
           abilities: { create: body.abilities || [] },
           items: { create: body.items || [] },
         },
-        include: { spellSlots: true, abilities: true, conditions: true, items: true },
+        include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
       });
       return res.status(201).json(newChar);
     } catch (error) {
