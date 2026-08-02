@@ -111,6 +111,7 @@ export default async function handler(req: any, res: any) {
           level: body.level !== undefined ? Number(body.level) : undefined,
           alignment: body.alignment !== undefined ? String(body.alignment) : undefined,
           background: body.background !== undefined ? String(body.background) : undefined,
+          lore: body.lore !== undefined ? String(body.lore) : undefined,
           gold: body.gold !== undefined ? Number(body.gold) : undefined,
           silver: body.silver !== undefined ? Number(body.silver) : undefined,
           copper: body.copper !== undefined ? Number(body.copper) : undefined,

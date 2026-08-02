@@ -7,7 +7,7 @@ import { CharacterData, SpellItemData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
 import { useRouter } from 'expo-router';
-import { AlertTriangle, Award, BookOpen, CheckCircle, ChevronDown, ChevronUp, Circle, Clock, Crosshair, Download, Edit, Eye, EyeOff, Heart, Moon, Package, Plus, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
+import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, Heart, Package, Plus, Scroll, Shield, Sparkles, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -49,7 +49,8 @@ export default function PlayerModule() {
   const [editingChar, setEditingChar] = useState<CharacterData | null>(null);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
-  const [activeTab, setActiveTab] = useState<'spells' | 'abilities' | 'skills' | 'inventory'>('spells');
+  const [activeTab, setActiveTab] = useState<'spells' | 'abilities' | 'skills' | 'inventory' | 'lore'>('spells');
+  const [loreText, setLoreText] = useState('');
   const [customHp, setCustomHp] = useState('');
   const [newItemName, setNewItemName] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
@@ -107,6 +108,26 @@ export default function PlayerModule() {
     }
   }, [characters, selectedId]);
 
+  const selectedChar = characters.find(c => c.id === selectedId) || null;
+
+  useEffect(() => {
+    if (selectedChar) {
+      setLoreText(selectedChar.lore || '');
+    }
+  }, [selectedChar?.id]); // Only reset when changing character
+
+  const handleSaveLore = async () => {
+    if (!selectedChar) return;
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { lore: loreText });
+      loadCharacters(true);
+      Alert.alert('Lore Salva!', 'A história do seu personagem foi registrada nos pergaminhos.');
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Erro', 'Falha ao salvar a lore.');
+    }
+  };
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCharacters();
@@ -117,7 +138,7 @@ export default function PlayerModule() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const selectedChar = characters.find(c => c.id === selectedId) || null;
+
   const themeColor = selectedChar?.themeColor || '#C5A059';
 
   const getMod = (score: number) => Math.floor((score - 10) / 2);
@@ -854,6 +875,15 @@ export default function PlayerModule() {
               <Package color={activeTab === 'inventory' ? themeColor : '#80776C'} size={18} />
               <Text style={[styles.tabBtnText, activeTab === 'inventory' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
                 Mochila
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === 'lore' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
+              onPress={() => setActiveTab('lore')}
+            >
+              <BookOpen color={activeTab === 'lore' ? themeColor : '#80776C'} size={18} />
+              <Text style={[styles.tabBtnText, activeTab === 'lore' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
+                Lore
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -1633,6 +1663,30 @@ export default function PlayerModule() {
                     </TouchableOpacity>
                   </View>
                 </View>
+              </View>
+            )}
+            
+            {/* ABA: Lore */}
+            {activeTab === 'lore' && (
+              <View style={styles.loreContainer}>
+                <View style={styles.loreHeaderRow}>
+                  <Text style={styles.loreHeaderTitle}>HISTÓRIA</Text>
+                  <TouchableOpacity style={styles.loreSaveBtn} onPress={handleSaveLore}>
+                    <Text style={styles.loreSaveBtnText}>Salvar História</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.loreDesc}>
+                  Escreva aqui a história de origem, as cicatrizes e os segredos do seu personagem.
+                </Text>
+                <TextInput
+                  style={[styles.loreInput, isMobile && { minHeight: 400 }]}
+                  multiline
+                  value={loreText}
+                  onChangeText={setLoreText}
+                  placeholder="..."
+                  placeholderTextColor="#5A5043"
+                  textAlignVertical="top"
+                />
               </View>
             )}
           </View>
@@ -3181,4 +3235,53 @@ const styles = StyleSheet.create({
     color: '#110F0D',
     fontWeight: '700',
   },
+  loreContainer: {
+    backgroundColor: '#161311',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    padding: 16,
+    gap: 12,
+  },
+  loreHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  loreHeaderTitle: {
+    color: '#E2D8C3',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  loreSaveBtn: {
+    backgroundColor: '#2A241F',
+    borderWidth: 1,
+    borderColor: '#524B43',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  loreSaveBtnText: {
+    color: '#C5A059',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  loreDesc: {
+    color: '#80776C',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  loreInput: {
+    backgroundColor: '#110F0D',
+    color: '#D1C7B7',
+    fontSize: 15,
+    lineHeight: 24,
+    padding: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2D251E',
+    minHeight: 250,
+  }
 });

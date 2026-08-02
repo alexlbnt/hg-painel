@@ -55,6 +55,7 @@ export interface CharacterData {
   level: number;
   alignment: string;
   background: string;
+  lore?: string;
   currentHp: number;
   maxHp: number;
   tempHp: number;

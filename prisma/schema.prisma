@@ -46,6 +46,7 @@ model Character {
   alignment          String      @default("Neutro")
   background         String      @default("Herói do Povo")
   username           String      @default("")
+  lore               String      @default("")
   
   // Combat stats
   currentHp          Int         @default(10)
