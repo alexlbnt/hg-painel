@@ -22,6 +22,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
   const [maxHp, setMaxHp] = useState('10');
   const [armorClass, setArmorClass] = useState('10');
   const [initiativeBonus, setInitiativeBonus] = useState('0');
+  const [deity, setDeity] = useState('Nenhum');
 
   // Atributos
   const [str, setStr] = useState('10');
@@ -66,6 +67,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setWisProf(!!initialData.wisProf);
       setChaProf(!!initialData.chaProf);
       setThemeColor(initialData.themeColor || '#C5A059');
+      setDeity(initialData.deity || 'Nenhum');
     } else {
       setName('');
       setPlayerName(user?.name || 'Alex');
@@ -88,6 +90,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setWisProf(true);
       setChaProf(true);
       setThemeColor('#C5A059');
+      setDeity('Nenhum');
     }
   }, [initialData, visible, user?.name]);
 
@@ -118,6 +121,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       wisProf,
       chaProf,
       themeColor,
+      deity,
     });
     onClose();
   };
@@ -198,7 +202,29 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
               </View>
             </View>
 
-
+            {/* Religião / Divindade */}
+            <Text style={styles.label}>Devoção / Divindade</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+              {[
+                { name: 'Nenhum', color: '#80776C', label: 'Nenhum' },
+                { name: 'Arcké', color: '#B82828', label: 'Arcké, o Justo' },
+                { name: 'Vitta', color: '#C5A059', label: 'Vitta, a Bondade' },
+                { name: 'Thanatos', color: '#1B3B6F', label: 'Thanatos, o Descanso' }
+              ].map(d => (
+                <TouchableOpacity
+                  key={d.name}
+                  onPress={() => setDeity(d.name)}
+                  style={[
+                    styles.deityChip,
+                    deity === d.name && { borderColor: d.color, backgroundColor: `${d.color}22` }
+                  ]}
+                >
+                  <Text style={[styles.deityChipText, deity === d.name && { color: d.color, fontWeight: 'bold' }]}>
+                    {d.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {/* Estatísticas de Combate */}
             <Text style={styles.sectionTitle}>ESTATÍSTICAS VITAIS DE COMBATE</Text>
@@ -453,4 +479,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
+  deityChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    backgroundColor: '#1A1714',
+  },
+  deityChipText: {
+    color: '#80776C',
+    fontSize: 12,
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  }
 });

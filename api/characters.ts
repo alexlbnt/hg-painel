@@ -78,7 +78,7 @@ export default async function handler(req: any, res: any) {
           level: Number(body.level) || 1,
           alignment: body.alignment || 'Neutro',
           background: body.background || 'Herói do Povo',
-          username: body.username || '',
+          deity: body.deity || 'Nenhum',
           lore: body.lore || '',
           currentHp: Number(body.currentHp) || 10,
           maxHp: Number(body.maxHp) || 10,

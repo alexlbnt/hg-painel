@@ -47,6 +47,7 @@ model Character {
   background         String      @default("Herói do Povo")
   username           String      @default("")
   lore               String      @default("")
+  deity              String      @default("Nenhum")
   
   // Combat stats
   currentHp          Int         @default(10)

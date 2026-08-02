@@ -380,7 +380,7 @@ export default function TasksScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Diário de Missão</Text>
-            <Text style={styles.pageSubtitle}>Descreva como você completou "{editingTask?.title}". Você pode usar links, negrito, etc.</Text>
+            <Text style={styles.pageSubtitle}>Descreva como você completou &quot;{editingTask?.title}&quot;. Você pode usar links, negrito, etc.</Text>
             
             <TextInput 
               style={[styles.input, { height: 160, textAlignVertical: 'top', marginTop: 16 }]} 

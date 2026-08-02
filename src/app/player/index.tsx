@@ -7,7 +7,7 @@ import { CharacterData, SpellItemData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
 import { useRouter } from 'expo-router';
-import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, Heart, Package, Plus, Scroll, Shield, Sparkles, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
+import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, Heart, Package, Plus, Scale, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -112,8 +112,10 @@ export default function PlayerModule() {
 
   useEffect(() => {
     if (selectedChar) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoreText(selectedChar.lore || '');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChar?.id]); // Only reset when changing character
 
   const handleSaveLore = async () => {
@@ -658,6 +660,16 @@ export default function PlayerModule() {
               <Text style={styles.charMeta}>
                 {selectedChar.class} • Jogador: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{selectedChar.playerName}</Text>
               </Text>
+              {selectedChar.deity && selectedChar.deity !== 'Nenhum' && (
+                <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, borderWidth: 1, borderColor: selectedChar.deity === 'Arcké' ? '#B82828' : selectedChar.deity === 'Vitta' ? '#C5A059' : '#1B3B6F', backgroundColor: selectedChar.deity === 'Arcké' ? '#B8282815' : selectedChar.deity === 'Vitta' ? '#C5A05915' : '#1B3B6F15' }}>
+                  {selectedChar.deity === 'Arcké' && <Scale color="#B82828" size={14} />}
+                  {selectedChar.deity === 'Vitta' && <Sun color="#C5A059" size={14} />}
+                  {selectedChar.deity === 'Thanatos' && <Skull color="#1B3B6F" size={14} />}
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: selectedChar.deity === 'Arcké' ? '#B82828' : selectedChar.deity === 'Vitta' ? '#C5A059' : '#1B3B6F', textTransform: 'uppercase' }}>
+                    DEVOTO DE {selectedChar.deity}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Estatísticas resumidas e compactas no centro do Header */}

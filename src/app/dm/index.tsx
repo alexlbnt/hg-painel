@@ -3,7 +3,7 @@ import InterventionModal from '@/components/dm/InterventionModal';
 import WhispersModal from '@/components/dm/WhispersModal';
 import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
-import { AlertTriangle, Crown, Moon, RefreshCw, Shield, Skull, Sun, Sword, Users } from 'lucide-react-native';
+import { AlertTriangle, Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -230,9 +230,22 @@ export default function DmModule() {
                     </View>
                   </View>
                   
-                  <View style={styles.acBadge}>
-                    <Shield color="#8C6C90" size={16} />
-                    <Text style={styles.acText}>{char.armorClass} CA</Text>
+                  <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                    <View style={styles.acBadge}>
+                      <Shield color="#8C6C90" size={16} />
+                      <Text style={styles.acText}>{char.armorClass} CA</Text>
+                    </View>
+                    
+                    {char.deity && char.deity !== 'Nenhum' && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4, borderWidth: 1, borderColor: char.deity === 'Arcké' ? '#B82828' : char.deity === 'Vitta' ? '#C5A059' : '#1B3B6F', backgroundColor: char.deity === 'Arcké' ? '#B8282815' : char.deity === 'Vitta' ? '#C5A05915' : '#1B3B6F15' }}>
+                        {char.deity === 'Arcké' && <Scale color="#B82828" size={10} />}
+                        {char.deity === 'Vitta' && <Sun color="#C5A059" size={10} />}
+                        {char.deity === 'Thanatos' && <Skull color="#1B3B6F" size={10} />}
+                        <Text style={{ fontSize: 9, fontWeight: '700', color: char.deity === 'Arcké' ? '#B82828' : char.deity === 'Vitta' ? '#C5A059' : '#1B3B6F', textTransform: 'uppercase' }}>
+                          {char.deity}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
 
