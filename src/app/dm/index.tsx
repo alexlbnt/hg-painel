@@ -97,9 +97,16 @@ export default function DmModule() {
 
   const handleAssignUser = async (charId: string, username: string) => {
     try {
-      await ApiService.updateCharacter(charId, { username: username.toLowerCase().trim() });
-      if (Platform.OS === 'web') window.alert(`Personagem vinculado ao usuário '${username}' com sucesso!`);
-      else Alert.alert('Sucesso', `Vinculado ao usuário '${username}'`);
+      const trimmedUsername = username.trim();
+      const newPlayerName = trimmedUsername.charAt(0).toUpperCase() + trimmedUsername.slice(1).toLowerCase();
+      
+      await ApiService.updateCharacter(charId, { 
+        username: trimmedUsername.toLowerCase(),
+        playerName: newPlayerName 
+      });
+      
+      if (Platform.OS === 'web') window.alert(`Personagem vinculado ao usuário '${trimmedUsername}' com sucesso!`);
+      else Alert.alert('Sucesso', `Vinculado ao usuário '${trimmedUsername}'`);
       fetchTableData(true);
     } catch (e) {
       console.error(e);
