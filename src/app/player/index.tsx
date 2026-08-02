@@ -7,7 +7,8 @@ import { CharacterData, SpellItemData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
 import { useRouter } from 'expo-router';
-import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, Heart, Package, Plus, Scale, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
+import Markdown from 'react-native-markdown-display';
+import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, FastForward, Heart, Minus, Package, Plus, Scale, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -66,6 +67,27 @@ export default function PlayerModule() {
   const [newAbDesc, setNewAbDesc] = useState('');
   const [newAbUses, setNewAbUses] = useState('1');
   const [newAbReset, setNewAbReset] = useState<'SHORT_REST' | 'LONG_REST' | 'NONE'>('SHORT_REST');
+  const [newAbActionType, setNewAbActionType] = useState('LIVRE');
+  const [abilityFilter, setAbilityFilter] = useState('ALL');
+  const [expandedAbilities, setExpandedAbilities] = useState<Record<string, boolean>>({});
+
+  const toggleAbilityExpanded = (id: string) => {
+    setExpandedAbilities(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const adjustAbilityUses = async (abId: string, amount: number) => {
+    if (!selectedChar) return;
+    const ability = selectedChar.abilities.find(a => a.id === abId);
+    if (!ability) return;
+    
+    let newUses = ability.currentUses + amount;
+    if (newUses < 0) newUses = 0;
+    if (newUses > ability.maxUses) newUses = ability.maxUses;
+    
+    const updatedAbilities = selectedChar.abilities.map(a => a.id === abId ? { ...a, currentUses: newUses } : a);
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c));
+    await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
+  };
 
   const [srdModalVisible, setSrdModalVisible] = useState(false);
   const [srdModalType, setSrdModalType] = useState<'spell'|'ability'>('spell');
@@ -591,6 +613,7 @@ export default function PlayerModule() {
       maxUses: parseInt(newAbUses, 10) || 1,
       currentUses: parseInt(newAbUses, 10) || 1,
       resetType: newAbReset,
+      actionType: newAbActionType,
     };
     const updatedAbilities = [...selectedChar.abilities, newAb];
     const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
@@ -598,6 +621,8 @@ export default function PlayerModule() {
     setNewAbName('');
     setNewAbDesc('');
     setNewAbUses('1');
+    setNewAbReset('SHORT_REST');
+    setNewAbActionType('LIVRE');
   };
 
   const removeAbility = async (abId: string) => {
@@ -1238,20 +1263,46 @@ export default function PlayerModule() {
             {/* ABA: Habilidades e Poderes */}
             {activeTab === 'abilities' && (
               <View>
+                {/* Filtros de Habilidade */}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <TouchableOpacity onPress={() => setAbilityFilter('ALL')} style={[styles.coinBtn, abilityFilter === 'ALL' && { backgroundColor: themeColor, borderColor: '#FFF' }]}>
+                    <Text style={[styles.coinBtnText, abilityFilter === 'ALL' && { color: '#110F0D' }]}>Todas</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setAbilityFilter('ACTIVE')} style={[styles.coinBtn, abilityFilter === 'ACTIVE' && { backgroundColor: themeColor, borderColor: '#FFF' }]}>
+                    <Text style={[styles.coinBtnText, abilityFilter === 'ACTIVE' && { color: '#110F0D' }]}>Ativas</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setAbilityFilter('PASSIVE')} style={[styles.coinBtn, abilityFilter === 'PASSIVE' && { backgroundColor: themeColor, borderColor: '#FFF' }]}>
+                    <Text style={[styles.coinBtnText, abilityFilter === 'PASSIVE' && { color: '#110F0D' }]}>Passivas</Text>
+                  </TouchableOpacity>
+                </View>
+
                 <View style={styles.abilitiesList}>
                   {selectedChar.abilities.length === 0 ? (
                     <Text style={styles.emptyText}>Este herói não possui habilidades ou poderes cadastrados.</Text>
                   ) : (
-                    selectedChar.abilities.map(ab => (
-                      <View key={ab.id} style={styles.abilityCard}>
+                    selectedChar.abilities
+                      .filter(ab => {
+                        if (abilityFilter === 'ACTIVE') return ab.actionType !== 'LIVRE';
+                        if (abilityFilter === 'PASSIVE') return ab.actionType === 'LIVRE';
+                        return true;
+                      })
+                      .map(ab => {
+                      const isActive = ab.actionType !== 'LIVRE';
+                      const isExpanded = expandedAbilities[ab.id];
+                      return (
+                      <View key={ab.id} style={[styles.abilityCard, isActive ? { borderColor: `${themeColor}66`, backgroundColor: '#1A1714' } : { borderColor: '#3D342C' }]}>
                         <View style={[styles.abilityHeader, isMobile && { flexDirection: 'column', alignItems: 'flex-start', gap: 12 }]}>
-                          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={styles.abilityName}>{ab.name}</Text>
+                          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            {ab.actionType === 'ACAO' && <Sword color={themeColor} size={16} />}
+                            {ab.actionType === 'ACAO_BONUS' && <FastForward color={themeColor} size={16} />}
+                            {ab.actionType === 'REACAO' && <Shield color={themeColor} size={16} />}
+                            {ab.actionType === 'LIVRE' && <Zap color={themeColor} size={16} />}
+                            <Text style={[styles.abilityName, isActive && { color: themeColor }]}>{ab.name}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                             <View style={[styles.resetBadge, ab.resetType === 'LONG_REST' && styles.resetLongBadge]}>
                               <Text style={styles.resetBadgeText}>
-                                {ab.resetType === 'SHORT_REST' ? '⚡ Ritual Curto' : ab.resetType === 'LONG_REST' ? '💤 Ritual Longo' : 'Poder Passivo'}
+                                {ab.resetType === 'SHORT_REST' ? '⚡ Ritual Curto' : ab.resetType === 'LONG_REST' ? '💤 Ritual Longo' : 'Contínuo'}
                               </Text>
                             </View>
                             <TouchableOpacity style={styles.delItemBtn} onPress={() => {
@@ -1269,26 +1320,45 @@ export default function PlayerModule() {
                         
                         {ab.description ? (
                           <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-                            <Text style={styles.abilityDesc}>{ab.description}</Text>
+                            <Markdown style={markdownStyles}>
+                              {isExpanded ? ab.description : ab.description.split('\n').slice(0, 3).join('\n') + (ab.description.split('\n').length > 3 ? '...' : '')}
+                            </Markdown>
+                            {ab.description.split('\n').length > 3 && (
+                              <TouchableOpacity onPress={() => toggleAbilityExpanded(ab.id)} style={{ marginTop: 8 }}>
+                                <Text style={{ color: themeColor, fontSize: 12, fontWeight: '700' }}>{isExpanded ? 'Esconder...' : 'Ler Mais...'}</Text>
+                              </TouchableOpacity>
+                            )}
                           </View>
                         ) : null}
 
                         {ab.maxUses < 90 && (
                           <View style={[styles.abilityFooter, isMobile && { flexDirection: 'column', gap: 12, alignItems: 'flex-start' }]}>
-                            <Text style={styles.abilityUses}>
-                              Usos Disponíveis: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{ab.currentUses} / {ab.maxUses}</Text>
-                            </Text>
-                            <TouchableOpacity
-                              style={[styles.useBtn, ab.currentUses <= 0 && styles.useBtnDisabled, isMobile && { width: '100%' }]}
-                              disabled={ab.currentUses <= 0}
-                              onPress={() => consumeAbility(ab.id, ab.currentUses)}
-                            >
-                              <Text style={styles.useBtnText}>{ab.currentUses > 0 ? 'Invocar Poder' : 'Esgotado'}</Text>
-                            </TouchableOpacity>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                              <Text style={styles.abilityUses}>
+                                Usos: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{ab.currentUses} / {ab.maxUses}</Text>
+                              </Text>
+                              <View style={{ flexDirection: 'row', gap: 4 }}>
+                                <TouchableOpacity onPress={() => adjustAbilityUses(ab.id, -1)} style={styles.miniAdjustBtn}>
+                                  <Minus color="#E6C280" size={12} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => adjustAbilityUses(ab.id, 1)} style={styles.miniAdjustBtn}>
+                                  <Plus color="#E6C280" size={12} />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                            {isActive && (
+                              <TouchableOpacity
+                                style={[styles.useBtn, ab.currentUses <= 0 && styles.useBtnDisabled, isMobile && { width: '100%' }]}
+                                disabled={ab.currentUses <= 0}
+                                onPress={() => consumeAbility(ab.id, ab.currentUses)}
+                              >
+                                <Text style={styles.useBtnText}>{ab.currentUses > 0 ? 'Invocar Poder' : 'Esgotado'}</Text>
+                              </TouchableOpacity>
+                            )}
                           </View>
                         )}
                       </View>
-                    ))
+                    )})
                   )}
                 </View>
 
@@ -1329,32 +1399,52 @@ export default function PlayerModule() {
                     </View>
                     <View style={styles.addInputRow}>
                       <TextInput
-                        style={[styles.addInput, { flex: 1 }]}
-                        placeholder="Descrição do poder e efeitos..."
+                        style={[styles.addInput, { flex: 1, minHeight: 60 }]}
+                        placeholder="Descrição do poder e efeitos (suporta Markdown, **negrito**)..."
                         placeholderTextColor="#80776C"
+                        multiline
                         value={newAbDesc}
                         onChangeText={setNewAbDesc}
                       />
                     </View>
-                    <View style={[styles.addInputRow, { alignItems: 'center' }]}>
+                    <View style={styles.addInputRow}>
+                      <Text style={{ color: '#BAAFA0', fontSize: 12, width: '100%', marginBottom: 4 }}>Tipo de Ação</Text>
+                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+
+                        <TouchableOpacity style={[styles.coinBtn, newAbActionType === 'ACAO' && { backgroundColor: themeColor, borderColor: '#FFF' }]} onPress={() => setNewAbActionType('ACAO')}>
+                          <Text style={[styles.coinBtnText, newAbActionType === 'ACAO' && { color: '#110F0D' }]}>⚔️ Ação</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.coinBtn, newAbActionType === 'ACAO_BONUS' && { backgroundColor: themeColor, borderColor: '#FFF' }]} onPress={() => setNewAbActionType('ACAO_BONUS')}>
+                          <Text style={[styles.coinBtnText, newAbActionType === 'ACAO_BONUS' && { color: '#110F0D' }]}>⚡ Bônus</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.coinBtn, newAbActionType === 'REACAO' && { backgroundColor: themeColor, borderColor: '#FFF' }]} onPress={() => setNewAbActionType('REACAO')}>
+                          <Text style={[styles.coinBtnText, newAbActionType === 'REACAO' && { color: '#110F0D' }]}>🛡️ Reação</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.coinBtn, newAbActionType === 'LIVRE' && { backgroundColor: themeColor, borderColor: '#FFF' }]} onPress={() => setNewAbActionType('LIVRE')}>
+                          <Text style={[styles.coinBtnText, newAbActionType === 'LIVRE' && { color: '#110F0D' }]}>💨 Livre / Passiva</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    <View style={styles.addInputRow}>
+                      <Text style={{ color: '#BAAFA0', fontSize: 12, width: '100%', marginBottom: 4 }}>Recuperação</Text>
                       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
                         <TouchableOpacity
                           style={[styles.coinBtn, newAbReset === 'SHORT_REST' && { backgroundColor: '#6B4A70', borderColor: '#E6C280' }]}
                           onPress={() => setNewAbReset('SHORT_REST')}
                         >
-                          <Text style={[styles.coinBtnText, newAbReset === 'SHORT_REST' && { color: '#FFF' }]}>⚡ Descanso Curto</Text>
+                          <Text style={[styles.coinBtnText, newAbReset === 'SHORT_REST' && { color: '#FFF' }]}>⚡ Curto</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.coinBtn, newAbReset === 'LONG_REST' && { backgroundColor: '#C5A059', borderColor: '#FFF' }]}
                           onPress={() => setNewAbReset('LONG_REST')}
                         >
-                          <Text style={[styles.coinBtnText, newAbReset === 'LONG_REST' && { color: '#FFF' }]}>💤 Descanso Longo</Text>
+                          <Text style={[styles.coinBtnText, newAbReset === 'LONG_REST' && { color: '#FFF' }]}>💤 Longo</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.coinBtn, newAbReset === 'NONE' && { backgroundColor: '#3D342C', borderColor: '#E6C280' }]}
                           onPress={() => setNewAbReset('NONE')}
                         >
-                          <Text style={[styles.coinBtnText, newAbReset === 'NONE' && { color: '#FFF' }]}>✨ Passivo / Contínuo</Text>
+                          <Text style={[styles.coinBtnText, newAbReset === 'NONE' && { color: '#FFF' }]}>✨ Contínuo</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -3295,5 +3385,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2D251E',
     minHeight: 250,
-  }
+  },
+  miniAdjustBtn: {
+    padding: 4,
+    backgroundColor: '#3D342C',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#5C4A3D',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
 });
+
+const markdownStyles = {
+  body: { color: '#BAAFA0', fontSize: 13, lineHeight: 20 },
+  strong: { color: '#E2D8C3', fontWeight: 'bold' },
+  em: { fontStyle: 'italic', color: '#D4C6AB' },
+};

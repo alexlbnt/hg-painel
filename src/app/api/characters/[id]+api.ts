@@ -27,6 +27,7 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
             maxUses: Number(ab.maxUses) || 1,
             currentUses: Number(ab.currentUses) !== undefined ? Number(ab.currentUses) : (Number(ab.maxUses) || 1),
             resetType: ab.resetType || 'SHORT_REST',
+            actionType: ab.actionType || 'LIVRE',
             characterId: id,
           })),
         });

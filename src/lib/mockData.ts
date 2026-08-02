@@ -24,6 +24,7 @@ export interface AbilityData {
   maxUses: number;
   currentUses: number;
   resetType: 'SHORT_REST' | 'LONG_REST' | 'NONE';
+  actionType?: string;
 }
 
 export interface ConditionData {

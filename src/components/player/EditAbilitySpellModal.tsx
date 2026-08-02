@@ -25,6 +25,7 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
   // Ability specific
   const [maxUses, setMaxUses] = useState('1');
   const [resetType, setResetType] = useState<'SHORT_REST' | 'LONG_REST' | 'NONE'>('SHORT_REST');
+  const [actionType, setActionType] = useState('LIVRE');
 
   useEffect(() => {
     if (initialData && visible) {
@@ -40,6 +41,7 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
       } else {
         setMaxUses(String(initialData.maxUses || 1));
         setResetType(initialData.resetType || 'SHORT_REST');
+        setActionType(initialData.actionType || 'LIVRE');
       }
     }
   }, [initialData, visible, type]);
@@ -65,6 +67,7 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
         description: description.trim(),
         maxUses: Number(maxUses) || 1,
         resetType,
+        actionType,
       };
       onSave(updated);
     }
@@ -142,6 +145,34 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
                   keyboardType="numeric"
                   placeholderTextColor="#80776C"
                 />
+
+                <Text style={styles.label}>Tipo de Ação</Text>
+                <View style={styles.radioGroup}>
+                  <TouchableOpacity
+                    style={[styles.radioBtn, actionType === 'ACAO' && { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
+                    onPress={() => setActionType('ACAO')}
+                  >
+                    <Text style={[styles.radioText, actionType === 'ACAO' && { color: themeColor }]}>⚔️ Ação</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.radioBtn, actionType === 'ACAO_BONUS' && { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
+                    onPress={() => setActionType('ACAO_BONUS')}
+                  >
+                    <Text style={[styles.radioText, actionType === 'ACAO_BONUS' && { color: themeColor }]}>⏩ Bônus</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.radioBtn, actionType === 'REACAO' && { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
+                    onPress={() => setActionType('REACAO')}
+                  >
+                    <Text style={[styles.radioText, actionType === 'REACAO' && { color: themeColor }]}>🛡️ Reação</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.radioBtn, actionType === 'LIVRE' && { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
+                    onPress={() => setActionType('LIVRE')}
+                  >
+                    <Text style={[styles.radioText, actionType === 'LIVRE' && { color: themeColor }]}>💨 Livre/Passiva</Text>
+                  </TouchableOpacity>
+                </View>
 
                 <Text style={styles.label}>Recuperação</Text>
                 <View style={styles.radioGroup}>

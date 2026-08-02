@@ -120,6 +120,7 @@ model Ability {
   maxUses     Int       @default(1)
   currentUses Int       @default(1)
   resetType   ResetType @default(SHORT_REST)
+  actionType  String    @default("LIVRE")
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
