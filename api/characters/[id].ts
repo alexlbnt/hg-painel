@@ -52,6 +52,7 @@ export default async function handler(req: any, res: any) {
       }
 
       if (body.items && Array.isArray(body.items)) {
+        console.log(`[API] Updating items for character ${id}:`, body.items);
         await prisma.item.deleteMany({ where: { characterId: id } });
         await prisma.item.createMany({
           data: body.items.map((i: any) => ({
@@ -61,6 +62,9 @@ export default async function handler(req: any, res: any) {
             quantity: Number(i.quantity) || 1,
             isWeapon: !!i.isWeapon,
             damage: i.damage || '',
+            isArmor: !!i.isArmor,
+            isEquipped: !!i.isEquipped,
+            armorClassBonus: Number(i.armorClassBonus) || 0,
             characterId: id,
           })),
         });
