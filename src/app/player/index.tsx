@@ -812,6 +812,39 @@ export default function PlayerModule() {
                 </Text>
               </View>
 
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12, width: '100%' }}>
+                <TouchableOpacity style={[styles.actionBtn, { flex: 1, borderColor: '#C5A059' }]} onPress={triggerShortRest}>
+                  <Text style={[styles.actionBtnText, { color: '#C5A059' }]}>Descanso Curto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionBtn, { flex: 1, borderColor: '#6B4A70' }]} onPress={triggerLongRest}>
+                  <Text style={[styles.actionBtnText, { color: '#6B4A70' }]}>Descanso Longo</Text>
+                </TouchableOpacity>
+              </View>
+
+              {selectedChar.currentHp <= 0 && (
+                <View style={{ marginBottom: 12, backgroundColor: '#1A1714', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#B82828' }}>
+                  <Text style={{ color: '#E2D8C3', fontSize: 14, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>TESTES CONTRA A MORTE</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ color: '#78C288', fontSize: 12, marginBottom: 4 }}>Sucessos</Text>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {[0, 1, 2].map(i => (
+                          <TouchableOpacity key={`succ-${i}`} onPress={() => toggleDeathSave('success', i)} style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#78C288', backgroundColor: selectedChar.deathSaveSuccesses > i ? '#78C288' : 'transparent' }} />
+                        ))}
+                      </View>
+                    </View>
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ color: '#B82828', fontSize: 12, marginBottom: 4 }}>Falhas</Text>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {[0, 1, 2].map(i => (
+                          <TouchableOpacity key={`fail-${i}`} onPress={() => toggleDeathSave('fail', i)} style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#B82828', backgroundColor: selectedChar.deathSaveFailures > i ? '#B82828' : 'transparent' }} />
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+
               {/* Input Customizado de Dano / Poção mais elegante e compacto */}
               <View style={styles.customHpRow}>
                 <TextInput
@@ -1907,13 +1940,7 @@ export default function PlayerModule() {
   );
 }
 
-function XCircleIcon({ color, size }: { color: string; size: number }) {
-  return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: '#110F0D', fontSize: size * 0.6, fontWeight: '900' }}>✕</Text>
-    </View>
-  );
-}
+
 
 const styles = StyleSheet.create({
   container: {

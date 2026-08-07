@@ -3,7 +3,7 @@ import InterventionModal from '@/components/dm/InterventionModal';
 import WhispersModal from '@/components/dm/WhispersModal';
 import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
-import { AlertTriangle, Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
