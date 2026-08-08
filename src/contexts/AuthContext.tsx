@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 export type Role = 'PLAYER' | 'DM';
 
 export interface User {
+  id: string;
   username: string;
   role: Role;
   name: string;
@@ -11,23 +12,12 @@ export interface User {
 
 interface AuthContextData {
   user: User | null;
-  login: (username: string, pass: string) => boolean;
+  login: (username: string, pass: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
-
-const USERS = [
-  { username: 'joao.c', pass: '7392', role: 'PLAYER' as Role, name: 'João' },
-  { username: 'pastor.j', pass: '4815', role: 'PLAYER' as Role, name: 'Pastor' },
-  { username: 'lobo.l', pass: '9024', role: 'PLAYER' as Role, name: 'Lobo' },
-  { username: 'luis.k', pass: '1568', role: 'PLAYER' as Role, name: 'Luis' },
-  { username: 'allan.m', pass: '6271', role: 'PLAYER' as Role, name: 'Allan' },
-  { username: 'dantas.p', pass: '3840', role: 'PLAYER' as Role, name: 'Dantas' },
-  { username: 'gabi.f', pass: '8193', role: 'PLAYER' as Role, name: 'Gabi' },
-  { username: 'alex.g', pass: '2807', role: 'DM' as Role, name: 'Alex (Mestre)' },
-];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -49,15 +39,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = (username: string, pass: string) => {
-    const foundUser = USERS.find(u => u.username === username.toLowerCase().trim() && u.pass === pass);
-    if (foundUser) {
-      const userData = { username: foundUser.username, role: foundUser.role, name: foundUser.name };
-      setUser(userData);
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('@hg_user', JSON.stringify(userData));
+  const login = async (username: string, pass: string) => {
+    if (Platform.OS === 'web') {
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password: pass }),
+        });
+        
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('@hg_user', JSON.stringify(userData));
+          }
+          return true;
+        }
+      } catch (e) {
+        console.error('Login error:', e);
       }
-      return true;
     }
     return false;
   };

@@ -49,8 +49,6 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
     }
 
     if (body.items && Array.isArray(body.items)) {
-      console.log('--- UPDATING ITEMS ---');
-      console.log(JSON.stringify(body.items, null, 2));
       await prisma.item.deleteMany({ where: { characterId: id } });
       await prisma.item.createMany({
         data: body.items.map((i: any) => ({

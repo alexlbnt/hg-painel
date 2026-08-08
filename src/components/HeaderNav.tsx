@@ -2,9 +2,9 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { usePathname, useRouter } from 'expo-router';
-import { ClipboardList, Crown, Home, Shield, Sword, X } from 'lucide-react-native';
+import { BookOpen, ClipboardList, Crown, Home, Shield, Sword, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 export default function HeaderNav() {
   const router = useRouter();
@@ -12,17 +12,20 @@ export default function HeaderNav() {
   const { isMobile } = useResponsive();
   const { user, login, logout } = useAuth();
   
+  const { width } = useWindowDimensions();
+  const isVerySmall = width < 380;
+  
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
       setLoginError('Preencha os campos.');
       return;
     }
-    const success = login(username, password);
+    const success = await login(username, password);
     if (!success) {
       setLoginError('Usuário ou senha inválidos.');
     } else {
@@ -35,6 +38,7 @@ export default function HeaderNav() {
 
   const navItems = [
     { name: 'Portal da Taverna', mobileName: 'Taverna', path: '/', icon: Home },
+    { name: 'Diário da Campanha', mobileName: 'Diário', path: '/journal', icon: BookOpen },
     { name: 'Tarefas da Mesa', mobileName: 'Tarefas', path: '/tasks', icon: ClipboardList },
     { name: 'Grimório do Jogador', mobileName: 'Jogador', path: '/player', icon: Shield },
     { name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown },
@@ -137,9 +141,11 @@ export default function HeaderNav() {
                   onPress={() => router.push(item.path as any)}
                 >
                   <Icon color={isActive ? Colors.fantasy.goldBright : Colors.fantasy.textSecondary} size={14} />
-                  <Text style={[styles.navText, { fontSize: 11 }, isActive && styles.navTextActive]} numberOfLines={1}>
-                    {item.mobileName}
-                  </Text>
+                  {!isVerySmall && (
+                    <Text style={[styles.navText, { fontSize: 11 }, isActive && styles.navTextActive]} numberOfLines={1}>
+                      {item.mobileName}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               );
             })}
