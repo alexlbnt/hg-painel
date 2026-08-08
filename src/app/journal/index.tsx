@@ -120,9 +120,13 @@ export default function JournalScreen() {
       if (res.ok) {
         setNewNoteContent('');
         await loadSessions();
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(`Erro ao registrar: ${err?.error || res.status}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert(`Erro de conexão: ${e.message}`);
     }
   };
 
