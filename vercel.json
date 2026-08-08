@@ -1,0 +1,16 @@
+{
+  "buildCommand": "npx prisma generate && npx expo export -p web",
+  "outputDirectory": "dist/client",
+  "cleanUrls": true,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "dist/server/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ]
+}
