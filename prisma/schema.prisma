@@ -171,6 +171,7 @@ enum TaskCategory {
 }
 
 enum TaskStatus {
+  SUGERIDO
   PARADO
   ANDAMENTO
   FINALIZADO

@@ -94,7 +94,7 @@ export interface CharacterData {
 }
 
 export type TaskCategory = 'LORE' | 'MECANICA' | 'ARTE' | 'DEV' | 'ESPECIAL';
-export type TaskStatus = 'PARADO' | 'ANDAMENTO' | 'FINALIZADO' | 'APROVADO';
+export type TaskStatus = 'SUGERIDO' | 'PARADO' | 'ANDAMENTO' | 'FINALIZADO' | 'APROVADO';
 
 export interface TaskData {
   id: string;

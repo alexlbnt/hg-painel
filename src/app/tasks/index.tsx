@@ -107,7 +107,7 @@ export default function TasksScreen() {
       if (editingTask) {
         await ApiService.updateTask(editingTask.id, { title, description, category, reward, resolution });
       } else {
-        await ApiService.createTask({ title, description, category, reward, resolution, status: 'PARADO' });
+        await ApiService.createTask({ title, description, category, reward, resolution, status: isDM ? 'PARADO' : 'SUGERIDO' });
       }
       await loadTasks();
     } catch (e) {
@@ -173,6 +173,13 @@ export default function TasksScreen() {
 
     return (
       <View style={styles.actionButtons}>
+        {task.status === 'SUGERIDO' && isDM && (
+          <TouchableOpacity style={[styles.btnTake, { backgroundColor: '#C5A059' }]} onPress={() => handleUpdateStatus(task, 'PARADO')}>
+            <CheckCircle color="#111" size={16} />
+            <Text style={[styles.btnText, { color: '#111' }]}>Aprovar Sugestão</Text>
+          </TouchableOpacity>
+        )}
+
         {task.status === 'PARADO' && (
           <TouchableOpacity style={styles.btnTake} onPress={() => handleUpdateStatus(task, 'ANDAMENTO')}>
             <PlayCircle color="#111" size={16} />
@@ -298,12 +305,10 @@ export default function TasksScreen() {
           <Text style={styles.pageTitle}>Tarefas da Mesa</Text>
           <Text style={styles.pageSubtitle}>Quadro de missões e contribuições da Taverna</Text>
         </View>
-        {isDM && (
-          <TouchableOpacity style={styles.createButton} onPress={openNewTaskModal}>
-            <Plus color="#110F0D" size={20} />
-            <Text style={styles.createButtonText}>Nova Tarefa</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.createButton} onPress={openNewTaskModal}>
+          <Plus color="#110F0D" size={20} />
+          <Text style={styles.createButtonText}>{isDM ? 'Nova Tarefa' : 'Sugerir Tarefa'}</Text>
+        </TouchableOpacity>
       </View>
 
       {loading && tasks.length === 0 ? (
@@ -317,6 +322,7 @@ export default function TasksScreen() {
           decelerationRate="fast"
           showsHorizontalScrollIndicator={!isMobile}
         >
+          {renderColumn('SUGERIDO', 'SUGESTÕES')}
           {renderColumn('PARADO', 'PARADO (ABERTAS)')}
           {renderColumn('ANDAMENTO', 'EM ANDAMENTO')}
           {renderColumn('FINALIZADO', 'FINALIZADO')}
@@ -328,7 +334,7 @@ export default function TasksScreen() {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}</Text>
+            <Text style={styles.modalTitle}>{editingTask ? 'Editar Tarefa' : isDM ? 'Nova Tarefa' : 'Sugerir Tarefa'}</Text>
             <ScrollView style={{ maxHeight: 600 }}>
               <Text style={styles.label}>Título</Text>
               <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholderTextColor="#666" placeholder="Ex: Criar arte do Rei" />
@@ -359,8 +365,12 @@ export default function TasksScreen() {
                 </Picker>
               </View>
 
-              <Text style={styles.label}>Recompensa (Opcional)</Text>
-              <TextInput style={styles.input} value={reward} onChangeText={setReward} placeholderTextColor="#666" placeholder="Ex: 50 PO e Inspiração" />
+              {isDM && (
+                <>
+                  <Text style={styles.label}>Recompensa (Opcional)</Text>
+                  <TextInput style={styles.input} value={reward} onChangeText={setReward} placeholderTextColor="#666" placeholder="Ex: 50 PO e Inspiração" />
+                </>
+              )}
             </ScrollView>
             
             <View style={styles.modalButtons}>
@@ -368,7 +378,7 @@ export default function TasksScreen() {
                 <Text style={styles.btnCancelText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.btnSave} onPress={handleSaveTask}>
-                <Text style={styles.btnSaveText}>Salvar Tarefa</Text>
+                <Text style={styles.btnSaveText}>{editingTask || isDM ? 'Salvar Tarefa' : 'Enviar Sugestão'}</Text>
               </TouchableOpacity>
             </View>
           </View>
