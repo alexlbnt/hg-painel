@@ -88,11 +88,14 @@ model Character {
   // Skill Proficiencies (stored as comma-separated string for simplicity in D&D 5e skills)
   proficientSkills   String      @default("")
 
-  // Coins (Tesouro / Moedas)
+  // Moedas e Recursos Especiais
   gold               Int         @default(15) // PO
   silver             Int         @default(10) // PP
   copper             Int         @default(30) // PC
-  themeColor         String      @default("#C5A059") // Cor de Personalização da Ficha
+  themeColor         String      @default("#C5A059") // Cor de Personalização
+  
+  sorceryPoints      Int         @default(0) // Pontos de Feitiçaria
+  maxSorceryPoints   Int         @default(0)
 
   // Relations
   roomId             String?

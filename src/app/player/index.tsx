@@ -8,9 +8,10 @@ import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
 import { useRouter } from 'expo-router';
 import Markdown from 'react-native-markdown-display';
-import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, FastForward, Heart, Minus, Package, Plus, Scale, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
+import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, FastForward, Heart, Minus, Moon, Package, Plus, Scale, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { parseClassesAndCalculateSlots } from '@/utils/spellProgression';
 
 const SKILLS_LIST = [
   { name: 'Acrobacia', attr: 'dex', label: 'DES' },
@@ -95,7 +96,7 @@ export default function PlayerModule() {
   const [editEntityVisible, setEditEntityVisible] = useState(false);
   const [editEntityType, setEditEntityType] = useState<'spell'|'ability'>('spell');
   const [entityToEdit, setEntityToEdit] = useState<any>(null);
-  const [expandedLevels, setExpandedLevels] = useState<number[]>([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const [expandedLevels, setExpandedLevels] = useState<number[]>([]);
   const [addingSpellForLevel, setAddingSpellForLevel] = useState<number | null>(null);
   const [newSpellName, setNewSpellName] = useState('');
   const [newSpellCastTime, setNewSpellCastTime] = useState('1 Ação');
@@ -103,6 +104,9 @@ export default function PlayerModule() {
   const [newSpellDuration, setNewSpellDuration] = useState('Instantânea');
   const [newSpellDesc, setNewSpellDesc] = useState('');
   const [showManageSlots, setShowManageSlots] = useState(false);
+  const [editingSorcery, setEditingSorcery] = useState(false);
+  const [tempMaxSorcery, setTempMaxSorcery] = useState('');
+  const [prevClassAndLevel, setPrevClassAndLevel] = useState<string>('');
 
   const loadCharacters = async (silent = false) => {
     try {
@@ -344,15 +348,43 @@ export default function PlayerModule() {
     if (!selectedChar) return;
     const newUsed = currentUsed >= total ? 0 : currentUsed + 1;
     const updatedSlots = selectedChar.spellSlots.map(s => s.id === slotId ? { ...s, used: newUsed } : s);
-    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-    loadCharacters(true);
+    
+    // Atualização Otimista
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c));
+    
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    } catch (e) {
+      // Reverter em caso de erro
+      loadCharacters(true);
+    }
+  };
+
+  const updateSorceryPoints = async (amount: number) => {
+    if (!selectedChar) return;
+    
+    // Atualização Otimista
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, sorceryPoints: amount } : c));
+    
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { sorceryPoints: amount });
+    } catch (e) {
+      loadCharacters(true);
+    }
   };
 
   const consumeAbility = async (abId: string, currentUses: number) => {
     if (!selectedChar || currentUses <= 0) return;
     const updatedAbilities = selectedChar.abilities.map(a => a.id === abId ? { ...a, currentUses: currentUses - 1 } : a);
-    await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
-    loadCharacters(true);
+    
+    // Atualização Otimista
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c));
+    
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
+    } catch (e) {
+      loadCharacters(true);
+    }
   };
 
   const toggleDeathSave = async (type: 'success' | 'fail', index: number) => {
@@ -373,6 +405,76 @@ export default function PlayerModule() {
     await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
     loadCharacters(true);
   };
+
+  // Auto-fill resources and spell slots when Class or Level changes
+  useEffect(() => {
+    if (!selectedChar) return;
+    
+    const currentClassAndLevel = `${selectedChar.id}-${selectedChar.class}-${selectedChar.level}`;
+    
+    // Only auto-fill if the character changed, or their class/level changed. 
+    // This allows manual edits to spell slots via the bottom menu without immediately overwriting them,
+    // until the user levels up or changes class.
+    if (prevClassAndLevel === currentClassAndLevel) {
+      return;
+    }
+    
+    let updates: any = {};
+    let shouldUpdate = false;
+
+    // Sorcerer auto-fill
+    if (selectedChar.class?.toLowerCase().includes('feiticeiro')) {
+      if ((selectedChar.maxSorceryPoints === 0 || selectedChar.maxSorceryPoints == null) && selectedChar.level > 0) {
+        updates.maxSorceryPoints = selectedChar.level;
+        updates.sorceryPoints = selectedChar.level;
+        shouldUpdate = true;
+      }
+    }
+
+    // Calcular espaços de magia baseados na classe e nível
+    const calculated = parseClassesAndCalculateSlots(selectedChar.class || '', selectedChar.level || 1);
+    const { standard, warlock } = calculated;
+
+    const currentSlots = selectedChar.spellSlots || [];
+    let newSlots = [...currentSlots];
+    let slotsChanged = false;
+
+    // 1. Criar ou atualizar os slots esperados
+    for (let lvl = 1; lvl <= 9; lvl++) {
+      const expectedStandard = standard[lvl] || 0;
+      const expectedWarlock = (warlock && warlock.level === lvl) ? warlock.count : 0;
+      const totalExpected = expectedStandard + expectedWarlock;
+
+      const existingSlot = newSlots.find(s => s.level === lvl);
+
+      if (totalExpected > 0) {
+        if (!existingSlot) {
+          newSlots.push({ id: `slot-${Date.now()}-${lvl}`, level: lvl, total: totalExpected, used: 0 });
+          slotsChanged = true;
+        } else if (existingSlot.total !== totalExpected) {
+          existingSlot.total = totalExpected;
+          if (existingSlot.used > totalExpected) existingSlot.used = totalExpected;
+          slotsChanged = true;
+        }
+      } else if (existingSlot) {
+         // Destructive Update: Remover se o total esperado for 0
+         newSlots = newSlots.filter(s => s.level !== lvl);
+         slotsChanged = true;
+      }
+    }
+
+    if (slotsChanged) {
+       updates.spellSlots = newSlots.sort((a, b) => a.level - b.level);
+       shouldUpdate = true;
+    }
+
+    // Registra que já calculamos para este nível e classe
+    setPrevClassAndLevel(currentClassAndLevel);
+
+    if (shouldUpdate) {
+      ApiService.updateCharacter(selectedChar.id, updates).then(() => loadCharacters(true));
+    }
+  }, [selectedChar?.id, selectedChar?.level, selectedChar?.class, selectedChar?.spellSlots, prevClassAndLevel]);
 
   const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string; isArmor?: boolean; isEquipped?: boolean; armorClassBonus?: number }) => {
     if (!selectedChar) return;
@@ -971,6 +1073,9 @@ export default function PlayerModule() {
               availableLevelsSet.add(0);
               availableLevelsSet.add(1);
               const sortedLevels = Array.from(availableLevelsSet).sort((a, b) => a - b);
+              
+              const isWarlock = selectedChar.class?.toLowerCase().includes('bruxo');
+              const isSorcerer = selectedChar.class?.toLowerCase().includes('feiticeiro');
 
               return (
                 <View style={{ gap: 16 }}>
@@ -1000,6 +1105,124 @@ export default function PlayerModule() {
                       </View>
                     </View>
                   </View>
+
+                  {/* ⚡ Feiticeiro: Pontos de Feitiçaria */}
+                  {isSorcerer && (
+                    <View style={[styles.spellStatsBanner, { borderColor: '#8C4A60', backgroundColor: 'rgba(140, 74, 96, 0.1)', marginTop: 0 }]}>
+                      <View style={{ flex: 1, flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 0 }}>
+                        <View>
+                          <Text style={[styles.spellStatLabel, { color: '#E2D8C3' }]}>PONTOS DE FEITIÇARIA</Text>
+                          {editingSorcery ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                              <TextInput 
+                                style={{ backgroundColor: '#1A1714', color: '#E6C280', fontSize: 18, padding: 4, borderRadius: 4, width: 50, textAlign: 'center', borderWidth: 1, borderColor: '#8C4A60' }}
+                                value={tempMaxSorcery}
+                                onChangeText={setTempMaxSorcery}
+                                keyboardType="numeric"
+                              />
+                              <TouchableOpacity onPress={async () => {
+                                const newMax = parseInt(tempMaxSorcery, 10);
+                                if (!isNaN(newMax)) {
+                                  await ApiService.updateCharacter(selectedChar.id, { maxSorceryPoints: newMax, sorceryPoints: newMax });
+                                  loadCharacters(true);
+                                }
+                                setEditingSorcery(false);
+                              }}>
+                                <Text style={{ color: '#4E9C8E', fontWeight: 'bold' }}>✓ SALVAR</Text>
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 24, marginTop: 4 }]}>
+                                {/* @ts-ignore */}
+                                {selectedChar.sorceryPoints || 0} / {selectedChar.maxSorceryPoints || 0}
+                              </Text>
+                              <TouchableOpacity onPress={() => {
+                                // @ts-ignore
+                                setTempMaxSorcery(String(selectedChar.maxSorceryPoints || 0));
+                                setEditingSorcery(true);
+                              }}>
+                                <Edit color="#8C4A60" size={16} />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 10, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end' }}>
+                          <TouchableOpacity 
+                            style={[{ backgroundColor: 'rgba(140, 74, 96, 0.3)', padding: 10, borderRadius: 6, alignItems: 'center' }, isMobile && { flex: 1 }]}
+                            // @ts-ignore
+                            onPress={() => updateSorceryPoints(Math.max(0, (selectedChar.sorceryPoints || 0) - 1))}
+                          >
+                            <Text style={{ color: '#E2D8C3', fontWeight: 'bold' }}>- GASTAR</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[{ backgroundColor: 'rgba(78, 156, 142, 0.2)', padding: 10, borderRadius: 6, alignItems: 'center' }, isMobile && { flex: 1 }]}
+                            // @ts-ignore
+                            onPress={() => updateSorceryPoints(Math.min((selectedChar.maxSorceryPoints || 0), (selectedChar.sorceryPoints || 0) + 1))}
+                          >
+                            <Text style={{ color: '#E2D8C3', fontWeight: 'bold' }}>+ RECUPERAR</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* 🌑 Bruxo: Magia de Pacto */}
+                  {isWarlock && (() => {
+                     const pactSlotsLevel = sortedLevels.filter(l => l > 0).pop();
+                     const pactSlot = selectedChar.spellSlots.find(s => s.level === pactSlotsLevel);
+                     if (!pactSlot) return null;
+                     
+                     return (
+                      <View style={[styles.spellStatsBanner, { borderColor: '#6B4A70', backgroundColor: 'rgba(107, 74, 112, 0.1)', marginTop: 0 }]}>
+                        <View style={{ flex: 1, flexDirection: 'column', gap: 12 }}>
+                          <View style={{ flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 0 }}>
+                            <View>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Text style={[styles.spellStatLabel, { color: '#E2D8C3' }]}>MAGIA DE PACTO (BRUXO)</Text>
+                                <TouchableOpacity onPress={() => setShowManageSlots(true)}>
+                                  <Edit color="#6B4A70" size={14} />
+                                </TouchableOpacity>
+                              </View>
+                              <Text style={[styles.spellAccordionSub, { marginTop: 4 }]}>Espaços de {pactSlotsLevel}º Nível unificados.</Text>
+                            </View>
+                            <TouchableOpacity 
+                              style={{ backgroundColor: 'rgba(107, 74, 112, 0.3)', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 6, width: isMobile ? '100%' : 'auto', justifyContent: 'center' }}
+                              onPress={async () => {
+                                // Recuperação de descanso curto otimista
+                                const updatedSlots = selectedChar.spellSlots.map(s => ({...s, used: 0}));
+                                setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c));
+                                
+                                try {
+                                  await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+                                } catch (e) {
+                                  loadCharacters(true);
+                                }
+                              }}
+                            >
+                              <Moon color="#E2D8C3" size={16} />
+                              <Text style={{ color: '#E2D8C3', fontWeight: 'bold', fontSize: 12 }}>DESCANSO CURTO</Text>
+                            </TouchableOpacity>
+                          </View>
+                          
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            {Array.from({ length: pactSlot.total }).map((_, idx) => {
+                              const isUsed = idx < pactSlot.used;
+                              return (
+                                <TouchableOpacity
+                                  key={`pact-slot-${idx}`}
+                                  style={[styles.accordionTokenBtn, { width: 32, height: 32 }, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
+                                  onPress={() => toggleSpellSlot(pactSlot.id, pactSlot.used, pactSlot.total)}
+                                >
+                                  <Scroll color={isUsed ? '#3D342C' : themeColor} size={16} />
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        </View>
+                      </View>
+                     );
+                  })()}
 
                   {/* 📜 2. Acordeões de Níveis de Magia */}
                   <View style={{ gap: 12 }}>
@@ -1031,7 +1254,7 @@ export default function PlayerModule() {
                             </View>
 
                             {/* Tokens de Espaço no Header (se for nível 1+) */}
-                            {levelNum > 0 && slotForLevel && (
+                            {levelNum > 0 && slotForLevel && !isWarlock && (
                               <View style={[styles.accordionSlotsBox, isMobile && { paddingHorizontal: 6, paddingVertical: 4, gap: 4 }]} onStartShouldSetResponder={() => true}>
                                 <Text style={[styles.accordionSlotsText, isMobile && { fontSize: 10 }]}>
                                   {isMobile ? '' : 'Usados: '}<Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel.used}</Text> / {slotForLevel.total}
