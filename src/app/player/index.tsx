@@ -184,16 +184,23 @@ export default function PlayerModule() {
       if (editingChar) {
         await ApiService.updateCharacter(editingChar.id, data);
         Alert.alert('Sucesso', 'Ficha atualizada!');
+        loadCharacters(true);
       } else {
         const newChar = await ApiService.createCharacter({
           ...data,
           username: user?.username || ''
         });
+        
+        // Optimistic UI: adiciona a ficha imediatamente na lista local para evitar
+        // que o useEffect de validação do selectedId resete a seleção
+        setCharacters(prev => [...prev, newChar]);
         setSelectedId(newChar.id);
         Alert.alert('Sucesso', 'Ficha criada!');
+        
+        // Pede a atualização silenciosa em background
+        loadCharacters(true);
       }
       setModalVisible(false);
-      loadCharacters();
     } catch (e) {
       console.error(e);
       Alert.alert('Erro', 'Falha ao salvar ficha.');
@@ -576,11 +583,14 @@ export default function PlayerModule() {
   };
 
   const updateSpellsForChar = async (charId: string, newSpells: SpellItemData[]) => {
+    // Optimistic Update
+    setCharacters(prev => prev.map(c => c.id === charId ? { ...c, spells: newSpells } : c));
     try {
       const updated = await ApiService.updateCharacter(charId, { spells: newSpells });
       setCharacters(prev => prev.map(c => c.id === charId ? updated : c));
     } catch (e) {
       console.error(e);
+      loadCharacters(true); // Reverter em caso de erro
     }
   };
 
@@ -653,13 +663,17 @@ export default function PlayerModule() {
       currentUses: data.currentUses,
       resetType: data.resetType as any,
     };
+    
+    const newAbilities = [...selectedChar.abilities, newAb];
+    // Optimistic Update
+    setCharacters(prev => prev.map(c => c.id === charId ? { ...c, abilities: newAbilities } : c));
+    
     try {
-      const updated = await ApiService.updateCharacter(charId, {
-        abilities: [...selectedChar.abilities, newAb]
-      });
+      const updated = await ApiService.updateCharacter(charId, { abilities: newAbilities });
       setCharacters(prev => prev.map(c => c.id === charId ? updated : c));
     } catch (e) {
       console.error(e);
+      loadCharacters(true); // Reverter em caso de erro
     }
   };
 
@@ -669,11 +683,19 @@ export default function PlayerModule() {
       if (editEntityType === 'spell') {
         const currentSpells = selectedChar.spells || [];
         const newSpells = currentSpells.map(s => s.id === updatedData.id ? updatedData : s);
+        
+        // Optimistic Update
+        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spells: newSpells } : c));
+        
         const updated = await ApiService.updateCharacter(selectedChar.id, { spells: newSpells });
         setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
       } else {
         const currentAbs = selectedChar.abilities || [];
         const newAbs = currentAbs.map(a => a.id === updatedData.id ? updatedData : a);
+        
+        // Optimistic Update
+        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, abilities: newAbs } : c));
+        
         const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: newAbs });
         setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
       }
@@ -681,6 +703,7 @@ export default function PlayerModule() {
       setEntityToEdit(null);
     } catch (error) {
       console.error(error);
+      loadCharacters(true); // Reverter em caso de erro
     }
   };
 
@@ -730,8 +753,17 @@ export default function PlayerModule() {
   const removeAbility = async (abId: string) => {
     if (!selectedChar) return;
     const updatedAbilities = selectedChar.abilities.filter(a => a.id !== abId);
-    const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
+    
+    // Optimistic Update
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c));
+    
+    try {
+      const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
+      setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
+    } catch (e) {
+      console.error(e);
+      loadCharacters(true); // Reverter em caso de erro
+    }
   };
 
   return (
