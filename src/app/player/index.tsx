@@ -9,9 +9,11 @@ import { ExportService } from '@/services/exportService';
 import { useRouter } from 'expo-router';
 import Markdown from 'react-native-markdown-display';
 import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, FastForward, Heart, Minus, Moon, Package, Plus, Scale, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { parseClassesAndCalculateSlots } from '@/utils/spellProgression';
+
+const generateId = () => Math.random().toString(36).substring(2, 11);
 
 const SKILLS_LIST = [
   { name: 'Acrobacia', attr: 'dex', label: 'DES' },
@@ -106,7 +108,7 @@ export default function PlayerModule() {
   const [showManageSlots, setShowManageSlots] = useState(false);
   const [editingSorcery, setEditingSorcery] = useState(false);
   const [tempMaxSorcery, setTempMaxSorcery] = useState('');
-  const [prevClassAndLevel, setPrevClassAndLevel] = useState<string>('');
+  const prevClassAndLevel = useRef<string>('');
 
   const loadCharacters = async (silent = false) => {
     try {
@@ -422,7 +424,7 @@ export default function PlayerModule() {
     // Only auto-fill if the character changed, or their class/level changed. 
     // This allows manual edits to spell slots via the bottom menu without immediately overwriting them,
     // until the user levels up or changes class.
-    if (prevClassAndLevel === currentClassAndLevel) {
+    if (prevClassAndLevel.current === currentClassAndLevel) {
       return;
     }
     
@@ -456,7 +458,7 @@ export default function PlayerModule() {
 
       if (totalExpected > 0) {
         if (!existingSlot) {
-          newSlots.push({ id: `slot-${Date.now()}-${lvl}`, level: lvl, total: totalExpected, used: 0 });
+          newSlots.push({ id: `slot-${generateId()}-${lvl}`, level: lvl, total: totalExpected, used: 0 });
           slotsChanged = true;
         } else if (existingSlot.total !== totalExpected) {
           existingSlot.total = totalExpected;
@@ -476,18 +478,17 @@ export default function PlayerModule() {
     }
 
     // Registra que já calculamos para este nível e classe
-    setPrevClassAndLevel(currentClassAndLevel);
+    prevClassAndLevel.current = currentClassAndLevel;
 
     if (shouldUpdate) {
       ApiService.updateCharacter(selectedChar.id, updates).then(() => loadCharacters(true));
     }
-  }, [selectedChar?.id, selectedChar?.level, selectedChar?.class, selectedChar?.spellSlots, prevClassAndLevel]);
+  }, [selectedChar?.id, selectedChar?.level, selectedChar?.class, selectedChar?.spellSlots] /* prevClassAndLevel removed */);
 
   const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string; isArmor?: boolean; isEquipped?: boolean; armorClassBonus?: number }) => {
     if (!selectedChar) return;
     const itemObj = {
-      // eslint-disable-next-line react-hooks/purity
-      id: `item-${Date.now()}`,
+      id: `item-${generateId()}`,
       ...newItem,
     };
     const updatedItems = [...(selectedChar.items || []), itemObj];
@@ -527,8 +528,7 @@ export default function PlayerModule() {
     const levelNum = parseInt(newSpellLevel, 10) || 1;
     const totalNum = parseInt(newSpellTotal, 10) || 1;
     const newSlot = {
-      // eslint-disable-next-line react-hooks/purity
-      id: `slot-${Date.now()}`,
+      id: `slot-${generateId()}`,
       level: levelNum,
       total: totalNum,
       used: 0,
@@ -611,8 +611,7 @@ export default function PlayerModule() {
   const addSpellItem = (charId: string, level: number) => {
     if (!newSpellName.trim() || !selectedChar) return;
     const newSp: SpellItemData = {
-      // eslint-disable-next-line react-hooks/purity
-      id: `sp-${Date.now()}`,
+      id: `sp-${generateId()}`,
       name: newSpellName.trim(),
       level: level,
       castingTime: newSpellCastTime.trim() || '1 Ação',
@@ -633,8 +632,7 @@ export default function PlayerModule() {
     if (!selectedChar) return;
     if (srdModalType === 'spell') {
       const newSp: SpellItemData = {
-        // eslint-disable-next-line react-hooks/purity
-        id: `sp-${Date.now()}`,
+        id: `sp-${generateId()}`,
         name: data.name,
         level: data.level || (addingSpellForLevel || 0),
         castingTime: data.castingTime,
@@ -655,8 +653,7 @@ export default function PlayerModule() {
   const addAbilityFromSrd = async (charId: string, data: any) => {
     if (!selectedChar) return;
     const newAb = {
-      // eslint-disable-next-line react-hooks/purity
-      id: `ab-${Date.now()}`,
+      id: `ab-${generateId()}`,
       name: data.name,
       description: data.description,
       maxUses: data.maxUses,
@@ -731,8 +728,7 @@ export default function PlayerModule() {
   const addAbility = async () => {
     if (!selectedChar || !newAbName.trim()) return;
     const newAb = {
-      // eslint-disable-next-line react-hooks/purity
-      id: `ab-${Date.now()}`,
+      id: `ab-${generateId()}`,
       name: newAbName.trim(),
       description: newAbDesc.trim(),
       maxUses: parseInt(newAbUses, 10) || 1,

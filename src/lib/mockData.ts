@@ -91,6 +91,8 @@ export interface CharacterData {
   conditions: ConditionData[];
   items: ItemData[];
   themeColor?: string;
+  sorceryPoints?: number;
+  maxSorceryPoints?: number;
 }
 
 export type TaskCategory = 'LORE' | 'MECANICA' | 'ARTE' | 'DEV' | 'ESPECIAL';
