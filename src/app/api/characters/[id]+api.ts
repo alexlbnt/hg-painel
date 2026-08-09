@@ -126,6 +126,8 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
         intProf: body.intProf !== undefined ? Boolean(body.intProf) : undefined,
         wisProf: body.wisProf !== undefined ? Boolean(body.wisProf) : undefined,
         chaProf: body.chaProf !== undefined ? Boolean(body.chaProf) : undefined,
+        sorceryPoints: body.sorceryPoints !== undefined ? Number(body.sorceryPoints) : undefined,
+        maxSorceryPoints: body.maxSorceryPoints !== undefined ? Number(body.maxSorceryPoints) : undefined,
       },
       include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
     });

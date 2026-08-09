@@ -1,56 +1,75 @@
-# Welcome to your Expo app 👋
+# HG Painel
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Um painel completo, híbrido e moderno para gerenciamento de campanhas de RPG de Mesa (D&D 5e) e Quadro de Tarefas / Missões de desenvolvimento e comunidade. 
 
-## Get started
+Construído com as melhores práticas de desenvolvimento web/mobile usando o ecossistema Expo e banco de dados relacional via Prisma.
 
-1. Install dependencies
+## 🚀 Funcionalidades Principais
 
-   ```bash
-   npm install
-   ```
+### 🧙‍♂️ Fichas de Personagem (D&D 5e)
+- **Atributos e Proficiências:** Controle automático de modificadores, testes de resistência (Saving Throws) e perícias.
+- **Magias e Recursos:** Gerenciamento dinâmico de Espaços de Magia (Spell Slots), Lista de Magias e Pontos de Feitiçaria (Sorcery Points).
+- **Equipamentos e Inventário:** Rastreamento de peso, armas e armaduras, além de bônus na Classe de Armadura.
+- **Condições e Habilidades:** Rastreamento completo das condições do personagem e gerenciamento de habilidades por descanso curto/longo.
 
-2. Start the app
+### 🗺️ Mesa e Diário de Campanha
+- **Sistema de Sessões:** Criação de anotações (Journal Notes) segmentadas por sessão e por autor.
+- **Multi-usuários (DM vs Player):** Permissões distintas para jogadores e para o Mestre da Campanha.
 
-   ```bash
-   npx expo start
-   ```
+### 📋 Quadro de Tarefas (Kanban)
+- **Sistema Integrado de Missões/Tarefas:** Ideal para organizar tarefas de desenvolvimento da campanha (Arte, Lore, Mecânica, Dev).
+- **Sugestões:** Jogadores podem enviar tarefas para aprovação do Mestre.
+- **Transições de Status:** Fluxo de *Sugerido* -> *Parado* -> *Em Andamento* -> *Finalizado* -> *Aprovado/Arquivado*.
 
-In the output, you'll find options to open the app in a
+## 🛠️ Tecnologias Utilizadas
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **[Expo](https://expo.dev/) & [React Native](https://reactnative.dev/):** Framework principal permitindo compilação nativa para Web, iOS e Android através do mesmo código.
+- **[Expo Router](https://docs.expo.dev/router/introduction/):** Navegação baseada em rotas de arquivos (File-based routing) e API Routes nativas (Fullstack).
+- **[Prisma ORM](https://www.prisma.io/):** Modelagem de banco de dados e migrações tipadas e consistentes (PostgreSQL).
+- **[TypeScript](https://www.typescriptlang.org/):** Base de código inteiramente tipada, prevenindo dezenas de bugs antes de rodar a aplicação.
+- **[Lucide Icons](https://lucide.dev/):** Biblioteca de ícones moderna.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## ⚙️ Pré-requisitos
 
-## Get a fresh project
+- [Node.js](https://nodejs.org/en/) (Versão recomendada: >= 20.19.4)
+- Banco de Dados PostgreSQL configurado localmente ou em nuvem (ex: Neon, Supabase).
 
-When you're ready, run:
+## 🏃 Como Rodar o Projeto
 
+**1. Instale as dependências:**
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**2. Configure as Variáveis de Ambiente:**
+Crie um arquivo `.env` na raiz do projeto contendo a sua URI de banco de dados PostgreSQL.
+```env
+DATABASE_URL="postgresql://usuario:senha@localhost:5432/hgpainel?schema=public"
+```
 
-### Other setup steps
+**3. Prepare o Banco de Dados:**
+Rode os comandos do Prisma para inicializar e sincronizar seu esquema do banco de dados e gerar a tipagem.
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+**4. Inicie o Servidor:**
+Para rodar diretamente na versão Web (recomendado):
+```bash
+npm run web
+```
+*(Você também pode usar `npm start` para abrir o menu do Expo e escolher outras plataformas).*
 
-## Learn more
+## 📖 Estrutura do Banco de Dados
+Abaixo estão os principais models encontrados no banco (Veja `prisma/schema.prisma` para detalhes):
+- `User` - Usuários, Autenticação e Perfis.
+- `Character` - Ficha complexa de Personagens incluindo relação com magias, slots, itens e condições.
+- `Task` - Gerenciamento Kanban de construção do cenário.
+- `Room` / `CampaignSession` / `JournalNote` - Organização da campanha e registros de aventura.
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 🤝 Contribuição
+Para contribuir com novos sistemas no código:
+- Utilize a página correspondente no diretório `src/app`.
+- Componentes isolados e reutilizáveis devem ficar na pasta `src/components`.
+- Lógica de interação com a base de dados ocorre nas Expo API Routes (`src/app/api`). Certifique-se de testar as mudanças do ORM gerando o Prisma novamente.
