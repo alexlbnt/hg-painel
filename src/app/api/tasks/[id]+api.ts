@@ -4,6 +4,7 @@ export async function PUT(request: Request, params: { id: string }) {
   try {
     const { id } = params;
     const body = await request.json();
+    console.log('PUT BODY:', body);
     
     const updatedTask = await prisma.task.update({
       where: { id },
