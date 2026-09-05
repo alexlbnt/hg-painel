@@ -130,7 +130,13 @@ export async function PUT(request: Request, context: any) {
         sorceryPoints: body.sorceryPoints !== undefined ? Number(body.sorceryPoints) : undefined,
         maxSorceryPoints: body.maxSorceryPoints !== undefined ? Number(body.maxSorceryPoints) : undefined,
       },
-      include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
+      include: {
+        spellSlots: { orderBy: { level: 'asc' } },
+        spells: { orderBy: { level: 'asc' } },
+        abilities: true,
+        conditions: true,
+        items: true,
+      },
     });
 
     return Response.json(updated);

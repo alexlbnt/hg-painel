@@ -37,14 +37,14 @@ const SKILLS_LIST = [
 ];
 
 export default function PlayerModule() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       router.replace('/');
     }
-  }, [user, router]);
+  }, [authLoading, user, router]);
 
   const { isMobile } = useResponsive();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
@@ -160,14 +160,15 @@ export default function PlayerModule() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadCharacters();
-    const interval = setInterval(() => {
-      loadCharacters(true);
-    }, 2000);
-    return () => clearInterval(interval);
+    if (!authLoading && user) {
+      loadCharacters();
+      const interval = setInterval(() => {
+        loadCharacters(true);
+      }, 2000);
+      return () => clearInterval(interval);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, user?.username, user?.role]);
 
 
   const themeColor = selectedChar?.themeColor || '#C5A059';
@@ -185,9 +186,20 @@ export default function PlayerModule() {
   const handleCreateOrUpdate = async (data: Partial<CharacterData>) => {
     try {
       if (editingChar) {
+        // Optimistic UI imediata
+        setCharacters(prev => prev.map(c => c.id === editingChar.id ? {
+          ...c,
+          ...data,
+          spellSlots: data.spellSlots !== undefined ? data.spellSlots : c.spellSlots,
+        } : c));
+
         await ApiService.updateCharacter(editingChar.id, data);
-        Alert.alert('Sucesso', 'Ficha atualizada!');
-        loadCharacters(true);
+        if (Platform.OS === 'web') {
+          window.alert('Ficha atualizada com sucesso!');
+        } else {
+          Alert.alert('Sucesso', 'Ficha atualizada!');
+        }
+        await loadCharacters(true);
       } else {
         const newChar = await ApiService.createCharacter({
           ...data,
@@ -198,15 +210,24 @@ export default function PlayerModule() {
         // que o useEffect de validação do selectedId resete a seleção
         setCharacters(prev => [...prev, newChar]);
         setSelectedId(newChar.id);
-        Alert.alert('Sucesso', 'Ficha criada!');
+        if (Platform.OS === 'web') {
+          window.alert('Ficha criada com sucesso!');
+        } else {
+          Alert.alert('Sucesso', 'Ficha criada!');
+        }
         
         // Pede a atualização silenciosa em background
-        loadCharacters(true);
+        await loadCharacters(true);
       }
       setModalVisible(false);
+      setEditingChar(null);
     } catch (e) {
       console.error(e);
-      Alert.alert('Erro', 'Falha ao salvar ficha.');
+      if (Platform.OS === 'web') {
+        window.alert('Falha ao salvar ficha.');
+      } else {
+        Alert.alert('Erro', 'Falha ao salvar ficha.');
+      }
     }
   };
 
@@ -495,11 +516,10 @@ export default function PlayerModule() {
     }
   };
 
-  // Inicialização inteligente: APENAS auto-preenche se o personagem não tiver NENHUM espaço cadastrado ainda
+  // Inicialização de Feitiçaria para Sorcerers (se não configurado ainda)
   useEffect(() => {
     if (!selectedChar) return;
 
-    // Pontos de Feitiçaria (Sorcerer)
     if (selectedChar.class?.toLowerCase().includes('feiticeiro')) {
       if ((selectedChar.maxSorceryPoints === 0 || selectedChar.maxSorceryPoints == null) && selectedChar.level > 0) {
         ApiService.updateCharacter(selectedChar.id, {
@@ -508,19 +528,7 @@ export default function PlayerModule() {
         }).then(() => loadCharacters(true));
       }
     }
-
-    // Apenas auto-preenche se o personagem for novo / sem espaços cadastrados
-    const currentSlots = selectedChar.spellSlots || [];
-    if (currentSlots.length === 0) {
-      const calculated = parseClassesAndCalculateSlots(selectedChar.class || '', selectedChar.level || 1);
-      const { standard, warlock } = calculated;
-      const hasAnySlots = Object.values(standard).some(v => v > 0) || (warlock && warlock.count > 0);
-
-      if (hasAnySlots) {
-        autoFillOfficialSlots(false);
-      }
-    }
-  }, [selectedChar?.id, selectedChar?.spellSlots?.length]);
+  }, [selectedChar?.id, selectedChar?.class, selectedChar?.level]);
 
   const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string; isArmor?: boolean; isEquipped?: boolean; armorClassBonus?: number }) => {
     if (!selectedChar) return;
@@ -750,7 +758,7 @@ export default function PlayerModule() {
       );
       return;
     }
-    toggleSpellSlot(targetSlot.id, targetSlot.used + 1, targetSlot.total);
+    toggleSpellSlot(targetSlot.id, targetSlot.used, targetSlot.total);
     Alert.alert('⚡ Magia Conjurada!', `${char.name} conjurou ${spell.name}!\n(1 espaço de ${spell.level}º Nível foi consumido automaticamente)`);
   };
 

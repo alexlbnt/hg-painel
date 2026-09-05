@@ -177,7 +177,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       class: className,
       level: parseInt(level, 10) || 1,
       maxHp: parseInt(maxHp, 10) || 10,
-      currentHp: parseInt(maxHp, 10) || 10,
+      currentHp: initialData ? initialData.currentHp : (parseInt(maxHp, 10) || 10),
       armorClass: parseInt(armorClass, 10) || 10,
       initiativeBonus: parseInt(initiativeBonus, 10) || 0,
       str: parseInt(str, 10) || 10,
@@ -424,9 +424,12 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
 
                         <TextInput
                           style={[styles.slotInput, hasSlots && { borderColor: themeColor, color: '#E6C280' }]}
-                          value={String(count)}
+                          value={count === 0 ? '' : String(count)}
+                          placeholder="0"
+                          placeholderTextColor="#666"
                           onChangeText={(t) => {
-                            const val = parseInt(t.replace(/[^0-9]/g, ''), 10);
+                            const cleaned = t.replace(/[^0-9]/g, '');
+                            const val = cleaned === '' ? 0 : parseInt(cleaned, 10);
                             updateSlotLevel(lvl, isNaN(val) ? 0 : val);
                           }}
                           keyboardType="numeric"

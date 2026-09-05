@@ -5,8 +5,8 @@ export async function GET() {
   try {
     const characters = await prisma.character.findMany({
       include: {
-        spellSlots: true,
-        spells: true,
+        spellSlots: { orderBy: { level: 'asc' } },
+        spells: { orderBy: { level: 'asc' } },
         abilities: true,
         conditions: true,
         items: true,
@@ -98,7 +98,13 @@ export async function GET() {
         });
       }
       const newChars = await prisma.character.findMany({
-        include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
+        include: {
+          spellSlots: { orderBy: { level: 'asc' } },
+          spells: { orderBy: { level: 'asc' } },
+          abilities: true,
+          conditions: true,
+          items: true,
+        },
       });
       return Response.json(newChars);
     }
@@ -164,7 +170,13 @@ export async function POST(request: Request) {
           create: body.items || [],
         },
       },
-      include: { spellSlots: true, spells: true, abilities: true, conditions: true, items: true },
+      include: {
+        spellSlots: { orderBy: { level: 'asc' } },
+        spells: { orderBy: { level: 'asc' } },
+        abilities: true,
+        conditions: true,
+        items: true,
+      },
     });
 
     return Response.json(newChar, { status: 201 });

@@ -233,11 +233,14 @@ export const ApiService = {
         });
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) return data;
+          if (Array.isArray(data) && data.length > 0) {
+            saveToStorage(data);
+            return data;
+          }
         }
       }
-    } catch {
-      // Usar fallback
+    } catch (e) {
+      console.warn('Erro ao buscar personagens da API, usando armazenamento local', e);
     }
     return loadFromStorage();
   },
@@ -308,7 +311,11 @@ export const ApiService = {
           body: JSON.stringify(newChar),
         });
         if (res.ok) {
-          return await res.json();
+          const created = await res.json();
+          const chars = loadFromStorage();
+          chars.push(created);
+          saveToStorage(chars);
+          return created;
         }
       }
     } catch {
@@ -330,11 +337,22 @@ export const ApiService = {
           body: JSON.stringify(updates),
         });
         if (res.ok) {
-          return await res.json();
+          const updated = await res.json();
+          const chars = loadFromStorage();
+          const idx = chars.findIndex(c => c.id === id);
+          if (idx !== -1) {
+            chars[idx] = updated;
+          } else {
+            chars.push(updated);
+          }
+          saveToStorage(chars);
+          return updated;
+        } else {
+          console.error(`Falha no PUT /api/characters/${id}: status ${res.status}`);
         }
       }
-    } catch {
-      // Usar fallback
+    } catch (err) {
+      console.error('Erro na requisição PUT de personagem:', err);
     }
 
     const chars = loadFromStorage();
