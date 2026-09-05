@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 
-export async function PUT(request: Request, { id }: Record<string, string>) {
+export async function PUT(request: Request, context: any) {
+  const id = context?.id || context?.params?.id || (context as any);
   try {
     const body = await request.json();
 
@@ -40,8 +41,8 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
         await prisma.spellSlot.createMany({
           data: body.spellSlots.map((slot: any) => ({
             level: Number(slot.level) || 1,
-            total: Number(slot.total) || 1,
-            used: Number(slot.used) || 0,
+            total: Math.max(0, Number(slot.total) || 0),
+            used: Math.max(0, Number(slot.used) || 0),
             characterId: id,
           })),
         });
@@ -139,7 +140,8 @@ export async function PUT(request: Request, { id }: Record<string, string>) {
   }
 }
 
-export async function DELETE(request: Request, { id }: Record<string, string>) {
+export async function DELETE(request: Request, context: any) {
+  const id = context?.id || context?.params?.id || (context as any);
   try {
     await prisma.character.delete({ where: { id } });
     return Response.json({ success: true });

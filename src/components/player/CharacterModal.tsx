@@ -1,9 +1,10 @@
 import { CharacterData } from '@/lib/mockData';
-import { Save, Sword, X } from 'lucide-react-native';
+import { Minus, Plus, Save, Sparkles, Sword, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { parseClassesAndCalculateSlots } from '@/utils/spellProgression';
 
 interface CharacterModalProps {
   visible: boolean;
@@ -44,6 +45,11 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
   const [themeColor, setThemeColor] = useState('#C5A059');
   const [assignedUsername, setAssignedUsername] = useState('');
 
+  // Espaços de Magia por Nível (1 a 9)
+  const [slotsByLevel, setSlotsByLevel] = useState<Record<number, number>>({
+    1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0
+  });
+
   useEffect(() => {
     if (initialData) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -70,6 +76,25 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setChaProf(!!initialData.chaProf);
       setThemeColor(initialData.themeColor || '#C5A059');
       setDeity(initialData.deity || 'Nenhum');
+
+      // Inicializa os espaços de magia da ficha existente
+      const existingSlotsMap: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+      if (initialData.spellSlots && initialData.spellSlots.length > 0) {
+        initialData.spellSlots.forEach(s => {
+          if (s.level >= 1 && s.level <= 9) {
+            existingSlotsMap[s.level] = s.total;
+          }
+        });
+      } else {
+        // Se a ficha não tinha slots gravados, pré-calcula com base nas regras de D&D 5e
+        const calculated = parseClassesAndCalculateSlots(initialData.class || 'Paladino', initialData.level || 1);
+        for (let l = 1; l <= 9; l++) {
+          const std = calculated.standard[l] || 0;
+          const war = (calculated.warlock && calculated.warlock.level === l) ? calculated.warlock.count : 0;
+          existingSlotsMap[l] = std + war;
+        }
+      }
+      setSlotsByLevel(existingSlotsMap);
     } else {
       setName('');
       setPlayerName(user?.name || 'Alex');
@@ -94,11 +119,55 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setChaProf(true);
       setThemeColor('#C5A059');
       setDeity('Nenhum');
+
+      // Padrão de novo personagem: Paladino Nível 1 não tem slots no nível 1 (ganha no 2)
+      const calculated = parseClassesAndCalculateSlots('Paladino', 1);
+      const newSlotsMap: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+      for (let l = 1; l <= 9; l++) {
+        const std = calculated.standard[l] || 0;
+        const war = (calculated.warlock && calculated.warlock.level === l) ? calculated.warlock.count : 0;
+        newSlotsMap[l] = std + war;
+      }
+      setSlotsByLevel(newSlotsMap);
     }
   }, [initialData, visible, user?.name, user?.username, user?.role]);
 
+  // Função para recalcular os espaços oficiais de D&D 5e sob demanda
+  const handleAutoFillOfficialSlots = () => {
+    const currentLvl = parseInt(level, 10) || 1;
+    const calculated = parseClassesAndCalculateSlots(className, currentLvl);
+    const newSlotsMap: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+    for (let l = 1; l <= 9; l++) {
+      const std = calculated.standard[l] || 0;
+      const war = (calculated.warlock && calculated.warlock.level === l) ? calculated.warlock.count : 0;
+      newSlotsMap[l] = std + war;
+    }
+    setSlotsByLevel(newSlotsMap);
+  };
+
+  const updateSlotLevel = (lvl: number, total: number) => {
+    setSlotsByLevel(prev => ({
+      ...prev,
+      [lvl]: Math.max(0, Math.min(20, total)),
+    }));
+  };
+
   const handleSave = () => {
     if (!name.trim()) return;
+
+    // Formata os espaços de magia para persistência
+    const formattedSlots = Object.entries(slotsByLevel)
+      .map(([lvlStr, total]) => {
+        const lvl = parseInt(lvlStr, 10);
+        const existing = (initialData?.spellSlots || []).find(s => s.level === lvl);
+        return {
+          id: existing?.id || `slot-${lvl}-${Date.now()}`,
+          level: lvl,
+          total: Math.max(0, total),
+          used: existing ? Math.min(existing.used, total) : 0,
+        };
+      })
+      .filter(s => s.total > 0);
 
     onSave({
       name,
@@ -125,6 +194,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       chaProf,
       themeColor,
       deity,
+      spellSlots: formattedSlots,
     });
     onClose();
   };
@@ -303,6 +373,77 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
                   </TouchableOpacity>
                 </View>
               ))}
+            </View>
+
+            {/* Espaços de Magia (1º ao 9º Nível) */}
+            <View style={{ marginTop: 24 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <Text style={[styles.sectionTitle, { marginBottom: 0, borderBottomWidth: 0, paddingBottom: 0 }]}>
+                  ESPAÇOS DE MAGIA (D&D 5E / PERSONALIZADO)
+                </Text>
+                <TouchableOpacity
+                  style={styles.autoFillBtn}
+                  onPress={handleAutoFillOfficialSlots}
+                  activeOpacity={0.8}
+                >
+                  <Sparkles color="#4E9C8E" size={14} />
+                  <Text style={styles.autoFillBtnText}>✨ Preencher D&D 5e</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.sectionSubtitle}>
+                Defina manualmente a quantidade total de espaços por nível. O botão acima calcula automaticamente com base na Classe ({className || 'Classe'}) e Nível ({level || '1'}).
+              </Text>
+
+              <View style={styles.slotGrid}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => {
+                  const count = slotsByLevel[lvl] || 0;
+                  const hasSlots = count > 0;
+                  return (
+                    <View
+                      key={`modal-slot-card-${lvl}`}
+                      style={[
+                        styles.slotCard,
+                        hasSlots && { borderColor: themeColor, backgroundColor: 'rgba(26, 22, 19, 0.95)' }
+                      ]}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <Text style={[styles.slotBadgeText, hasSlots && { color: themeColor, fontWeight: '700' }]}>
+                          {lvl}º Nível
+                        </Text>
+                        <View style={[styles.slotDot, hasSlots && { backgroundColor: themeColor }]} />
+                      </View>
+
+                      <View style={styles.slotCounterRow}>
+                        <TouchableOpacity
+                          style={[styles.slotStepBtn, count <= 0 && { opacity: 0.3 }]}
+                          disabled={count <= 0}
+                          onPress={() => updateSlotLevel(lvl, count - 1)}
+                        >
+                          <Minus color="#E2D8C3" size={14} />
+                        </TouchableOpacity>
+
+                        <TextInput
+                          style={[styles.slotInput, hasSlots && { borderColor: themeColor, color: '#E6C280' }]}
+                          value={String(count)}
+                          onChangeText={(t) => {
+                            const val = parseInt(t.replace(/[^0-9]/g, ''), 10);
+                            updateSlotLevel(lvl, isNaN(val) ? 0 : val);
+                          }}
+                          keyboardType="numeric"
+                          selectTextOnFocus
+                        />
+
+                        <TouchableOpacity
+                          style={styles.slotStepBtn}
+                          onPress={() => updateSlotLevel(lvl, count + 1)}
+                        >
+                          <Plus color="#E2D8C3" size={14} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           </ScrollView>
 
@@ -510,5 +651,84 @@ const styles = StyleSheet.create({
     color: '#80776C',
     fontSize: 12,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  }
+  },
+  autoFillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(78, 156, 142, 0.15)',
+    borderWidth: 1,
+    borderColor: '#4E9C8E',
+  },
+  autoFillBtnText: {
+    color: '#4E9C8E',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  sectionSubtitle: {
+    color: '#80776C',
+    fontSize: 11,
+    marginBottom: 14,
+    lineHeight: 16,
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  slotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  slotCard: {
+    flex: 1,
+    minWidth: 105,
+    backgroundColor: '#141210',
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2D2620',
+  },
+  slotBadgeText: {
+    color: '#BAAFA0',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  slotDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#3D342C',
+  },
+  slotCounterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+  },
+  slotStepBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 4,
+    backgroundColor: '#24201C',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slotInput: {
+    flex: 1,
+    backgroundColor: '#110F0D',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 4,
+    color: '#80776C',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    minWidth: 32,
+  },
 });

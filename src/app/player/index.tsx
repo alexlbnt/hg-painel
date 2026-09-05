@@ -489,6 +489,7 @@ export default function PlayerModule() {
 
     try {
       await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+      loadCharacters(true);
     } catch (e) {
       loadCharacters(true);
     }
@@ -1128,6 +1129,12 @@ export default function PlayerModule() {
               selectedChar.spellSlots.forEach(s => availableLevelsSet.add(s.level));
               availableLevelsSet.add(0);
               availableLevelsSet.add(1);
+
+              // Garante que todos os níveis suportados oficialmente pela classe e nível apareçam no acordeão
+              const calculatedOfficial = parseClassesAndCalculateSlots(selectedChar.class || '', selectedChar.level || 1);
+              Object.keys(calculatedOfficial.standard).forEach(lvl => availableLevelsSet.add(Number(lvl)));
+              if (calculatedOfficial.warlock) availableLevelsSet.add(calculatedOfficial.warlock.level);
+
               const sortedLevels = Array.from(availableLevelsSet).sort((a, b) => a - b);
               
               const isWarlock = selectedChar.class?.toLowerCase().includes('bruxo');
@@ -1160,6 +1167,63 @@ export default function PlayerModule() {
                         <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: isMobile ? 18 : 22 }]}>{spellStats.attackBonus}</Text>
                       </View>
                     </View>
+                  </View>
+
+                  {/* 🎛️ Barra Superior de Gestão Rápida de Espaços */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
+                    <TouchableOpacity
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        backgroundColor: showManageSlots ? 'rgba(197, 160, 89, 0.2)' : '#1A1714',
+                        borderWidth: 1,
+                        borderColor: showManageSlots ? '#C5A059' : '#3D342C',
+                        paddingVertical: 8,
+                        paddingHorizontal: 14,
+                        borderRadius: 6,
+                      }}
+                      onPress={() => setShowManageSlots(!showManageSlots)}
+                    >
+                      <Text style={{ color: showManageSlots ? '#E6C280' : '#BAAFA0', fontWeight: '700', fontSize: 12 }}>
+                        {showManageSlots ? '▲ Ocultar Painel de Espaços' : '⚙️ Gerenciar Todos os Espaços (1º ao 9º)'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        backgroundColor: 'rgba(78, 156, 142, 0.15)',
+                        borderWidth: 1,
+                        borderColor: '#4E9C8E',
+                        paddingVertical: 8,
+                        paddingHorizontal: 14,
+                        borderRadius: 6,
+                      }}
+                      onPress={() => {
+                        if (Platform.OS === 'web') {
+                          if (window.confirm(`Deseja recalcular e preencher os espaços oficiais de D&D 5e para ${selectedChar.class} Nível ${selectedChar.level}?`)) {
+                            autoFillOfficialSlots(true);
+                          }
+                        } else {
+                          Alert.alert(
+                            'Auto-preencher Espaços (D&D 5e)',
+                            `Preencher espaços oficiais para ${selectedChar.class} Nível ${selectedChar.level}?`,
+                            [
+                              { text: 'Cancelar', style: 'cancel' },
+                              { text: 'Preencher', onPress: () => autoFillOfficialSlots(true) },
+                            ]
+                          );
+                        }
+                      }}
+                    >
+                      <Sparkles color="#4E9C8E" size={14} />
+                      <Text style={{ color: '#4E9C8E', fontWeight: '700', fontSize: 12 }}>
+                        ✨ Auto-preencher D&D 5e ({selectedChar.class} Nv {selectedChar.level})
+                      </Text>
+                    </TouchableOpacity>
                   </View>
 
                   {/* ⚡ Feiticeiro: Pontos de Feitiçaria */}
@@ -1310,25 +1374,74 @@ export default function PlayerModule() {
                             </View>
 
                             {/* Tokens de Espaço no Header (se for nível 1+) */}
-                            {levelNum > 0 && slotForLevel && !isWarlock && (
+                            {levelNum > 0 && !isWarlock && (
                               <View style={[styles.accordionSlotsBox, isMobile && { paddingHorizontal: 6, paddingVertical: 4, gap: 4 }]} onStartShouldSetResponder={() => true}>
-                                <Text style={[styles.accordionSlotsText, isMobile && { fontSize: 10 }]}>
-                                  {isMobile ? '' : 'Usados: '}<Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel.used}</Text> / {slotForLevel.total}
-                                </Text>
-                                <View style={[styles.accordionTokensRow, isMobile && { gap: 2 }]}>
-                                  {Array.from({ length: slotForLevel.total }).map((_, idx) => {
-                                    const isUsed = idx < slotForLevel.used;
-                                    return (
-                                      <TouchableOpacity
-                                        key={`accordion-token-${slotForLevel.id}-${idx}`}
-                                        style={[styles.accordionTokenBtn, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
-                                        onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
-                                      >
-                                        <Scroll color={isUsed ? '#3D342C' : themeColor} size={isMobile ? 12 : 14} />
-                                      </TouchableOpacity>
-                                    );
-                                  })}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                  <Text style={[styles.accordionSlotsText, isMobile && { fontSize: 10 }]}>
+                                    {isMobile ? '' : 'Usados: '}<Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel?.used || 0}</Text> / {slotForLevel?.total || 0}
+                                  </Text>
+                                  {/* Botões rápidos para alterar total de espaços do nível */}
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                    <TouchableOpacity
+                                      style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 4,
+                                        backgroundColor: '#26221E',
+                                        borderWidth: 1,
+                                        borderColor: '#3D342C',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        opacity: (!slotForLevel || slotForLevel.total <= 0) ? 0.3 : 1
+                                      }}
+                                      disabled={!slotForLevel || slotForLevel.total <= 0}
+                                      onPress={(e) => {
+                                        // @ts-ignore
+                                        e?.stopPropagation?.();
+                                        upsertSpellSlot(levelNum, (slotForLevel?.total || 0) - 1);
+                                      }}
+                                      accessibilityLabel="Diminuir 1 espaço total deste nível"
+                                    >
+                                      <Minus color="#E2D8C3" size={10} />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 4,
+                                        backgroundColor: '#26221E',
+                                        borderWidth: 1,
+                                        borderColor: '#3D342C',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                      }}
+                                      onPress={(e) => {
+                                        // @ts-ignore
+                                        e?.stopPropagation?.();
+                                        upsertSpellSlot(levelNum, (slotForLevel?.total || 0) + 1);
+                                      }}
+                                      accessibilityLabel="Adicionar 1 espaço total a este nível"
+                                    >
+                                      <Plus color="#E2D8C3" size={10} />
+                                    </TouchableOpacity>
+                                  </View>
                                 </View>
+                                {slotForLevel && slotForLevel.total > 0 && (
+                                  <View style={[styles.accordionTokensRow, isMobile && { gap: 2 }]}>
+                                    {Array.from({ length: slotForLevel.total }).map((_, idx) => {
+                                      const isUsed = idx < slotForLevel.used;
+                                      return (
+                                        <TouchableOpacity
+                                          key={`accordion-token-${slotForLevel.id}-${idx}`}
+                                          style={[styles.accordionTokenBtn, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
+                                          onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
+                                        >
+                                          <Scroll color={isUsed ? '#3D342C' : themeColor} size={isMobile ? 12 : 14} />
+                                        </TouchableOpacity>
+                                      );
+                                    })}
+                                  </View>
+                                )}
                               </View>
                             )}
 
