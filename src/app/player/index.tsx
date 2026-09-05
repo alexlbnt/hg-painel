@@ -3,7 +3,7 @@ import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal
 import { SrdSearchModal } from '@/components/player/SrdSearchModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
-import { CharacterData, SpellItemData } from '@/lib/mockData';
+import { CharacterData, SpellItemData, SpellSlotData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
 import { useRouter } from 'expo-router';
@@ -416,75 +416,110 @@ export default function PlayerModule() {
     loadCharacters(true);
   };
 
-  // Auto-fill resources and spell slots when Class or Level changes
-  useEffect(() => {
+  // Preenchimento automático de espaços de magia segundo tabelas oficiais de D&D 5e
+  const autoFillOfficialSlots = async (notify = true) => {
     if (!selectedChar) return;
-    
-    const currentClassAndLevel = `${selectedChar.id}-${selectedChar.class}-${selectedChar.level}`;
-    
-    // Only auto-fill if the character changed, or their class/level changed. 
-    // This allows manual edits to spell slots via the bottom menu without immediately overwriting them,
-    // until the user levels up or changes class.
-    if (prevClassAndLevel.current === currentClassAndLevel) {
-      return;
-    }
-    
-    let updates: any = {};
-    let shouldUpdate = false;
-
-    // Sorcerer auto-fill
-    if (selectedChar.class?.toLowerCase().includes('feiticeiro')) {
-      if ((selectedChar.maxSorceryPoints === 0 || selectedChar.maxSorceryPoints == null) && selectedChar.level > 0) {
-        updates.maxSorceryPoints = selectedChar.level;
-        updates.sorceryPoints = selectedChar.level;
-        shouldUpdate = true;
-      }
-    }
-
-    // Calcular espaços de magia baseados na classe e nível
     const calculated = parseClassesAndCalculateSlots(selectedChar.class || '', selectedChar.level || 1);
     const { standard, warlock } = calculated;
 
     const currentSlots = selectedChar.spellSlots || [];
-    let newSlots = [...currentSlots];
-    let slotsChanged = false;
+    let newSlots: SpellSlotData[] = [];
 
-    // 1. Criar ou atualizar os slots esperados
+    // Preenche para todos os níveis que têm espaços esperados
     for (let lvl = 1; lvl <= 9; lvl++) {
       const expectedStandard = standard[lvl] || 0;
       const expectedWarlock = (warlock && warlock.level === lvl) ? warlock.count : 0;
       const totalExpected = expectedStandard + expectedWarlock;
 
-      const existingSlot = newSlots.find(s => s.level === lvl);
-
       if (totalExpected > 0) {
-        if (!existingSlot) {
-          newSlots.push({ id: `slot-${generateId()}-${lvl}`, level: lvl, total: totalExpected, used: 0 });
-          slotsChanged = true;
-        } else if (existingSlot.total !== totalExpected) {
-          existingSlot.total = totalExpected;
-          if (existingSlot.used > totalExpected) existingSlot.used = totalExpected;
-          slotsChanged = true;
-        }
-      } else if (existingSlot) {
-         // Destructive Update: Remover se o total esperado for 0
-         newSlots = newSlots.filter(s => s.level !== lvl);
-         slotsChanged = true;
+        const existing = currentSlots.find(s => s.level === lvl);
+        newSlots.push({
+          id: existing?.id || `slot-${generateId()}-${lvl}`,
+          level: lvl,
+          total: totalExpected,
+          used: existing ? Math.min(existing.used, totalExpected) : 0,
+        });
       }
     }
 
-    if (slotsChanged) {
-       updates.spellSlots = newSlots.sort((a, b) => a.level - b.level);
-       shouldUpdate = true;
+    newSlots.sort((a, b) => a.level - b.level);
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: newSlots } : c));
+
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { spellSlots: newSlots });
+      if (notify) {
+        const msg = `Espaços de magia sincronizados com sucesso para ${selectedChar.class} Nível ${selectedChar.level}!`;
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Sucesso', msg);
+      }
+    } catch (e) {
+      loadCharacters(true);
+    }
+  };
+
+  // Upsert manual de espaços de magia por nível (permite definir manualmente sem duplicar)
+  const upsertSpellSlot = async (level: number, total: number) => {
+    if (!selectedChar) return;
+    const currentSlots = selectedChar.spellSlots || [];
+    let updatedSlots = [...currentSlots];
+    const existingIndex = updatedSlots.findIndex(s => s.level === level);
+
+    if (total <= 0) {
+      // Remove o slot caso seja zerado
+      updatedSlots = updatedSlots.filter(s => s.level !== level);
+    } else if (existingIndex >= 0) {
+      // Atualiza o slot existente
+      updatedSlots[existingIndex] = {
+        ...updatedSlots[existingIndex],
+        total,
+        used: Math.min(updatedSlots[existingIndex].used, total),
+      };
+    } else {
+      // Insere novo slot para esse nível
+      updatedSlots.push({
+        id: `slot-${generateId()}-${level}`,
+        level,
+        total,
+        used: 0,
+      });
     }
 
-    // Registra que já calculamos para este nível e classe
-    prevClassAndLevel.current = currentClassAndLevel;
+    updatedSlots.sort((a, b) => a.level - b.level);
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c));
 
-    if (shouldUpdate) {
-      ApiService.updateCharacter(selectedChar.id, updates).then(() => loadCharacters(true));
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    } catch (e) {
+      loadCharacters(true);
     }
-  }, [selectedChar?.id, selectedChar?.level, selectedChar?.class, selectedChar?.spellSlots] /* prevClassAndLevel removed */);
+  };
+
+  // Inicialização inteligente: APENAS auto-preenche se o personagem não tiver NENHUM espaço cadastrado ainda
+  useEffect(() => {
+    if (!selectedChar) return;
+
+    // Pontos de Feitiçaria (Sorcerer)
+    if (selectedChar.class?.toLowerCase().includes('feiticeiro')) {
+      if ((selectedChar.maxSorceryPoints === 0 || selectedChar.maxSorceryPoints == null) && selectedChar.level > 0) {
+        ApiService.updateCharacter(selectedChar.id, {
+          maxSorceryPoints: selectedChar.level,
+          sorceryPoints: selectedChar.level,
+        }).then(() => loadCharacters(true));
+      }
+    }
+
+    // Apenas auto-preenche se o personagem for novo / sem espaços cadastrados
+    const currentSlots = selectedChar.spellSlots || [];
+    if (currentSlots.length === 0) {
+      const calculated = parseClassesAndCalculateSlots(selectedChar.class || '', selectedChar.level || 1);
+      const { standard, warlock } = calculated;
+      const hasAnySlots = Object.values(standard).some(v => v > 0) || (warlock && warlock.count > 0);
+
+      if (hasAnySlots) {
+        autoFillOfficialSlots(false);
+      }
+    }
+  }, [selectedChar?.id, selectedChar?.spellSlots?.length]);
 
   const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string; isArmor?: boolean; isEquipped?: boolean; armorClassBonus?: number }) => {
     if (!selectedChar) return;
@@ -528,15 +563,7 @@ export default function PlayerModule() {
     if (!selectedChar || !newSpellLevel || !newSpellTotal) return;
     const levelNum = parseInt(newSpellLevel, 10) || 1;
     const totalNum = parseInt(newSpellTotal, 10) || 1;
-    const newSlot = {
-      id: `slot-${generateId()}`,
-      level: levelNum,
-      total: totalNum,
-      used: 0,
-    };
-    const updatedSlots = [...selectedChar.spellSlots, newSlot].sort((a, b) => a.level - b.level);
-    const updated = await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
+    await upsertSpellSlot(levelNum, totalNum);
     setNewSpellLevel('1');
     setNewSpellTotal('2');
   };
@@ -544,8 +571,8 @@ export default function PlayerModule() {
   const removeSpellSlot = async (slotId: string) => {
     if (!selectedChar) return;
     const updatedSlots = selectedChar.spellSlots.filter(s => s.id !== slotId);
-    const updated = await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c));
+    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
   };
 
   // --- GRIMÓRIO INTERATIVO: FUNÇÕES AUXILIARES ---
@@ -1497,47 +1524,147 @@ export default function PlayerModule() {
 
                     {showManageSlots && (
                       <View style={[styles.addItemBox, { marginTop: 12 }]}>
-                        <Text style={styles.addItemHeading}>➕ CADASTRAR ESPAÇOS DE MAGIA</Text>
-                        <View style={styles.addItemForm}>
-                          <View style={styles.addInputRow}>
-                            <TextInput
-                              style={[styles.addInput, { flex: 1 }]}
-                              placeholder="Nível da Magia (1 a 9)"
-                              placeholderTextColor="#80776C"
-                              keyboardType="numeric"
-                              value={newSpellLevel}
-                              onChangeText={setNewSpellLevel}
-                            />
-                            <TextInput
-                              style={[styles.addInput, { flex: 1 }]}
-                              placeholder="Qtd de Espaços (ex: 2, 4)"
-                              placeholderTextColor="#80776C"
-                              keyboardType="numeric"
-                              value={newSpellTotal}
-                              onChangeText={setNewSpellTotal}
-                            />
-                          </View>
-                          <TouchableOpacity style={styles.addItemSubmitBtn} onPress={addSpellSlot}>
-                            <Plus color="#110F0D" size={18} />
-                            <Text style={styles.addItemSubmitText}>Cadastrar Espaços</Text>
-                          </TouchableOpacity>
-                        </View>
+                        {/* Botão de Auto-preenchimento oficial D&D 5e */}
+                        <TouchableOpacity
+                          style={{
+                            backgroundColor: 'rgba(78, 156, 142, 0.15)',
+                            borderWidth: 1,
+                            borderColor: '#4E9C8E',
+                            paddingVertical: 12,
+                            paddingHorizontal: 16,
+                            borderRadius: 8,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            marginBottom: 16,
+                          }}
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            if (Platform.OS === 'web') {
+                              if (window.confirm(`Deseja recalcular e preencher os espaços oficiais de D&D 5e para ${selectedChar.class} Nível ${selectedChar.level}?`)) {
+                                autoFillOfficialSlots(true);
+                              }
+                            } else {
+                              Alert.alert(
+                                'Auto-preencher Espaços (D&D 5e)',
+                                `Preencher espaços oficiais para ${selectedChar.class} Nível ${selectedChar.level}?`,
+                                [
+                                  { text: 'Cancelar', style: 'cancel' },
+                                  { text: 'Preencher', onPress: () => autoFillOfficialSlots(true) },
+                                ]
+                              );
+                            }
+                          }}
+                        >
+                          <Sparkles color="#4E9C8E" size={16} />
+                          <Text style={{ color: '#4E9C8E', fontWeight: 'bold', fontSize: 13 }}>
+                            ✨ Auto-preencher Padrão D&D 5e ({selectedChar.class} Nv {selectedChar.level})
+                          </Text>
+                        </TouchableOpacity>
 
-                        {selectedChar.spellSlots.length > 0 && (
-                          <View style={{ marginTop: 16 }}>
-                            <Text style={[styles.addItemHeading, { fontSize: 13, marginBottom: 8 }]}>Espaços Cadastrados:</Text>
-                            <View style={{ gap: 8 }}>
-                              {selectedChar.spellSlots.map(slot => (
-                                <View key={`manage-slot-${slot.id}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(26, 22, 19, 0.6)', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#3D342C' }}>
-                                  <Text style={{ color: '#E6C280', fontWeight: '600' }}>{slot.level}º Nível ({slot.total} espaços totais)</Text>
-                                  <TouchableOpacity style={styles.delItemBtn} onPress={() => removeSpellSlot(slot.id)}>
-                                    <Trash2 color="#C95B5B" size={16} />
+                        <Text style={[styles.addItemHeading, { fontSize: 13, marginBottom: 12 }]}>
+                          Controle Manual de Espaços (1º ao 9º Nível):
+                        </Text>
+
+                        {/* Grade Interativa de Níveis 1 a 9 */}
+                        <View style={{ gap: 8 }}>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => {
+                            const existing = selectedChar.spellSlots.find((s) => s.level === lvl);
+                            const currentTotal = existing ? existing.total : 0;
+                            return (
+                              <View
+                                key={`slot-manage-row-${lvl}`}
+                                style={{
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  backgroundColor: currentTotal > 0 ? 'rgba(26, 22, 19, 0.8)' : 'rgba(17, 15, 13, 0.5)',
+                                  paddingVertical: 8,
+                                  paddingHorizontal: 12,
+                                  borderRadius: 8,
+                                  borderWidth: 1,
+                                  borderColor: currentTotal > 0 ? '#3D342C' : '#26221E',
+                                }}
+                              >
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                  <View
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: 6,
+                                      backgroundColor: currentTotal > 0 ? `${themeColor}22` : '#1A1714',
+                                      borderWidth: 1,
+                                      borderColor: currentTotal > 0 ? themeColor : '#3D342C',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Text style={{ color: currentTotal > 0 ? themeColor : '#80776C', fontWeight: 'bold', fontSize: 12 }}>
+                                      {lvl}
+                                    </Text>
+                                  </View>
+                                  <Text style={{ color: currentTotal > 0 ? '#E2D8C3' : '#80776C', fontWeight: '600', fontSize: 13 }}>
+                                    {lvl}º Nível
+                                  </Text>
+                                </View>
+
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                  <TouchableOpacity
+                                    style={{
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: 6,
+                                      backgroundColor: '#26221E',
+                                      borderWidth: 1,
+                                      borderColor: '#3D342C',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      opacity: currentTotal <= 0 ? 0.3 : 1,
+                                    }}
+                                    disabled={currentTotal <= 0}
+                                    onPress={() => upsertSpellSlot(lvl, currentTotal - 1)}
+                                  >
+                                    <Minus color="#E2D8C3" size={14} />
+                                  </TouchableOpacity>
+
+                                  <View
+                                    style={{
+                                      minWidth: 42,
+                                      paddingVertical: 5,
+                                      paddingHorizontal: 8,
+                                      backgroundColor: '#110F0D',
+                                      borderRadius: 6,
+                                      borderWidth: 1,
+                                      borderColor: currentTotal > 0 ? '#C5A059' : '#3D342C',
+                                      alignItems: 'center',
+                                    }}
+                                  >
+                                    <Text style={{ color: currentTotal > 0 ? '#E6C280' : '#80776C', fontWeight: 'bold', fontSize: 14 }}>
+                                      {currentTotal}
+                                    </Text>
+                                  </View>
+
+                                  <TouchableOpacity
+                                    style={{
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: 6,
+                                      backgroundColor: '#26221E',
+                                      borderWidth: 1,
+                                      borderColor: '#3D342C',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                    onPress={() => upsertSpellSlot(lvl, currentTotal + 1)}
+                                  >
+                                    <Plus color="#E2D8C3" size={14} />
                                   </TouchableOpacity>
                                 </View>
-                              ))}
-                            </View>
-                          </View>
-                        )}
+                              </View>
+                            );
+                          })}
+                        </View>
                       </View>
                     )}
                   </View>
