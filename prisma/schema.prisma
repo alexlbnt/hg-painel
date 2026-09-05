@@ -28,6 +28,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   journalNotes JournalNote[]
+  rsvps        SessionRsvp[]
 }
 
 model Room {
@@ -216,4 +217,35 @@ model JournalNote {
   session   CampaignSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+}
+
+enum RsvpStatus {
+  CONFIRMED
+  MAYBE
+  DECLINED
+}
+
+model ScheduledSession {
+  id          String        @id @default(uuid())
+  title       String        @default("Próxima Sessão")
+  scheduledAt DateTime?
+  location    String        @default("Discord")
+  description String        @default("")
+  isActive    Boolean       @default(true)
+  rsvps       SessionRsvp[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model SessionRsvp {
+  id                 String           @id @default(uuid())
+  scheduledSessionId String
+  scheduledSession   ScheduledSession @relation(fields: [scheduledSessionId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             RsvpStatus       @default(CONFIRMED)
+  note               String           @default("")
+  updatedAt          DateTime         @updatedAt
+
+  @@unique([scheduledSessionId, userId])
 }

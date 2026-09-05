@@ -11,6 +11,63 @@ export interface UserData {
   updatedAt?: string;
 }
 
+export interface SessionNoteData {
+  id: string;
+  content: string;
+  authorId: string;
+  author: { name: string; role: Role };
+  createdAt: string;
+}
+
+export interface CampaignSessionData {
+  id: string;
+  title: string;
+  date: string;
+  notes: SessionNoteData[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type RsvpStatus = 'CONFIRMED' | 'MAYBE' | 'DECLINED';
+
+export interface SessionRsvpData {
+  id: string;
+  scheduledSessionId: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    role: Role;
+  };
+  status: RsvpStatus;
+  note: string;
+  updatedAt: string;
+}
+
+export interface ScheduledSessionData {
+  id: string;
+  title: string;
+  scheduledAt: string | null;
+  location: string;
+  description: string;
+  isActive: boolean;
+  rsvps: SessionRsvpData[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduleResponseData {
+  session: ScheduledSessionData | null;
+  quorum?: {
+    confirmedCount: number;
+    maybeCount: number;
+    declinedCount: number;
+    totalUsers: number;
+  };
+  totalUsers?: number;
+}
+
 const STORAGE_KEY = 'honra_egoismo_characters_v1';
 
 // Gerenciador de armazenamento local com fallback em memória (para funcionar em SSR/Native e Browser)
@@ -491,5 +548,82 @@ export const ApiService = {
       }
     }
     return false;
+  },
+
+  // SESSIONS / JOURNAL
+  async getSessions(): Promise<CampaignSessionData[]> {
+    try {
+      if (Platform.OS === 'web') {
+        const res = await fetch(`/api/journal/sessions?t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao buscar sessões do diário:', e);
+    }
+    return [];
+  },
+
+  // SCHEDULE / NEXT SESSION & RSVP
+  async getScheduledSession(): Promise<ScheduleResponseData> {
+    try {
+      if (Platform.OS === 'web') {
+        const res = await fetch(`/api/schedule?t=${Date.now()}`);
+        if (res.ok) {
+          return await res.json();
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao buscar próxima sessão agendada:', e);
+    }
+    return { session: null };
+  },
+
+  async saveScheduledSession(payload: {
+    title?: string;
+    scheduledAt?: string | null;
+    location?: string;
+    description?: string;
+    userId: string;
+    resetRsvps?: boolean;
+  }): Promise<ScheduledSessionData> {
+    if (Platform.OS === 'web') {
+      const res = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        return await res.json();
+      } else {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao agendar sessão');
+      }
+    }
+    throw new Error('Ambiente não suportado');
+  },
+
+  async submitRsvp(payload: {
+    scheduledSessionId: string;
+    userId: string;
+    status: RsvpStatus;
+    note?: string;
+  }): Promise<SessionRsvpData> {
+    if (Platform.OS === 'web') {
+      const res = await fetch('/api/schedule/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        return await res.json();
+      } else {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao confirmar presença');
+      }
+    }
+    throw new Error('Ambiente não suportado');
   },
 };
