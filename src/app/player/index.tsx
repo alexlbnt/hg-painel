@@ -113,8 +113,9 @@ export default function PlayerModule() {
   const loadCharacters = async (silent = false) => {
     try {
       const data = await ApiService.getCharacters();
-      // Filtra apenas as fichas que pertencem a este usuário
-      const myChars = user?.role === 'DM' ? data : data.filter((c: CharacterData) => c.username === user?.username);
+      // Filtra apenas as fichas que pertencem a este usuário (Mestre e Player Mecânico têm acesso a todas as fichas)
+      const hasAccessToAll = user?.role === 'DM' || user?.role === 'MECHANIC';
+      const myChars = hasAccessToAll ? data : data.filter((c: CharacterData) => c.username === user?.username);
       setCharacters(myChars);
       if (myChars.length > 0 && !selectedId && !silent) {
         setSelectedId(myChars[0].id);

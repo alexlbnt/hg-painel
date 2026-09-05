@@ -41,7 +41,7 @@ export default function HeaderNav() {
     { name: 'Diário da Campanha', mobileName: 'Diário', path: '/journal', icon: BookOpen },
     { name: 'Tarefas da Mesa', mobileName: 'Tarefas', path: '/tasks', icon: ClipboardList },
     { name: 'Grimório do Jogador', mobileName: 'Jogador', path: '/player', icon: Shield },
-    { name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown },
+    ...((!user || user.role === 'DM') ? [{ name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown }] : []),
   ];
 
   const renderLoginModal = () => (

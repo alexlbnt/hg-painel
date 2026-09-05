@@ -1,5 +1,15 @@
 import { CharacterData, ConditionData, INITIAL_CHARACTERS, TaskData, INITIAL_TASKS } from '@/lib/mockData';
 import { Platform } from 'react-native';
+import { Role } from '@/contexts/AuthContext';
+
+export interface UserData {
+  id: string;
+  name: string;
+  username: string;
+  role: Role;
+  createdAt: string;
+  updatedAt?: string;
+}
 
 const STORAGE_KEY = 'honra_egoismo_characters_v1';
 
@@ -416,5 +426,70 @@ export const ApiService = {
     const data = JSON.parse(JSON.stringify(INITIAL_CHARACTERS));
     saveToStorage(data);
     return data;
+  },
+
+  // USERS & PERMISSIONS
+  async getUsers(): Promise<UserData[]> {
+    try {
+      if (Platform.OS === 'web') {
+        const res = await fetch(`/api/users?t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao buscar usuários da API', e);
+    }
+    return [];
+  },
+
+  async createUser(data: { name: string; username: string; password?: string; role: Role }): Promise<UserData> {
+    if (Platform.OS === 'web') {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        return await res.json();
+      } else {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao criar usuário');
+      }
+    }
+    throw new Error('Ambiente não suportado para criação de usuário');
+  },
+
+  async updateUser(id: string, data: { name?: string; role?: Role; password?: string }): Promise<UserData> {
+    if (Platform.OS === 'web') {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        return await res.json();
+      } else {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao atualizar usuário');
+      }
+    }
+    throw new Error('Ambiente não suportado para atualização de usuário');
+  },
+
+  async deleteUser(id: string): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        return true;
+      } else {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao excluir usuário');
+      }
+    }
+    return false;
   },
 };

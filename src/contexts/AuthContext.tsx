@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Platform } from 'react-native';
 
-export type Role = 'PLAYER' | 'DM';
+export type Role = 'PLAYER' | 'MECHANIC' | 'DM';
 
 export interface User {
   id: string;

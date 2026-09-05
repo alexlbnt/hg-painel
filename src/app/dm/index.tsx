@@ -1,9 +1,10 @@
 import InitiativeTracker from '@/components/dm/InitiativeTracker';
 import InterventionModal from '@/components/dm/InterventionModal';
 import WhispersModal from '@/components/dm/WhispersModal';
+import UserManagement from '@/components/dm/UserManagement';
 import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
-import { Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp, Key } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +24,7 @@ export default function DmModule() {
   const [selectedChar, setSelectedChar] = useState<CharacterData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [whispersModalVisible, setWhispersModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<'monitor' | 'initiative'>('monitor');
+  const [activeTab, setActiveTab] = useState<'monitor' | 'initiative' | 'users'>('monitor');
   const [lastSync, setLastSync] = useState<string>('Conectando ao Escudo do Mestre...');
   const [isAllExpanded, setIsAllExpanded] = useState<boolean>(false);
   const [hoveredCond, setHoveredCond] = useState<string | null>(null);
@@ -166,6 +167,16 @@ export default function DmModule() {
           <Sword color={activeTab === 'initiative' ? '#E6C280' : '#80776C'} size={18} />
           <Text style={[styles.tabText, activeTab === 'initiative' && styles.tabTextActive]}>
             Iniciativa & Combate
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'users' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('users')}
+        >
+          <Key color={activeTab === 'users' ? '#E6C280' : '#80776C'} size={18} />
+          <Text style={[styles.tabText, activeTab === 'users' && styles.tabTextActive]}>
+            Usuários & Permissões
           </Text>
         </TouchableOpacity>
       </View>
@@ -398,6 +409,11 @@ export default function DmModule() {
             fetchTableData(true);
           }}
         />
+      </View>
+
+      {/* SEÇÃO 3: GESTÃO DE USUÁRIOS E PERMISSÕES */}
+      <View style={{ display: activeTab === 'users' ? 'flex' : 'none', width: '100%' }}>
+        <UserManagement />
       </View>
 
       {/* Modal de Intervenção Remota */}

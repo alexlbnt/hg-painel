@@ -11,6 +11,7 @@ const USERS = [
   { username: 'allan.m', pass: '6271', role: 'PLAYER', name: 'Allan' },
   { username: 'dantas.p', pass: '3840', role: 'PLAYER', name: 'Dantas' },
   { username: 'gabi.f', pass: '8193', role: 'PLAYER', name: 'Gabi' },
+  { username: 'leo.a', pass: '1457', role: 'PLAYER', name: 'Leo' },
   { username: 'alex.g', pass: '2807', role: 'DM', name: 'Alex (Mestre)' },
 ];
 

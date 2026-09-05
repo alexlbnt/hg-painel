@@ -99,8 +99,8 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
 
     onSave({
       name,
-      playerName: user?.role === 'DM' ? playerName : (user?.name || playerName),
-      username: user?.role === 'DM' ? (initialData?.username || '') : (user?.username || ''),
+      playerName: (user?.role === 'DM' || user?.role === 'MECHANIC') ? playerName : (user?.name || playerName),
+      username: (user?.role === 'DM' || user?.role === 'MECHANIC') ? (initialData?.username || '') : (user?.username || ''),
       race,
       class: className,
       level: parseInt(level, 10) || 1,
@@ -159,10 +159,10 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nome do Jogador</Text>
                 <TextInput
-                  style={[styles.input, user?.role !== 'DM' && { backgroundColor: '#1A1714', color: '#666' }]}
+                  style={[styles.input, !(user?.role === 'DM' || user?.role === 'MECHANIC') && { backgroundColor: '#1A1714', color: '#666' }]}
                   value={playerName}
                   onChangeText={setPlayerName}
-                  editable={user?.role === 'DM'}
+                  editable={user?.role === 'DM' || user?.role === 'MECHANIC'}
                   placeholder="Nome do Jogador"
                   placeholderTextColor="#80776C"
                 />
