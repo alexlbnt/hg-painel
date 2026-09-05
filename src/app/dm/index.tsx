@@ -245,17 +245,27 @@ export default function DmModule() {
                     <Text style={styles.charClass}>
                       {char.class} • Nvl {char.level}
                     </Text>
-                    <Text style={styles.playerName}>Jogador: {char.playerName}</Text>
+                    <Text style={styles.playerName}>
+                      Jogador: <Text style={{ color: '#E6C280', fontWeight: 'bold' }}>{char.playerName}</Text>
+                      {char.username ? ` (@${char.username})` : ' (Sem vínculo)'}
+                    </Text>
                     {isExpanded && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                        <Text style={{ color: '#80776C', fontSize: 10, marginRight: 4 }}>Usuário:</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
                         <TextInput 
-                          style={{ backgroundColor: '#110F0D', borderWidth: 1, borderColor: '#3D342C', color: '#BAAFA0', fontSize: 10, padding: 2, paddingHorizontal: 6, borderRadius: 4, minWidth: 80 }}
+                          style={{ backgroundColor: '#110F0D', borderWidth: 1, borderColor: '#3D342C', color: '#BAAFA0', fontSize: 11, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, minWidth: 120 }}
                           defaultValue={char.username || ''}
-                          placeholder="Vincular usuário..."
-                          placeholderTextColor="#4A3333"
+                          placeholder="username (ex: lobo.l)"
+                          placeholderTextColor="#666"
+                          onChangeText={(t) => { (char as any)._tempUsername = t; }}
                           onSubmitEditing={(e) => handleAssignUser(char.id, e.nativeEvent.text)}
                         />
+                        <TouchableOpacity
+                          style={{ backgroundColor: '#C5A059', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 4 }}
+                          activeOpacity={0.8}
+                          onPress={() => handleAssignUser(char.id, (char as any)._tempUsername !== undefined ? (char as any)._tempUsername : (char.username || ''))}
+                        >
+                          <Text style={{ color: '#110F0D', fontSize: 11, fontWeight: 'bold' }}>Vincular</Text>
+                        </TouchableOpacity>
                       </View>
                     )}
                   </View>

@@ -42,12 +42,14 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
 
   // Cor de Tema da Ficha
   const [themeColor, setThemeColor] = useState('#C5A059');
+  const [assignedUsername, setAssignedUsername] = useState('');
 
   useEffect(() => {
     if (initialData) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(initialData.name);
       setPlayerName(initialData.playerName);
+      setAssignedUsername(initialData.username || '');
       setRace(initialData.race);
       setClassName(initialData.class);
       setLevel(initialData.level.toString());
@@ -71,6 +73,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
     } else {
       setName('');
       setPlayerName(user?.name || 'Alex');
+      setAssignedUsername(user?.role === 'DM' ? '' : (user?.username || ''));
       setRace('Meio-Elfo');
       setClassName('Paladino');
       setLevel('1');
@@ -92,7 +95,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setThemeColor('#C5A059');
       setDeity('Nenhum');
     }
-  }, [initialData, visible, user?.name]);
+  }, [initialData, visible, user?.name, user?.username, user?.role]);
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -100,7 +103,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
     onSave({
       name,
       playerName: (user?.role === 'DM' || user?.role === 'MECHANIC') ? playerName : (user?.name || playerName),
-      username: (user?.role === 'DM' || user?.role === 'MECHANIC') ? (initialData?.username || '') : (user?.username || ''),
+      username: (user?.role === 'DM' || user?.role === 'MECHANIC') ? assignedUsername.trim().toLowerCase() : (user?.username || ''),
       race,
       class: className,
       level: parseInt(level, 10) || 1,
@@ -168,6 +171,21 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
                 />
               </View>
             </View>
+
+            {(user?.role === 'DM' || user?.role === 'MECHANIC') && (
+              <View style={[styles.inputGroup, { marginBottom: 16 }]}>
+                <Text style={styles.label}>Login do Usuário (Username para vincular à ficha)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={assignedUsername}
+                  onChangeText={setAssignedUsername}
+                  placeholder="Ex: lobo.l, leo.a, joao.c..."
+                  placeholderTextColor="#80776C"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            )}
 
             <View style={styles.row}>
               <View style={styles.inputGroup}>
