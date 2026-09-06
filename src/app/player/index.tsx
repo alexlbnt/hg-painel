@@ -53,6 +53,8 @@ export default function PlayerModule() {
   const [editingChar, setEditingChar] = useState<CharacterData | null>(null);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
+  const [speedModalVisible, setSpeedModalVisible] = useState(false);
+  const [quickSpeed, setQuickSpeed] = useState('9m');
   const [activeTab, setActiveTab] = useState<'spells' | 'abilities' | 'skills' | 'inventory' | 'lore'>('spells');
   const [loreText, setLoreText] = useState('');
   const [customHp, setCustomHp] = useState('');
@@ -230,6 +232,27 @@ export default function PlayerModule() {
         window.alert('Falha ao salvar ficha.');
       } else {
         Alert.alert('Erro', 'Falha ao salvar ficha.');
+      }
+    }
+  };
+
+  const handleSaveQuickSpeed = async () => {
+    if (!selectedChar) return;
+    const finalSpeed = quickSpeed.trim() || '9m';
+
+    // Optimistic UI imediata
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, speed: finalSpeed } : c));
+    setSpeedModalVisible(false);
+
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { speed: finalSpeed });
+      await loadCharacters(true);
+    } catch (err) {
+      console.error('Erro ao atualizar deslocamento:', err);
+      if (Platform.OS === 'web') {
+        window.alert('Falha ao salvar deslocamento.');
+      } else {
+        Alert.alert('Erro', 'Falha ao salvar deslocamento.');
       }
     }
   };
@@ -900,10 +923,24 @@ export default function PlayerModule() {
                 <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#38783C' }]}>{passivePerception}</Text>
               </View>
               <View style={styles.headerStatDivider} />
-              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-                <Text style={styles.headerStatLabel}>DESL.</Text>
-                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }]}>{selectedChar.speed}</Text>
-              </View>
+              <TouchableOpacity
+                style={[styles.headerStatItem, isMobile && { minWidth: 28 }, Platform.OS === 'web' && { cursor: 'pointer' } as any]}
+                onPress={() => {
+                  setQuickSpeed(selectedChar.speed || '9m');
+                  setSpeedModalVisible(true);
+                }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Editar deslocamento do personagem"
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <Text style={styles.headerStatLabel}>DESL.</Text>
+                  <Edit size={10} color={themeColor} />
+                </View>
+                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#E6C280' }]}>
+                  {selectedChar.speed || '9m'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={[styles.headerActions, isMobile && { width: '100%', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6, marginTop: 6 }]}>
@@ -2381,6 +2418,90 @@ export default function PlayerModule() {
           onSave={handleSaveEditedEntity}
           themeColor={selectedChar.themeColor}
         />
+      )}
+
+      {/* Modal Rápido de Alterar Deslocamento */}
+      {speedModalVisible && selectedChar && (
+        <Modal
+          visible={speedModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSpeedModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxWidth: 440 }]}>
+              <View style={styles.modalHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <FastForward color={themeColor} size={18} />
+                  <Text style={styles.modalTitle}>ALTERAR DESLOCAMENTO</Text>
+                </View>
+                <TouchableOpacity onPress={() => setSpeedModalVisible(false)} style={styles.closeBtn}>
+                  <Text style={styles.closeBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.modalBody}>
+                <Text style={styles.modalSectionDesc}>
+                  Defina o deslocamento por turno ou adicione tipos especiais (ex: 7.5m, 9m, 12m, Voo 18m).
+                </Text>
+
+                {/* Atalhos Rápidos */}
+                <Text style={[styles.modalLabel, { marginTop: 4 }]}>Atalhos Comuns (D&D 5e):</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+                  {[
+                    { label: '7.5m (Anão / Halfling)', val: '7.5m' },
+                    { label: '9m (Padrão 30ft)', val: '9m' },
+                    { label: '10.5m (Elfo Floresta)', val: '10.5m' },
+                    { label: '12m (Monge / Bárbaro)', val: '12m' },
+                    { label: '15m (Cavalaria)', val: '15m' },
+                  ].map(preset => (
+                    <TouchableOpacity
+                      key={preset.val}
+                      onPress={() => setQuickSpeed(preset.val)}
+                      style={[
+                        styles.speedPresetChip,
+                        quickSpeed === preset.val && styles.speedPresetChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.speedPresetText,
+                          quickSpeed === preset.val && styles.speedPresetTextActive,
+                        ]}
+                      >
+                        {preset.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.modalLabel}>Deslocamento do Personagem:</Text>
+                <TextInput
+                  style={[styles.modalInput, { fontSize: 15, color: '#E6C280', marginBottom: 6 }]}
+                  value={quickSpeed}
+                  onChangeText={setQuickSpeed}
+                  placeholder="Ex: 9m, 10.5m, 9m (Voo 18m)"
+                  placeholderTextColor="#80776C"
+                  autoFocus
+                />
+              </ScrollView>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => setSpeedModalVisible(false)}
+                >
+                  <Text style={styles.cancelBtnText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: themeColor, borderColor: themeColor }]}
+                  onPress={handleSaveQuickSpeed}
+                >
+                  <Text style={[styles.actionBtnText, { color: '#110F0D', fontWeight: 'bold' }]}>Salvar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
 
       {/* Modal de Importação e Backup */}
@@ -3921,6 +4042,27 @@ const styles = StyleSheet.create({
     borderColor: '#5C4A3D',
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  speedPresetChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: '#110F0D',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+  },
+  speedPresetChipActive: {
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+    borderColor: '#C5A059',
+  },
+  speedPresetText: {
+    color: '#BAAFA0',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  speedPresetTextActive: {
+    color: '#E6C280',
+    fontWeight: '700',
   },
 });
 

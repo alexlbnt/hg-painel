@@ -23,6 +23,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
   const [maxHp, setMaxHp] = useState('10');
   const [armorClass, setArmorClass] = useState('10');
   const [initiativeBonus, setInitiativeBonus] = useState('0');
+  const [speed, setSpeed] = useState('9m');
   const [deity, setDeity] = useState('Nenhum');
 
   // Atributos
@@ -76,6 +77,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setChaProf(!!initialData.chaProf);
       setThemeColor(initialData.themeColor || '#C5A059');
       setDeity(initialData.deity || 'Nenhum');
+      setSpeed(initialData.speed || '9m');
 
       // Inicializa os espaços de magia da ficha existente
       const existingSlotsMap: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
@@ -119,6 +121,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setChaProf(true);
       setThemeColor('#C5A059');
       setDeity('Nenhum');
+      setSpeed('9m');
 
       // Padrão de novo personagem: Paladino Nível 1 não tem slots no nível 1 (ganha no 2)
       const calculated = parseClassesAndCalculateSlots('Paladino', 1);
@@ -194,6 +197,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       chaProf,
       themeColor,
       deity,
+      speed: speed.trim() || '9m',
       spellSlots: formattedSlots,
     });
     onClose();
@@ -343,6 +347,16 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
                   value={initiativeBonus}
                   onChangeText={setInitiativeBonus}
                   keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Deslocamento</Text>
+                <TextInput
+                  style={styles.input}
+                  value={speed}
+                  onChangeText={setSpeed}
+                  placeholder="Ex: 9m, 10.5m, 12m"
+                  placeholderTextColor="#80776C"
                 />
               </View>
             </View>
@@ -535,6 +549,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginBottom: 16,
   },
@@ -545,7 +560,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     flex: 1,
-    minWidth: 130,
+    minWidth: 110,
   },
   label: {
     color: '#BAAFA0',
