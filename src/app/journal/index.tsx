@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Plus, Trash, BookOpen, User as UserIcon, Edit2, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { confirmAction } from '@/utils/confirm';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -122,16 +123,9 @@ export default function JournalScreen() {
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('Tem certeza que deseja excluir esta sessão e todas as suas anotações?')) {
-        confirmDelete();
-      }
-    } else {
-      Alert.alert('Excluir Sessão', 'Deseja excluir este capítulo e todas as anotações?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Excluir', style: 'destructive', onPress: confirmDelete },
-      ]);
-    }
+    confirmAction('Tem certeza que deseja excluir esta sessão e todas as suas anotações?', () => {
+      confirmDelete();
+    }, 'Excluir Sessão');
   };
 
   const handleCreateSession = async () => {
@@ -225,9 +219,9 @@ export default function JournalScreen() {
     }
   };
 
-  const handleDeleteNote = async (noteId: string) => {
+  const handleDeleteNote = (noteId: string) => {
     if (!user) return;
-    if (confirm('Deletar esta anotação definitivamente?')) {
+    confirmAction('Deletar esta anotação definitivamente?', async () => {
       try {
         const res = await fetch('/api/journal/notes', {
           method: 'DELETE',
@@ -240,7 +234,7 @@ export default function JournalScreen() {
       } catch (e) {
         console.error(e);
       }
-    }
+    }, 'Excluir Anotação');
   };
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
@@ -265,7 +259,7 @@ export default function JournalScreen() {
         
         {(!isMobile || isSidebarExpanded) && (
           <>
-            <ScrollView style={styles.sessionList}>
+            <ScrollView style={[styles.sessionList, isMobile && { maxHeight: 200 }]}>
               {sessions.map(session => (
                 <TouchableOpacity 
                   key={session.id} 

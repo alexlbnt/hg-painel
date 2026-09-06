@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, Alert } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import { Sword, Plus, Trash2, Copy, SkipForward, SkipBack, RotateCcw, Users } from 'lucide-react-native';
+import { confirmAction } from '@/utils/confirm';
 
 export interface Combatant {
   id: string;
@@ -141,32 +142,22 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
       // Opcionalmente restaurar HP dos monstros ou limpar
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('Deseja reiniciar a contagem de rodadas e turnos para o início do combate?')) {
-        doReset();
-      }
-    } else {
-      Alert.alert('Reiniciar Combate', 'Deseja reiniciar a rodada e voltar para o 1º turno?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Reiniciar', style: 'destructive', onPress: doReset }
-      ]);
-    }
+    confirmAction(
+      'Deseja reiniciar a contagem de rodadas e turnos para o início do combate?',
+      doReset,
+      'Reiniciar Combate'
+    );
   };
 
   const handleClearMonsters = () => {
     const doClear = () => {
       setCombatants(prev => prev.filter(c => c.isPlayer));
     };
-    if (Platform.OS === 'web') {
-      if (window.confirm('Remover todos os monstros e inimigos do rastreador de iniciativa?')) {
-        doClear();
-      }
-    } else {
-      Alert.alert('Limpar Inimigos', 'Remover todos os monstros do combate?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Remover Todos', style: 'destructive', onPress: doClear }
-      ]);
-    }
+    confirmAction(
+      'Remover todos os monstros e inimigos do rastreador de iniciativa?',
+      doClear,
+      'Limpar Inimigos'
+    );
   };
 
   const handleImportPlayers = () => {

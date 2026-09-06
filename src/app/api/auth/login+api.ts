@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
-    const passwordMatch = bcrypt.compareSync(password, user.password);
+    const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
       return Response.json({ error: 'Invalid username or password' }, { status: 401 });

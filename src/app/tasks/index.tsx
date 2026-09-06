@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TaskCategory, TaskData, TaskStatus } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { confirmAction } from '@/utils/confirm';
 import { Picker } from '@react-native-picker/picker';
 import {
   AlertCircle,
@@ -16,7 +17,6 @@ import {
   Columns,
   Edit2,
   Grid,
-  Layers,
   Lock,
   PlayCircle,
   Plus,
@@ -108,7 +108,7 @@ const COLUMNS: ColumnConfig[] = [
     shortLabel: 'Abertas',
     icon: Clock,
     accentColor: '#C5A059',
-    emptyText: 'Todas as metas abertas foram assumidas!',
+    emptyText: 'Todas as tasks abertas foram assumidas!',
   },
   {
     status: 'ANDAMENTO',
@@ -116,7 +116,7 @@ const COLUMNS: ColumnConfig[] = [
     shortLabel: 'Andamento',
     icon: PlayCircle,
     accentColor: '#5B8AC9',
-    emptyText: 'Nenhuma meta em andamento no momento.',
+    emptyText: 'Nenhuma task em andamento no momento.',
   },
   {
     status: 'FINALIZADO',
@@ -124,7 +124,7 @@ const COLUMNS: ColumnConfig[] = [
     shortLabel: 'Concluídas',
     icon: CheckCircle,
     accentColor: '#4E9C8E',
-    emptyText: 'Nenhuma meta aguardando revisão ou arquivo.',
+    emptyText: 'Nenhuma task aguardando revisão ou arquivo.',
   },
   {
     status: 'APROVADO',
@@ -132,7 +132,7 @@ const COLUMNS: ColumnConfig[] = [
     shortLabel: 'Arquivo',
     icon: Lock,
     accentColor: '#80776C',
-    emptyText: 'Nenhuma meta arquivada até o momento.',
+    emptyText: 'Nenhuma task arquivada até o momento.',
   },
 ];
 
@@ -203,9 +203,7 @@ export default function TasksScreen() {
   });
 
   useEffect(() => {
-    setTimeout(() => {
-      loadTasks();
-    }, 0);
+    loadTasks();
   }, []);
 
   const openNewTaskModal = () => {
@@ -282,12 +280,12 @@ export default function TasksScreen() {
     }
   };
 
-  const handleDeleteTask = async (id: string) => {
-    if (confirm('Deletar essa tarefa para sempre?')) {
+  const handleDeleteTask = (id: string) => {
+    confirmAction('Deletar essa tarefa para sempre?', async () => {
       setLoading(true);
       await ApiService.deleteTask(id);
       await loadTasks();
-    }
+    });
   };
 
   const handleUpdateStatus = async (task: TaskData, newStatus: TaskStatus) => {
@@ -323,16 +321,8 @@ export default function TasksScreen() {
     }));
   };
 
-  // Métricas do Projeto (Project Management Dashboard)
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(
-    (t) => t.status === 'FINALIZADO' || t.status === 'APROVADO'
-  ).length;
-  const inProgressTasks = tasks.filter((t) => t.status === 'ANDAMENTO').length;
-  const openTasks = tasks.filter((t) => t.status === 'PARADO').length;
-  const suggestedTasks = tasks.filter((t) => t.status === 'SUGERIDO').length;
+  // Contagem de tarefas do usuário conectado
   const myTasksCount = user ? tasks.filter((t) => t.assignedTo === user.name).length : 0;
-  const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // Filtragem de Tarefas
   const filteredTasks = useMemo(() => {
@@ -341,7 +331,7 @@ export default function TasksScreen() {
       if (selectedCategory !== 'ALL' && task.category !== selectedCategory) {
         return false;
       }
-      // Filtro "Minhas Metas"
+      // Filtro "Minhas Tasks"
       if (onlyMyTasks && user && task.assignedTo !== user.name) {
         return false;
       }
@@ -424,7 +414,7 @@ export default function TasksScreen() {
             onPress={() => handleUpdateStatus(task, 'ANDAMENTO')}
           >
             <RotateCcw color="#555" size={13} />
-            <Text style={styles.btnUndoText}>Reabrir Meta</Text>
+            <Text style={styles.btnUndoText}>Reabrir Task</Text>
           </TouchableOpacity>
         )}
 
@@ -522,7 +512,7 @@ export default function TasksScreen() {
           </Text>
         </View>
 
-        {/* Título da Meta */}
+        {/* Título da Task */}
         <Text style={styles.postItTitle}>{task.title}</Text>
 
         {/* Descrição com suporte a colapso para textos longos */}
@@ -571,7 +561,7 @@ export default function TasksScreen() {
         ) : task.status === 'PARADO' ? (
           <View style={styles.openNoticeBox}>
             <Clock size={12} color="#854D0E" />
-            <Text style={styles.openNoticeText}>Meta livre para assumir</Text>
+            <Text style={styles.openNoticeText}>Task livre para assumir</Text>
           </View>
         ) : null}
 
@@ -641,68 +631,18 @@ export default function TasksScreen() {
         <View>
           <Text style={styles.pageTitle}>Tarefas da Mesa</Text>
           <Text style={styles.pageSubtitle}>
-            Painel de metas, missões e contribuições ativas da Taverna
+            Painel de tasks, missões e contribuições ativas da Taverna
           </Text>
         </View>
 
         <TouchableOpacity style={styles.createButton} onPress={openNewTaskModal}>
           <Plus color="#110F0D" size={18} />
           <Text style={styles.createButtonText}>
-            {editingTask || isDM ? 'Nova Meta' : 'Sugerir Meta'}
+            {editingTask || isDM ? 'Nova Task' : 'Sugerir Task'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* 📊 Painel de Gestão de Metas & Progresso (Project Management Dashboard) */}
-      <View style={styles.pmDashboardCard}>
-        <View style={styles.pmHeaderRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Layers size={16} color="#C5A059" />
-            <Text style={styles.pmTitle}>METAS DA CAMPANHA</Text>
-          </View>
-          <View style={styles.progressPercentPill}>
-            <CheckCircle size={13} color="#4E9C8E" />
-            <Text style={styles.progressPercentText}>{progressPercent}% Concluído</Text>
-          </View>
-        </View>
-
-        {/* Barra de Progresso */}
-        <View style={styles.progressBarTrack}>
-          <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
-        </View>
-
-        {/* Métricas Rápidas */}
-        <View style={[styles.metricsGrid, isMobile && { flexWrap: 'wrap', gap: 10 }]}>
-          <View style={styles.metricItem}>
-            <Text style={styles.metricNumber}>{totalTasks}</Text>
-            <Text style={styles.metricLabel}>Total</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metricItem}>
-            <Text style={[styles.metricNumber, { color: '#5B8AC9' }]}>{inProgressTasks}</Text>
-            <Text style={styles.metricLabel}>Em Andamento</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metricItem}>
-            <Text style={[styles.metricNumber, { color: '#C5A059' }]}>{openTasks}</Text>
-            <Text style={styles.metricLabel}>Abertas</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metricItem}>
-            <Text style={[styles.metricNumber, { color: '#4E9C8E' }]}>{completedTasks}</Text>
-            <Text style={styles.metricLabel}>Concluídas</Text>
-          </View>
-          {suggestedTasks > 0 && (
-            <>
-              <View style={styles.metricDivider} />
-              <View style={styles.metricItem}>
-                <Text style={[styles.metricNumber, { color: '#B280E6' }]}>{suggestedTasks}</Text>
-                <Text style={styles.metricLabel}>Sugestões</Text>
-              </View>
-            </>
-          )}
-        </View>
-      </View>
 
       {/* 🔍 Barra de Ferramentas: Busca & Filtros por Categoria */}
       <View style={styles.toolbarContainer}>
@@ -711,7 +651,7 @@ export default function TasksScreen() {
           <Search size={15} color="#80776C" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar metas por título, descrição ou responsável..."
+            placeholder="Buscar tasks por título, descrição ou responsável..."
             placeholderTextColor="#6B6257"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -723,7 +663,7 @@ export default function TasksScreen() {
           )}
         </View>
 
-        {/* Chips de Categoria e Filtro "Minhas Metas" */}
+        {/* Chips de Categoria e Filtro "Minhas Tasks" */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -766,7 +706,7 @@ export default function TasksScreen() {
                   onlyMyTasks && { color: '#110F0D', fontWeight: '700' },
                 ]}
               >
-                Minhas Metas ({myTasksCount})
+                Minhas Tasks ({myTasksCount})
               </Text>
             </TouchableOpacity>
           )}
@@ -907,15 +847,15 @@ export default function TasksScreen() {
         </ScrollView>
       )}
 
-      {/* Modal Nova / Editar Meta */}
+      {/* Modal Nova / Editar Task */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>
-              {editingTask ? 'Editar Meta' : isDM ? 'Nova Meta da Mesa' : 'Sugerir Meta'}
+              {editingTask ? 'Editar Task' : isDM ? 'Nova Task da Mesa' : 'Sugerir Task'}
             </Text>
             <ScrollView style={{ maxHeight: 520 }}>
-              <Text style={styles.label}>Título da Meta</Text>
+              <Text style={styles.label}>Título da Task</Text>
               <TextInput
                 style={styles.input}
                 value={title}
@@ -984,7 +924,7 @@ export default function TasksScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.btnSave} onPress={handleSaveTask}>
                 <Text style={styles.btnSaveText}>
-                  {editingTask || isDM ? 'Salvar Meta' : 'Enviar Sugestão'}
+                  {editingTask || isDM ? 'Salvar Task' : 'Enviar Sugestão'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1019,7 +959,7 @@ export default function TasksScreen() {
                 <Text style={styles.btnCancelText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.btnSave} onPress={handleSaveResolution}>
-                <Text style={styles.btnSaveText}>Concluir Meta</Text>
+                <Text style={styles.btnSaveText}>Concluir Task</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1034,7 +974,7 @@ export default function TasksScreen() {
             <View style={styles.reportContentBox}>
               <ScrollView style={{ maxHeight: 380 }}>
                 <Markdown style={darkMarkdownStyles}>
-                  {editingTask?.resolution || 'Nenhum registro foi redigido para esta meta.'}
+                  {editingTask?.resolution || 'Nenhum registro foi redigido para esta task.'}
                 </Markdown>
               </ScrollView>
             </View>
@@ -1137,81 +1077,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  // Painel de Métricas (Project Management Dashboard)
-  pmDashboardCard: {
-    backgroundColor: '#1B1815',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
-    gap: 12,
-  },
-  pmHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  pmTitle: {
-    color: '#E2D8C3',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  progressPercentPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(78, 156, 142, 0.15)',
-    borderWidth: 1,
-    borderColor: '#4E9C8E',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  progressPercentText: {
-    color: '#4E9C8E',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  progressBarTrack: {
-    height: 6,
-    backgroundColor: '#2A241F',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#C5A059',
-    borderRadius: 3,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingTop: 4,
-  },
-  metricItem: {
-    alignItems: 'center',
-    minWidth: 55,
-  },
-  metricNumber: {
-    color: '#E6C280',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  metricLabel: {
-    color: '#80776C',
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 2,
-    textTransform: 'uppercase',
-  },
-  metricDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#2D251E',
-  },
 
   // Barra de Ferramentas: Busca e Filtros
   toolbarContainer: {

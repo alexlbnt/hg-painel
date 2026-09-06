@@ -21,7 +21,7 @@ export default function BottomNav() {
   const navItems = [
     { name: 'Taverna', path: '/', icon: Home },
     { name: 'Diário', path: '/journal', icon: BookOpen },
-    { name: 'Metas', path: '/tasks', icon: ClipboardList },
+    { name: 'Tasks', path: '/tasks', icon: ClipboardList },
     { name: 'Jogador', path: '/player', icon: Shield },
     ...(isDM ? [{ name: 'Mestre', path: '/dm', icon: Crown }] : []),
   ];
@@ -95,11 +95,18 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 22 : 8,
     paddingHorizontal: 8,
     minHeight: 58,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 20,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 -3px 10px rgba(0, 0, 0, 0.4)',
+      } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 20,
+      },
+    }),
   },
   tabBtn: {
     flex: 1,
@@ -120,10 +127,17 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: Colors.fantasy.goldBright,
     borderRadius: 2,
-    shadowColor: Colors.fantasy.goldBright,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: `0 1px 4px ${Colors.fantasy.goldBright}`,
+      } as any,
+      default: {
+        shadowColor: Colors.fantasy.goldBright,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.8,
+        shadowRadius: 4,
+      },
+    }),
   },
   tabLabel: {
     color: '#80776C',

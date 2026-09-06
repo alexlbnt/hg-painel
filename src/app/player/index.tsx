@@ -14,6 +14,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { parseClassesAndCalculateSlots } from '@/utils/spellProgression';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { confirmAction } from '@/utils/confirm';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -188,7 +189,7 @@ export default function PlayerModule() {
           return;
         }
         loadCharacters(true);
-      }, 15000);
+      }, 60000);
       return () => clearInterval(interval);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -287,16 +288,11 @@ export default function PlayerModule() {
       });
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('Deseja selar e excluir este grimório de personagem para sempre?')) {
-        confirmDelete();
-      }
-    } else {
-      Alert.alert('Excluir Grimório', 'Deseja excluir este personagem para sempre?', [
-        { text: 'Manter', style: 'cancel' },
-        { text: 'Excluir', style: 'destructive', onPress: confirmDelete },
-      ]);
-    }
+    confirmAction(
+      'Deseja selar e excluir este grimório de personagem para sempre?',
+      confirmDelete,
+      'Excluir Grimório'
+    );
   };
 
   const handleExportJson = () => {
@@ -392,16 +388,11 @@ export default function PlayerModule() {
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('Realizar Ritual de Descanso Curto? (Gasta 1 Dado de Vida para curar e recarrega poderes marciais)')) {
-        executeRest();
-      }
-    } else {
-      Alert.alert('Descanso Curto', 'Gastar 1 Dado de Vida para curar e recarregar poderes?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Descansar na Taverna', onPress: executeRest },
-      ]);
-    }
+    confirmAction(
+      'Realizar Ritual de Descanso Curto? (Gasta 1 Dado de Vida para curar e recarrega poderes marciais)',
+      executeRest,
+      'Descanso Curto'
+    );
   };
 
   const triggerLongRest = async () => {
@@ -420,16 +411,11 @@ export default function PlayerModule() {
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('Realizar Descanso Longo? (Restaura 100% dos pontos de vida, limpa maldições temporárias e recarrega todos os feitiços)')) {
-        executeRest();
-      }
-    } else {
-      Alert.alert('Descanso Longo', 'Restaura 100% do HP, todos os feitiços e poderes marciais.', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Dormir em Paz', onPress: executeRest },
-      ]);
-    }
+    confirmAction(
+      'Realizar Descanso Longo? (Restaura 100% dos pontos de vida, limpa maldições temporárias e recarrega todos os feitiços)',
+      executeRest,
+      'Descanso Longo'
+    );
   };
 
   const toggleSpellSlot = async (slotId: string, currentUsed: number, total: number) => {
@@ -1494,20 +1480,11 @@ export default function PlayerModule() {
                         minWidth: isMobile ? '100%' : 150,
                       }}
                       onPress={() => {
-                        if (Platform.OS === 'web') {
-                          if (window.confirm(`Deseja recalcular e preencher os espaços oficiais de D&D 5e para ${selectedChar.class} Nível ${selectedChar.level}?`)) {
-                            autoFillOfficialSlots(true);
-                          }
-                        } else {
-                          Alert.alert(
-                            'Auto-preencher Espaços (D&D 5e)',
-                            `Preencher espaços oficiais para ${selectedChar.class} Nível ${selectedChar.level}?`,
-                            [
-                              { text: 'Cancelar', style: 'cancel' },
-                              { text: 'Preencher', onPress: () => autoFillOfficialSlots(true) },
-                            ]
-                          );
-                        }
+                        confirmAction(
+                          `Deseja recalcular e preencher os espaços oficiais de D&D 5e para ${selectedChar.class} Nível ${selectedChar.level}?`,
+                          () => autoFillOfficialSlots(true),
+                          'Auto-preencher Espaços (D&D 5e)'
+                        );
                       }}
                     >
                       <Sparkles color="#4E9C8E" size={14} />
@@ -2057,20 +2034,11 @@ export default function PlayerModule() {
                           }}
                           activeOpacity={0.8}
                           onPress={() => {
-                            if (Platform.OS === 'web') {
-                              if (window.confirm(`Deseja recalcular e preencher os espaços oficiais de D&D 5e para ${selectedChar.class} Nível ${selectedChar.level}?`)) {
-                                autoFillOfficialSlots(true);
-                              }
-                            } else {
-                              Alert.alert(
-                                'Auto-preencher Espaços (D&D 5e)',
-                                `Preencher espaços oficiais para ${selectedChar.class} Nível ${selectedChar.level}?`,
-                                [
-                                  { text: 'Cancelar', style: 'cancel' },
-                                  { text: 'Preencher', onPress: () => autoFillOfficialSlots(true) },
-                                ]
-                              );
-                            }
+                            confirmAction(
+                              `Deseja recalcular e preencher os espaços oficiais de D&D 5e para ${selectedChar.class} Nível ${selectedChar.level}?`,
+                              () => autoFillOfficialSlots(true),
+                              'Auto-preencher Espaços (D&D 5e)'
+                            );
                           }}
                         >
                           <Sparkles color="#4E9C8E" size={16} />

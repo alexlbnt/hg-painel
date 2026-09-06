@@ -10,6 +10,7 @@ import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, Touch
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { confirmAction } from '@/utils/confirm';
 
 export default function DmModule() {
   const { user, isLoading: authLoading } = useAuth();
@@ -29,6 +30,7 @@ export default function DmModule() {
   const [lastSync, setLastSync] = useState<string>('Conectando ao Escudo do Mestre...');
   const [isAllExpanded, setIsAllExpanded] = useState<boolean>(false);
   const [hoveredCond, setHoveredCond] = useState<string | null>(null);
+  const [assignUserInputs, setAssignUserInputs] = useState<Record<string, string>>({});
   const lastDataHash = useRef<string>('');
 
   const fetchTableData = async (silent = false) => {
@@ -76,7 +78,7 @@ export default function DmModule() {
         return;
       }
       fetchTableData(true);
-    }, 15000);
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -95,8 +97,11 @@ export default function DmModule() {
         )
       );
       fetchTableData(true);
-      if (Platform.OS === 'web') {
-        window.alert(`Ritual de Descanso ${type === 'short' ? 'Curto' : 'Longo'} aplicado a todos os heróis da mesa!`);
+      const msg = `Ritual de Descanso ${type === 'short' ? 'Curto' : 'Longo'} aplicado a todos os heróis da mesa!`;
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Ritual Concluído', msg);
       }
     } catch (e) {
       console.error(e);
@@ -104,20 +109,11 @@ export default function DmModule() {
   };
 
   const confirmMassRest = (type: 'short' | 'long') => {
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Aplicar Ritual de Descanso ${type === 'short' ? 'Curto' : 'Longo'} para todos os heróis?`)) {
-        executeMassRest(type);
-      }
-    } else {
-      Alert.alert(
-        `Ritual em Massa (${type === 'short' ? 'Curto' : 'Longo'})`,
-        `Deseja aplicar este descanso para todos na mesa?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Invocar Ritual', onPress: () => executeMassRest(type) },
-        ]
-      );
-    }
+    confirmAction(
+      `Aplicar Ritual de Descanso ${type === 'short' ? 'Curto' : 'Longo'} para todos os heróis?`,
+      () => executeMassRest(type),
+      `Ritual em Massa (${type === 'short' ? 'Curto' : 'Longo'})`
+    );
   };
 
   const handleAssignUser = async (charId: string, username: string) => {
@@ -284,16 +280,16 @@ export default function DmModule() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
                         <TextInput 
                           style={{ backgroundColor: '#110F0D', borderWidth: 1, borderColor: '#3D342C', color: '#BAAFA0', fontSize: 11, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, minWidth: 120 }}
-                          defaultValue={char.username || ''}
+                          value={assignUserInputs[char.id] !== undefined ? assignUserInputs[char.id] : (char.username || '')}
                           placeholder="username (ex: lobo.l)"
                           placeholderTextColor="#666"
-                          onChangeText={(t) => { (char as any)._tempUsername = t; }}
+                          onChangeText={(t) => setAssignUserInputs(prev => ({ ...prev, [char.id]: t }))}
                           onSubmitEditing={(e) => handleAssignUser(char.id, e.nativeEvent.text)}
                         />
                         <TouchableOpacity
                           style={{ backgroundColor: '#C5A059', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 4 }}
                           activeOpacity={0.8}
-                          onPress={() => handleAssignUser(char.id, (char as any)._tempUsername !== undefined ? (char as any)._tempUsername : (char.username || ''))}
+                          onPress={() => handleAssignUser(char.id, assignUserInputs[char.id] !== undefined ? assignUserInputs[char.id] : (char.username || ''))}
                         >
                           <Text style={{ color: '#110F0D', fontSize: 11, fontWeight: 'bold' }}>Vincular</Text>
                         </TouchableOpacity>

@@ -58,6 +58,92 @@ const TASK_CATEGORY_COLORS: Record<string, { bg: string; text: string; border: s
   ESPECIAL: { bg: 'rgba(225, 198, 153, 0.15)', text: '#E1C699', border: '#E6C280' },
 };
 
+interface CountdownProps {
+  targetIso: string | null | undefined;
+}
+
+const CountdownTimer = React.memo(function CountdownTimer({ targetIso }: CountdownProps) {
+  const [timeRemaining, setTimeRemaining] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    isPassed: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!targetIso) {
+      setTimeRemaining(null);
+      return;
+    }
+
+    const calc = () => {
+      const target = new Date(targetIso).getTime();
+      const now = Date.now();
+      const diff = target - now;
+
+      if (isNaN(diff)) {
+        setTimeRemaining(null);
+        return;
+      }
+
+      if (diff <= 0) {
+        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true });
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      setTimeRemaining({ days, hours, minutes, seconds, isPassed: false });
+    };
+
+    calc();
+    const timer = setInterval(calc, 1000);
+    return () => clearInterval(timer);
+  }, [targetIso]);
+
+  return (
+    <View style={styles.timerContainer}>
+      <Text style={styles.timerLabel}>CONTAGEM REGRESSIVA PARA O CHAMADO</Text>
+      {timeRemaining?.isPassed ? (
+        <View style={styles.sessionOngoingNotice}>
+          <Sparkles color="#4E9C8E" size={20} />
+          <Text style={styles.sessionOngoingText}>
+            O momento chegou! A sessão está em andamento ou pronta para iniciar.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.timerDigitsRow}>
+          <View style={styles.timerBox}>
+            <Text style={styles.timerNumber}>{String(timeRemaining?.days || 0).padStart(2, '0')}</Text>
+            <Text style={styles.timerUnit}>DIAS</Text>
+          </View>
+          <Text style={styles.timerColon}>:</Text>
+          <View style={styles.timerBox}>
+            <Text style={styles.timerNumber}>{String(timeRemaining?.hours || 0).padStart(2, '0')}</Text>
+            <Text style={styles.timerUnit}>HORAS</Text>
+          </View>
+          <Text style={styles.timerColon}>:</Text>
+          <View style={styles.timerBox}>
+            <Text style={styles.timerNumber}>{String(timeRemaining?.minutes || 0).padStart(2, '0')}</Text>
+            <Text style={styles.timerUnit}>MIN</Text>
+          </View>
+          <Text style={styles.timerColon}>:</Text>
+          <View style={styles.timerBox}>
+            <Text style={[styles.timerNumber, { color: '#C5A059' }]}>
+              {String(timeRemaining?.seconds || 0).padStart(2, '0')}
+            </Text>
+            <Text style={styles.timerUnit}>SEG</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+});
+
 export default function HomeScreen() {
   const router = useRouter();
   const { isMobile } = useResponsive();
@@ -79,14 +165,7 @@ export default function HomeScreen() {
   const [scheduleData, setScheduleData] = useState<ScheduleResponseData>({ session: null });
   const [loadingData, setLoadingData] = useState(true);
 
-  // Estados de Contagem Regressiva e RSVP
-  const [timeRemaining, setTimeRemaining] = useState<{
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-    isPassed: boolean;
-  } | null>(null);
+  // Estados de RSVP e Agendamento
 
   const [isSubmittingRsvp, setIsSubmittingRsvp] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -127,40 +206,6 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // Cálculo da contagem regressiva
-  useEffect(() => {
-    const targetIso = scheduleData?.session?.scheduledAt;
-    if (!targetIso) {
-      return;
-    }
-
-    const calc = () => {
-      const target = new Date(targetIso).getTime();
-      const now = Date.now();
-      const diff = target - now;
-
-      if (isNaN(diff)) {
-        setTimeRemaining(null);
-        return;
-      }
-
-      if (diff <= 0) {
-        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true });
-        return;
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-
-      setTimeRemaining({ days, hours, minutes, seconds, isPassed: false });
-    };
-
-    calc();
-    const timer = setInterval(calc, 1000);
-    return () => clearInterval(timer);
-  }, [scheduleData?.session?.scheduledAt]);
 
   // Sincronização em tempo real via SSE
   useRealtimeSync((event) => {
@@ -825,41 +870,7 @@ export default function HomeScreen() {
               {scheduleData.session?.scheduledAt ? (
                 <>
                   {/* Cronômetro Rúnico */}
-                  <View style={styles.timerContainer}>
-                    <Text style={styles.timerLabel}>CONTAGEM REGRESSIVA PARA O CHAMADO</Text>
-                    {timeRemaining?.isPassed ? (
-                      <View style={styles.sessionOngoingNotice}>
-                        <Sparkles color="#4E9C8E" size={20} />
-                        <Text style={styles.sessionOngoingText}>
-                          O momento chegou! A sessão está em andamento ou pronta para iniciar.
-                        </Text>
-                      </View>
-                    ) : (
-                      <View style={styles.timerDigitsRow}>
-                        <View style={styles.timerBox}>
-                          <Text style={styles.timerNumber}>{String(timeRemaining?.days || 0).padStart(2, '0')}</Text>
-                          <Text style={styles.timerUnit}>DIAS</Text>
-                        </View>
-                        <Text style={styles.timerColon}>:</Text>
-                        <View style={styles.timerBox}>
-                          <Text style={styles.timerNumber}>{String(timeRemaining?.hours || 0).padStart(2, '0')}</Text>
-                          <Text style={styles.timerUnit}>HORAS</Text>
-                        </View>
-                        <Text style={styles.timerColon}>:</Text>
-                        <View style={styles.timerBox}>
-                          <Text style={styles.timerNumber}>{String(timeRemaining?.minutes || 0).padStart(2, '0')}</Text>
-                          <Text style={styles.timerUnit}>MIN</Text>
-                        </View>
-                        <Text style={styles.timerColon}>:</Text>
-                        <View style={styles.timerBox}>
-                          <Text style={[styles.timerNumber, { color: '#C5A059' }]}>
-                            {String(timeRemaining?.seconds || 0).padStart(2, '0')}
-                          </Text>
-                          <Text style={styles.timerUnit}>SEG</Text>
-                        </View>
-                      </View>
-                    )}
-                  </View>
+                  <CountdownTimer targetIso={scheduleData.session?.scheduledAt} />
 
                   {/* Informações de Local e Data */}
                   <View style={styles.sessionMetaList}>
@@ -1262,7 +1273,8 @@ const styles = StyleSheet.create({
   heroGlowEffect: {
     position: 'absolute',
     top: -40,
-    width: 600,
+    width: '100%',
+    maxWidth: 600,
     height: 200,
     borderRadius: 300,
     backgroundColor: 'rgba(197, 160, 89, 0.06)',
@@ -1316,15 +1328,16 @@ const styles = StyleSheet.create({
   },
   hubColumn: {
     flex: 1,
-    minWidth: 320,
+    minWidth: 280,
+    maxWidth: '100%',
   },
   hubCard: {
     backgroundColor: '#1A1714',
     borderRadius: 12,
     borderWidth: 1,
-    padding: 24,
-    gap: 18,
-    height: '100%',
+    padding: 20,
+    gap: 16,
+    flex: 1,
     justifyContent: 'space-between',
   },
   heroCardBorder: {

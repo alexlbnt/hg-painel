@@ -23,7 +23,7 @@ export async function PATCH(req: Request, context: any) {
       }
     }
     if (body.password) {
-      dataToUpdate.password = bcrypt.hashSync(body.password, 10);
+      dataToUpdate.password = await bcrypt.hash(body.password, 10);
     }
 
     const updatedUser = await prisma.user.update({

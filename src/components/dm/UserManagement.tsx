@@ -28,6 +28,7 @@ import {
 import { ApiService, UserData } from '@/services/api';
 import { Role, useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
+import { confirmAction } from '@/utils/confirm';
 
 const ROLE_CONFIG: Record<
   Role,
@@ -256,20 +257,11 @@ export default function UserManagement() {
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Tem certeza que deseja banir/remover o usuário '${u.name}' (@${u.username}) da campanha?`)) {
-        confirmDelete();
-      }
-    } else {
-      Alert.alert(
-        'Confirmar Exclusão',
-        `Deseja remover '${u.name}' (@${u.username}) da campanha?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Remover', style: 'destructive', onPress: confirmDelete },
-        ]
-      );
-    }
+    confirmAction(
+      `Tem certeza que deseja banir/remover o usuário '${u.name}' (@${u.username}) da campanha?`,
+      () => confirmDelete(),
+      'Confirmar Exclusão'
+    );
   };
 
   // Contagens

@@ -24,94 +24,116 @@ export async function PUT(request: Request, context: any) {
   try {
     const body = await request.json();
 
+    // Prepara operações transacionais para garantir integridade atômica
+    const txOperations: any[] = [];
+
     // Se as condições foram modificadas
     if (body.conditions && Array.isArray(body.conditions)) {
-      await prisma.condition.deleteMany({ where: { characterId: id } });
-      await prisma.condition.createMany({
-        data: body.conditions.map((c: any) => ({
-          name: String(c.name || ''),
-          description: c.description || '',
-          characterId: id,
-        })),
-      });
+      txOperations.push(prisma.condition.deleteMany({ where: { characterId: id } }));
+      if (body.conditions.length > 0) {
+        txOperations.push(
+          prisma.condition.createMany({
+            data: body.conditions.map((c: any) => ({
+              name: String(c.name || ''),
+              description: c.description || '',
+              characterId: id,
+            })),
+          })
+        );
+      }
     }
 
     // Se habilidades ou slots forem atualizados
     if (body.abilities && Array.isArray(body.abilities)) {
-      await prisma.ability.deleteMany({ where: { characterId: id } });
+      txOperations.push(prisma.ability.deleteMany({ where: { characterId: id } }));
       if (body.abilities.length > 0) {
-        await prisma.ability.createMany({
-          data: body.abilities.map((ab: any) => {
-            const max = toSafeNumber(ab.maxUses, 1);
-            const cur = ab.currentUses !== undefined && ab.currentUses !== null && !isNaN(Number(ab.currentUses))
-              ? Number(ab.currentUses)
-              : max;
-            return {
-              ...(typeof ab.id === 'string' && ab.id.length > 20 && !ab.id.startsWith('ab-') ? { id: ab.id } : {}),
-              name: String(ab.name || 'Habilidade'),
-              description: ab.description || '',
-              maxUses: max,
-              currentUses: cur,
-              resetType: ab.resetType || 'SHORT_REST',
-              actionType: ab.actionType || 'LIVRE',
-              characterId: id,
-            };
-          }),
-        });
+        txOperations.push(
+          prisma.ability.createMany({
+            data: body.abilities.map((ab: any) => {
+              const max = toSafeNumber(ab.maxUses, 1);
+              const cur =
+                ab.currentUses !== undefined && ab.currentUses !== null && !isNaN(Number(ab.currentUses))
+                  ? Number(ab.currentUses)
+                  : max;
+              return {
+                ...(typeof ab.id === 'string' && ab.id.length > 20 && !ab.id.startsWith('ab-') ? { id: ab.id } : {}),
+                name: String(ab.name || 'Habilidade'),
+                description: ab.description || '',
+                maxUses: max,
+                currentUses: cur,
+                resetType: ab.resetType || 'SHORT_REST',
+                actionType: ab.actionType || 'LIVRE',
+                characterId: id,
+              };
+            }),
+          })
+        );
       }
     }
 
     if (body.spellSlots && Array.isArray(body.spellSlots)) {
-      await prisma.spellSlot.deleteMany({ where: { characterId: id } });
+      txOperations.push(prisma.spellSlot.deleteMany({ where: { characterId: id } }));
       if (body.spellSlots.length > 0) {
-        await prisma.spellSlot.createMany({
-          data: body.spellSlots.map((slot: any) => ({
-            level: toSafeNumber(slot.level, 1),
-            total: Math.max(0, toSafeNumber(slot.total, 0)),
-            used: Math.max(0, toSafeNumber(slot.used, 0)),
-            characterId: id,
-          })),
-        });
+        txOperations.push(
+          prisma.spellSlot.createMany({
+            data: body.spellSlots.map((slot: any) => ({
+              level: toSafeNumber(slot.level, 1),
+              total: Math.max(0, toSafeNumber(slot.total, 0)),
+              used: Math.max(0, toSafeNumber(slot.used, 0)),
+              characterId: id,
+            })),
+          })
+        );
       }
     }
 
     if (body.items && Array.isArray(body.items)) {
-      await prisma.item.deleteMany({ where: { characterId: id } });
-      await prisma.item.createMany({
-        data: body.items.map((i: any) => ({
-          ...(typeof i.id === 'string' && i.id.length > 20 && !i.id.startsWith('item-') ? { id: i.id } : {}),
-          name: String(i.name || 'Item'),
-          description: i.description || '',
-          weight: toSafeNumber(i.weight, 0),
-          quantity: Math.max(1, toSafeNumber(i.quantity, 1)),
-          isWeapon: !!i.isWeapon,
-          damage: i.damage || '',
-          isArmor: !!i.isArmor,
-          isEquipped: !!i.isEquipped,
-          armorClassBonus: toSafeNumber(i.armorClassBonus, 0),
-          characterId: id,
-        })),
-      });
+      txOperations.push(prisma.item.deleteMany({ where: { characterId: id } }));
+      if (body.items.length > 0) {
+        txOperations.push(
+          prisma.item.createMany({
+            data: body.items.map((i: any) => ({
+              ...(typeof i.id === 'string' && i.id.length > 20 && !i.id.startsWith('item-') ? { id: i.id } : {}),
+              name: String(i.name || 'Item'),
+              description: i.description || '',
+              weight: toSafeNumber(i.weight, 0),
+              quantity: Math.max(1, toSafeNumber(i.quantity, 1)),
+              isWeapon: !!i.isWeapon,
+              damage: i.damage || '',
+              isArmor: !!i.isArmor,
+              isEquipped: !!i.isEquipped,
+              armorClassBonus: toSafeNumber(i.armorClassBonus, 0),
+              characterId: id,
+            })),
+          })
+        );
+      }
     }
 
     if (body.spells && Array.isArray(body.spells)) {
-      await prisma.spell.deleteMany({ where: { characterId: id } });
+      txOperations.push(prisma.spell.deleteMany({ where: { characterId: id } }));
       if (body.spells.length > 0) {
-        await prisma.spell.createMany({
-          data: body.spells.map((s: any) => ({
-            ...(typeof s.id === 'string' && s.id.length > 20 && !s.id.startsWith('spell-') ? { id: s.id } : {}),
-            name: String(s.name || 'Magia'),
-            level: toSafeNumber(s.level, 0),
-            castingTime: s.castingTime || '',
-            range: s.range || '',
-            duration: s.duration || '',
-            components: s.components || '',
-            isPrepared: !!s.isPrepared,
-            description: s.description || '',
-            characterId: id,
-          })),
-        });
+        txOperations.push(
+          prisma.spell.createMany({
+            data: body.spells.map((s: any) => ({
+              ...(typeof s.id === 'string' && s.id.length > 20 && !s.id.startsWith('spell-') ? { id: s.id } : {}),
+              name: String(s.name || 'Magia'),
+              level: toSafeNumber(s.level, 0),
+              castingTime: s.castingTime || '',
+              range: s.range || '',
+              duration: s.duration || '',
+              components: s.components || '',
+              isPrepared: !!s.isPrepared,
+              description: s.description || '',
+              characterId: id,
+            })),
+          })
+        );
       }
+    }
+
+    if (txOperations.length > 0) {
+      await prisma.$transaction(txOperations);
     }
 
     const updated = await prisma.character.update({

@@ -19,6 +19,10 @@ class UniversalEventBus {
     this.listeners.delete(listener);
   }
 
+  listenerCount(): number {
+    return this.listeners.size;
+  }
+
   emit(_channel: string, event: AppRealtimeEvent): void {
     for (const listener of Array.from(this.listeners)) {
       try {
