@@ -161,8 +161,11 @@ export async function POST(request: Request) {
         proficientSkills: String(body.proficientSkills || ''),
         gold: toSafeNumber(body.gold, 15),
         silver: toSafeNumber(body.silver, 10),
-        copper: toSafeNumber(body.copper, 30),
         themeColor: String(body.themeColor || '#C5A059'),
+        sorceryPoints: toSafeNumber(body.sorceryPoints, 0),
+        maxSorceryPoints: toSafeNumber(body.maxSorceryPoints, 0),
+        kiPoints: toSafeNumber(body.kiPoints, 0),
+        maxKiPoints: toSafeNumber(body.maxKiPoints, 0),
         spellSlots: {
           create: Array.isArray(body.spellSlots)
             ? body.spellSlots.map((s: any) => ({

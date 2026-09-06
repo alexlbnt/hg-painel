@@ -111,6 +111,8 @@ export default function PlayerModule() {
   const [showManageSlots, setShowManageSlots] = useState(false);
   const [editingSorcery, setEditingSorcery] = useState(false);
   const [tempMaxSorcery, setTempMaxSorcery] = useState('');
+  const [editingKi, setEditingKi] = useState(false);
+  const [tempMaxKi, setTempMaxKi] = useState('');
   const lastDataHash = useRef<string>('');
 
   const loadCharacters = async (silent = false) => {
@@ -180,6 +182,9 @@ export default function PlayerModule() {
 
 
   const themeColor = selectedChar?.themeColor || '#C5A059';
+  const isMonk = !!(selectedChar?.class?.toLowerCase().includes('monge') || selectedChar?.class?.toLowerCase().includes('monk'));
+  const isSorcerer = !!(selectedChar?.class?.toLowerCase().includes('feiticeiro'));
+  const isWarlock = !!(selectedChar?.class?.toLowerCase().includes('bruxo'));
 
   const getMod = (score: number) => Math.floor((score - 10) / 2);
   const profBonus = selectedChar ? Math.floor((selectedChar.level - 1) / 4) + 2 : 2;
@@ -363,6 +368,9 @@ export default function PlayerModule() {
     if (!selectedChar) return;
     const executeRest = async () => {
       const healAmt = 8 + getMod(selectedChar.con);
+      if (selectedChar.maxKiPoints && selectedChar.maxKiPoints > 0) {
+        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, kiPoints: selectedChar.maxKiPoints } : c));
+      }
       await ApiService.takeShortRest(selectedChar.id, healAmt, 1);
       loadCharacters();
       if (Platform.OS === 'web') {
@@ -385,6 +393,12 @@ export default function PlayerModule() {
   const triggerLongRest = async () => {
     if (!selectedChar) return;
     const executeRest = async () => {
+      if (selectedChar.maxKiPoints && selectedChar.maxKiPoints > 0) {
+        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, kiPoints: selectedChar.maxKiPoints } : c));
+      }
+      if (selectedChar.maxSorceryPoints && selectedChar.maxSorceryPoints > 0) {
+        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, sorceryPoints: selectedChar.maxSorceryPoints } : c));
+      }
       await ApiService.takeLongRest(selectedChar.id);
       loadCharacters();
       if (Platform.OS === 'web') {
@@ -428,6 +442,39 @@ export default function PlayerModule() {
     
     try {
       await ApiService.updateCharacter(selectedChar.id, { sorceryPoints: amount });
+    } catch {
+      loadCharacters(true);
+    }
+  };
+
+  const updateKiPoints = async (amount: number) => {
+    if (!selectedChar) return;
+    
+    // Atualização Otimista
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, kiPoints: amount } : c));
+    
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { kiPoints: amount });
+    } catch {
+      loadCharacters(true);
+    }
+  };
+
+  const handleAutoSyncKi = async () => {
+    if (!selectedChar) return;
+    const calculatedKi = selectedChar.level >= 2 ? selectedChar.level : 0;
+    
+    // Atualização Otimista
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, maxKiPoints: calculatedKi, kiPoints: calculatedKi } : c));
+    
+    try {
+      await ApiService.updateCharacter(selectedChar.id, { maxKiPoints: calculatedKi, kiPoints: calculatedKi });
+      loadCharacters(true);
+      if (Platform.OS === 'web') {
+        window.alert(`Pontos de Qi sincronizados com sucesso para o Nível ${selectedChar.level} (${calculatedKi} Qi)!`);
+      } else {
+        Alert.alert('Sucesso', `Pontos de Qi sincronizados para o Nível ${selectedChar.level} (${calculatedKi} Qi)!`);
+      }
     } catch {
       loadCharacters(true);
     }
@@ -547,6 +594,23 @@ export default function PlayerModule() {
         ApiService.updateCharacter(selectedChar.id, {
           maxSorceryPoints: selectedChar.level,
           sorceryPoints: selectedChar.level,
+        }).then(() => loadCharacters(true));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChar?.id, selectedChar?.class, selectedChar?.level]);
+
+  // Inicialização e Contabilização de Pontos de QI para Monges pelo Nível
+  useEffect(() => {
+    if (!selectedChar) return;
+
+    const isMonkChar = selectedChar.class?.toLowerCase().includes('monge') || selectedChar.class?.toLowerCase().includes('monk');
+    if (isMonkChar && selectedChar.level > 0) {
+      const calculatedKi = selectedChar.level >= 2 ? selectedChar.level : 0;
+      if ((selectedChar.maxKiPoints === 0 || selectedChar.maxKiPoints == null) && selectedChar.level >= 2) {
+        ApiService.updateCharacter(selectedChar.id, {
+          maxKiPoints: calculatedKi,
+          kiPoints: calculatedKi,
         }).then(() => loadCharacters(true));
       }
     }
@@ -842,6 +906,107 @@ export default function PlayerModule() {
       console.error(e);
       loadCharacters(true); // Reverter em caso de erro
     }
+  };
+
+  const renderMonkKiBanner = () => {
+    if (!selectedChar) return null;
+    const isMonkChar = selectedChar.class?.toLowerCase().includes('monge') || selectedChar.class?.toLowerCase().includes('monk');
+    if (!isMonkChar) return null;
+
+    const currentKi = selectedChar.kiPoints != null ? selectedChar.kiPoints : 0;
+    const maxKi = selectedChar.maxKiPoints != null && selectedChar.maxKiPoints > 0 ? selectedChar.maxKiPoints : (selectedChar.level >= 2 ? selectedChar.level : 0);
+    const expectedKi = selectedChar.level >= 2 ? selectedChar.level : 0;
+
+    return (
+      <View style={[styles.spellStatsBanner, { borderColor: '#D4883A', backgroundColor: 'rgba(212, 136, 58, 0.1)', marginTop: 0, marginBottom: 14 }]}>
+        <View style={{ flex: 1, flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 0 }}>
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <Text style={[styles.spellStatLabel, { color: '#E2D8C3' }]}>☯️ PONTOS DE QI (ENERGIA VITAL)</Text>
+              <TouchableOpacity
+                style={{ backgroundColor: 'rgba(212, 136, 58, 0.2)', borderColor: '#D4883A', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}
+                onPress={handleAutoSyncKi}
+                accessibilityLabel="Recalcular Qi por Nível"
+              >
+                <Text style={{ color: '#E6C280', fontSize: 10, fontWeight: '700' }}>
+                  Nível {selectedChar.level} ({expectedKi} Qi) • Sincronizar
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {editingKi ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <TextInput
+                  style={{ backgroundColor: '#1A1714', color: '#E6C280', fontSize: 18, padding: 4, borderRadius: 4, width: 50, textAlign: 'center', borderWidth: 1, borderColor: '#D4883A' }}
+                  value={tempMaxKi}
+                  onChangeText={setTempMaxKi}
+                  keyboardType="numeric"
+                  autoFocus
+                />
+                <TouchableOpacity onPress={async () => {
+                  const newMax = parseInt(tempMaxKi, 10);
+                  if (!isNaN(newMax)) {
+                    await ApiService.updateCharacter(selectedChar.id, { maxKiPoints: newMax, kiPoints: Math.min(newMax, currentKi) });
+                    loadCharacters(true);
+                  }
+                  setEditingKi(false);
+                }}>
+                  <Text style={{ color: '#4E9C8E', fontWeight: 'bold' }}>✓ SALVAR</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setEditingKi(false)}>
+                  <Text style={{ color: '#80776C', fontWeight: 'bold' }}>CANCELAR</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 24, marginTop: 4 }]}>
+                  {currentKi} / {maxKi}
+                </Text>
+                <TouchableOpacity onPress={() => {
+                  setTempMaxKi(String(maxKi));
+                  setEditingKi(true);
+                }}>
+                  <Edit color="#D4883A" size={16} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <Text style={[styles.spellAccordionSub, { marginTop: 2, color: '#BAAFA0' }]}>
+              {selectedChar.level < 2
+                ? 'Monges despertam o Qi a partir do 2º Nível (pontos = nível do monge).'
+                : 'Recarrega totalmente com 30 min de meditação (Descanso Curto ou Longo).'}
+            </Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 8, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end', flexWrap: 'wrap' }}>
+            <TouchableOpacity
+              style={[{ backgroundColor: 'rgba(184, 40, 40, 0.25)', borderColor: '#B82828', borderWidth: 1, padding: 10, borderRadius: 6, alignItems: 'center' }, isMobile && { flex: 1 }]}
+              onPress={() => updateKiPoints(Math.max(0, currentKi - 1))}
+              disabled={currentKi <= 0}
+            >
+              <Text style={{ color: currentKi <= 0 ? '#666' : '#E2D8C3', fontWeight: 'bold' }}>- GASTAR 1 QI</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[{ backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E', borderWidth: 1, padding: 10, borderRadius: 6, alignItems: 'center' }, isMobile && { flex: 1 }]}
+              onPress={() => updateKiPoints(Math.min(maxKi, currentKi + 1))}
+              disabled={currentKi >= maxKi}
+            >
+              <Text style={{ color: currentKi >= maxKi ? '#666' : '#E2D8C3', fontWeight: 'bold' }}>+ RECUPERAR</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[{ backgroundColor: 'rgba(212, 136, 58, 0.25)', borderColor: '#D4883A', borderWidth: 1, padding: 10, borderRadius: 6, alignItems: 'center', flexDirection: 'row', gap: 4 }, isMobile && { flex: 1, justifyContent: 'center' }]}
+              onPress={() => updateKiPoints(maxKi)}
+              disabled={currentKi >= maxKi}
+            >
+              <Sparkles color="#E6C280" size={14} />
+              <Text style={{ color: currentKi >= maxKi ? '#80776C' : '#E6C280', fontWeight: 'bold', fontSize: 11 }}>MEDITAR (MAX)</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -1203,9 +1368,6 @@ export default function PlayerModule() {
               if (calculatedOfficial.warlock) availableLevelsSet.add(calculatedOfficial.warlock.level);
 
               const sortedLevels = Array.from(availableLevelsSet).sort((a, b) => a - b);
-              
-              const isWarlock = selectedChar.class?.toLowerCase().includes('bruxo');
-              const isSorcerer = selectedChar.class?.toLowerCase().includes('feiticeiro');
 
               return (
                 <View style={{ gap: 16 }}>
@@ -1237,23 +1399,38 @@ export default function PlayerModule() {
                   </View>
 
                   {/* 🎛️ Barra Superior de Gestão Rápida de Espaços */}
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View
+                    style={{
+                      flexDirection: isMobile ? 'column' : 'row',
+                      alignItems: isMobile ? 'stretch' : 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      width: '100%',
+                    }}
+                  >
                     <TouchableOpacity
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: 6,
                         backgroundColor: showManageSlots ? 'rgba(197, 160, 89, 0.2)' : '#1A1714',
                         borderWidth: 1,
                         borderColor: showManageSlots ? '#C5A059' : '#3D342C',
                         paddingVertical: 8,
-                        paddingHorizontal: 14,
+                        paddingHorizontal: 12,
                         borderRadius: 6,
+                        flex: isMobile ? undefined : 1,
+                        minWidth: isMobile ? '100%' : 150,
                       }}
                       onPress={() => setShowManageSlots(!showManageSlots)}
                     >
-                      <Text style={{ color: showManageSlots ? '#E6C280' : '#BAAFA0', fontWeight: '700', fontSize: 12 }}>
-                        {showManageSlots ? '▲ Ocultar Painel de Espaços' : '⚙️ Gerenciar Todos os Espaços (1º ao 9º)'}
+                      <Text
+                        style={{ color: showManageSlots ? '#E6C280' : '#BAAFA0', fontWeight: '700', fontSize: 12 }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {showManageSlots ? '▲ Ocultar Painel' : '⚙️ Gerenciar Espaços'}
                       </Text>
                     </TouchableOpacity>
 
@@ -1261,13 +1438,16 @@ export default function PlayerModule() {
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: 6,
                         backgroundColor: 'rgba(78, 156, 142, 0.15)',
                         borderWidth: 1,
                         borderColor: '#4E9C8E',
                         paddingVertical: 8,
-                        paddingHorizontal: 14,
+                        paddingHorizontal: 12,
                         borderRadius: 6,
+                        flex: isMobile ? undefined : 1,
+                        minWidth: isMobile ? '100%' : 150,
                       }}
                       onPress={() => {
                         if (Platform.OS === 'web') {
@@ -1287,11 +1467,18 @@ export default function PlayerModule() {
                       }}
                     >
                       <Sparkles color="#4E9C8E" size={14} />
-                      <Text style={{ color: '#4E9C8E', fontWeight: '700', fontSize: 12 }}>
-                        ✨ Auto-preencher D&D 5e ({selectedChar.class} Nv {selectedChar.level})
+                      <Text
+                        style={{ color: '#4E9C8E', fontWeight: '700', fontSize: 12 }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {isMobile ? 'Auto-preencher Espaços' : 'Auto-preencher (D&D 5e)'}
                       </Text>
                     </TouchableOpacity>
                   </View>
+
+                  {/* ☯️ Monge: Pontos de Qi */}
+                  {isMonk && renderMonkKiBanner()}
 
                   {/* ⚡ Feiticeiro: Pontos de Feitiçaria */}
                   {isSorcerer && (
@@ -1698,7 +1885,7 @@ export default function PlayerModule() {
                       onPress={() => setShowManageSlots(!showManageSlots)}
                     >
                       <Text style={styles.manageSlotsToggleText}>
-                        {showManageSlots ? '▲ Ocultar Gerenciador de Espaços' : '⚙️ Gerenciar Quantidade Total de Espaços por Nível ▼'}
+                        {showManageSlots ? '▲ Ocultar Gerenciador de Espaços' : '⚙️ Gerenciar Espaços por Nível (1º ao 9º) ▼'}
                       </Text>
                     </TouchableOpacity>
 
@@ -1710,14 +1897,15 @@ export default function PlayerModule() {
                             backgroundColor: 'rgba(78, 156, 142, 0.15)',
                             borderWidth: 1,
                             borderColor: '#4E9C8E',
-                            paddingVertical: 12,
-                            paddingHorizontal: 16,
+                            paddingVertical: 10,
+                            paddingHorizontal: 14,
                             borderRadius: 8,
                             flexDirection: 'row',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: 8,
                             marginBottom: 16,
+                            width: '100%',
                           }}
                           activeOpacity={0.8}
                           onPress={() => {
@@ -1738,8 +1926,8 @@ export default function PlayerModule() {
                           }}
                         >
                           <Sparkles color="#4E9C8E" size={16} />
-                          <Text style={{ color: '#4E9C8E', fontWeight: 'bold', fontSize: 13 }}>
-                            ✨ Auto-preencher Padrão D&D 5e ({selectedChar.class} Nv {selectedChar.level})
+                          <Text style={{ color: '#4E9C8E', fontWeight: 'bold', fontSize: 13, textAlign: 'center' }} numberOfLines={1} ellipsizeMode="tail">
+                            Auto-preencher Espaços Padrão (D&D 5e)
                           </Text>
                         </TouchableOpacity>
 
@@ -1855,6 +2043,9 @@ export default function PlayerModule() {
             {/* ABA: Habilidades e Poderes */}
             {activeTab === 'abilities' && (
               <View>
+                {/* ☯️ Monge: Pontos de Qi */}
+                {isMonk && renderMonkKiBanner()}
+
                 {/* Filtros de Habilidade */}
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
                   <TouchableOpacity onPress={() => setAbilityFilter('ALL')} style={[styles.coinBtn, abilityFilter === 'ALL' && { backgroundColor: themeColor, borderColor: '#FFF' }]}>

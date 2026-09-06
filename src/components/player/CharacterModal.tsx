@@ -198,6 +198,8 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       themeColor,
       deity,
       speed: speed.trim() || '9m',
+      kiPoints: initialData?.kiPoints !== undefined ? initialData.kiPoints : (className.toLowerCase().includes('monge') || className.toLowerCase().includes('monk') ? (parseInt(level, 10) >= 2 ? parseInt(level, 10) : 0) : 0),
+      maxKiPoints: initialData?.maxKiPoints !== undefined ? initialData.maxKiPoints : (className.toLowerCase().includes('monge') || className.toLowerCase().includes('monk') ? (parseInt(level, 10) >= 2 ? parseInt(level, 10) : 0) : 0),
       spellSlots: formattedSlots,
     });
     onClose();

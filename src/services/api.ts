@@ -397,11 +397,16 @@ export const ApiService = {
       return ab;
     });
 
-    return this.updateCharacter(id, {
+    const updates: Partial<CharacterData> = {
       currentHp: newHp,
       hitDiceSpent: newHitDiceSpent,
       abilities: updatedAbilities,
-    });
+    };
+    if (char.maxKiPoints && char.maxKiPoints > 0) {
+      updates.kiPoints = char.maxKiPoints;
+    }
+
+    return this.updateCharacter(id, updates);
   },
 
   // Automação de Descanso Longo
@@ -427,7 +432,7 @@ export const ApiService = {
       return ab;
     });
 
-    return this.updateCharacter(id, {
+    const updates: Partial<CharacterData> = {
       currentHp: char.maxHp,
       tempHp: 0,
       hitDiceSpent: newHitDiceSpent,
@@ -435,7 +440,15 @@ export const ApiService = {
       deathSaveFailures: 0,
       spellSlots: updatedSpellSlots,
       abilities: updatedAbilities,
-    });
+    };
+    if (char.maxKiPoints && char.maxKiPoints > 0) {
+      updates.kiPoints = char.maxKiPoints;
+    }
+    if (char.maxSorceryPoints && char.maxSorceryPoints > 0) {
+      updates.sorceryPoints = char.maxSorceryPoints;
+    }
+
+    return this.updateCharacter(id, updates);
   },
 
   // Intervenção Remota do Mestre (DM Intervention)

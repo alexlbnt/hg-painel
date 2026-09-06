@@ -93,6 +93,8 @@ export interface CharacterData {
   themeColor?: string;
   sorceryPoints?: number;
   maxSorceryPoints?: number;
+  kiPoints?: number;
+  maxKiPoints?: number;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }

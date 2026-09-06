@@ -156,6 +156,8 @@ export async function PUT(request: Request, context: any) {
         chaProf: body.chaProf !== undefined ? Boolean(body.chaProf) : undefined,
         sorceryPoints: toOptionalNumber(body.sorceryPoints),
         maxSorceryPoints: toOptionalNumber(body.maxSorceryPoints),
+        kiPoints: toOptionalNumber(body.kiPoints),
+        maxKiPoints: toOptionalNumber(body.maxKiPoints),
       },
       include: {
         spellSlots: { orderBy: { level: 'asc' } },

@@ -98,6 +98,8 @@ model Character {
   
   sorceryPoints      Int         @default(0) // Pontos de Feitiçaria
   maxSorceryPoints   Int         @default(0)
+  kiPoints           Int         @default(0) // Pontos de Qi / Ki (Monge)
+  maxKiPoints        Int         @default(0)
 
   // Relations
   roomId             String?
