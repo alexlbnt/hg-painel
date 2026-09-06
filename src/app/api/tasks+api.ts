@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { INITIAL_TASKS } from '@/lib/mockData';
+import { broadcastEvent } from '@/lib/eventBus';
 
 export async function GET() {
   try {
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
         assignedTo: body.assignedTo || null,
       },
     });
+    broadcastEvent({ type: 'TASK_CREATED', id: newTask.id, data: newTask });
     return Response.json(newTask, { status: 201 });
   } catch (error) {
     console.error('Erro no Prisma POST /api/tasks:', error);

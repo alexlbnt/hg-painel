@@ -13,6 +13,7 @@ import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshai
 import { useEffect, useState, useRef } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { parseClassesAndCalculateSlots } from '@/utils/spellProgression';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -166,6 +167,17 @@ export default function PlayerModule() {
     }
   };
 
+  useRealtimeSync((event) => {
+    if (
+      event.type === 'CHARACTER_UPDATED' ||
+      event.type === 'CHARACTER_CREATED' ||
+      event.type === 'CHARACTER_DELETED' ||
+      event.type === 'TABLE_REST'
+    ) {
+      loadCharacters(true);
+    }
+  });
+
   useEffect(() => {
     if (!authLoading && user) {
       loadCharacters();
@@ -174,7 +186,7 @@ export default function PlayerModule() {
           return;
         }
         loadCharacters(true);
-      }, 5000);
+      }, 15000);
       return () => clearInterval(interval);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

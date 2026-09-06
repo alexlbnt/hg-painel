@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { broadcastEvent } from '@/lib/eventBus';
 
 function extractId(context: any): string {
   if (typeof context === 'string') return context;
@@ -24,6 +25,7 @@ export async function PUT(request: Request, context: any) {
       },
     });
 
+    broadcastEvent({ type: 'TASK_UPDATED', id, data: updatedTask });
     return Response.json(updatedTask);
   } catch (error) {
     console.error('Erro no Prisma PUT /api/tasks/[id]:', error);
@@ -37,6 +39,7 @@ export async function DELETE(request: Request, context: any) {
     await prisma.task.delete({
       where: { id },
     });
+    broadcastEvent({ type: 'TASK_DELETED', id });
     return Response.json({ message: 'Task deletada com sucesso' });
   } catch (error) {
     console.error('Erro no Prisma DELETE /api/tasks/[id]:', error);

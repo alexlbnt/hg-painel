@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { INITIAL_CHARACTERS } from '@/lib/mockData';
+import { broadcastEvent } from '@/lib/eventBus';
 
 export async function GET() {
   try {
@@ -232,6 +233,7 @@ export async function POST(request: Request) {
       },
     });
 
+    broadcastEvent({ type: 'CHARACTER_CREATED', id: newChar.id, data: newChar });
     return Response.json(newChar, { status: 201 });
   } catch (error) {
     console.error('Erro no Prisma POST /api/characters:', error);

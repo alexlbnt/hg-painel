@@ -2,6 +2,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { TaskCategory, TaskData, TaskStatus } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { Picker } from '@react-native-picker/picker';
 import {
   AlertCircle,
@@ -179,17 +180,27 @@ export default function TasksScreen() {
   const mobileColWidth = Math.max(280, width - 40);
   const mobileColGap = 12;
 
-  const loadTasks = async () => {
-    setLoading(true);
+  const loadTasks = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await ApiService.getTasks();
       setTasks(data);
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  useRealtimeSync((event) => {
+    if (
+      event.type === 'TASK_CREATED' ||
+      event.type === 'TASK_UPDATED' ||
+      event.type === 'TASK_DELETED'
+    ) {
+      loadTasks(true);
+    }
+  });
 
   useEffect(() => {
     setTimeout(() => {

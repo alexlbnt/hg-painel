@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { broadcastEvent } from '@/lib/eventBus';
 
 function toSafeNumber(val: any, fallback: number = 0): number {
   if (val === undefined || val === null) return fallback;
@@ -168,6 +169,7 @@ export async function PUT(request: Request, context: any) {
       },
     });
 
+    broadcastEvent({ type: 'CHARACTER_UPDATED', id, data: updated });
     return Response.json(updated);
   } catch (error) {
     console.error(`Erro no Prisma PUT /api/characters/${id}:`, error);
@@ -179,6 +181,7 @@ export async function DELETE(request: Request, context: any) {
   const id = extractId(context);
   try {
     await prisma.character.delete({ where: { id } });
+    broadcastEvent({ type: 'CHARACTER_DELETED', id });
     return Response.json({ success: true });
   } catch (error) {
     console.error(`Erro no Prisma DELETE /api/characters/${id}:`, error);

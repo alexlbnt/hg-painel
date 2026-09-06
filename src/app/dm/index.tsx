@@ -9,6 +9,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 export default function DmModule() {
   const { user } = useAuth();
@@ -55,6 +56,19 @@ export default function DmModule() {
     }
   }, [characters, selectedChar]);
 
+  useRealtimeSync((event) => {
+    if (
+      event.type === 'CHARACTER_UPDATED' ||
+      event.type === 'CHARACTER_CREATED' ||
+      event.type === 'CHARACTER_DELETED' ||
+      event.type === 'TABLE_REST'
+    ) {
+      fetchTableData(true);
+      const now = new Date();
+      setLastSync(`⚡ Tempo Real: ${now.toLocaleTimeString()}`);
+    }
+  });
+
   useEffect(() => {
     fetchTableData();
     const timer = setInterval(() => {
@@ -62,7 +76,7 @@ export default function DmModule() {
         return;
       }
       fetchTableData(true);
-    }, 5000);
+    }, 15000);
     return () => clearInterval(timer);
   }, []);
 

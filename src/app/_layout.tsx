@@ -1,13 +1,17 @@
+import BottomNav from '@/components/BottomNav';
+import HeaderNav from '@/components/HeaderNav';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { useResponsive } from '@/hooks/useResponsive';
 import { DarkTheme, ThemeProvider, Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import HeaderNav from '@/components/HeaderNav';
-import { AuthProvider } from '@/contexts/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const { isMobile } = useResponsive();
+
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
@@ -17,9 +21,13 @@ export default function RootLayout() {
       <ThemeProvider value={DarkTheme}>
         <View style={styles.container}>
           <HeaderNav />
-          <ScrollView style={styles.mainScroll} contentContainerStyle={styles.mainContent}>
+          <ScrollView
+            style={styles.mainScroll}
+            contentContainerStyle={[styles.mainContent, isMobile && { paddingBottom: 80 }]}
+          >
             <Slot />
           </ScrollView>
+          <BottomNav />
         </View>
       </ThemeProvider>
     </AuthProvider>
