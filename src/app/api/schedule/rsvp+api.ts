@@ -1,4 +1,5 @@
 import { prisma } from '../../../lib/prisma';
+import { broadcastEvent } from '../../../lib/eventBus';
 
 export async function POST(req: Request) {
   try {
@@ -52,6 +53,7 @@ export async function POST(req: Request) {
       },
     });
 
+    broadcastEvent({ type: 'RSVP_UPDATED', data: rsvp });
     return Response.json(rsvp, { status: 200 });
   } catch (error) {
     console.error('Erro ao salvar confirmação de presença (RSVP):', error);

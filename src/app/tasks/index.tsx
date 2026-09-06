@@ -634,7 +634,8 @@ export default function TasksScreen() {
   };
 
   return (
-    <View style={[styles.container, isMobile && { padding: 12 }]}>
+    <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+      <View style={[styles.container, isMobile && { padding: 12 }]}>
       {/* 🧭 Topo da Página */}
       <View style={[styles.header, isMobile && { flexDirection: 'column', gap: 12 }]}>
         <View>
@@ -1048,7 +1049,8 @@ export default function TasksScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 

@@ -2,9 +2,11 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Plus, Trash, BookOpen, User as UserIcon, Edit2, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -83,6 +85,54 @@ export default function JournalScreen() {
     loadSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useRealtimeSync((event) => {
+    if (
+      event.type === 'JOURNAL_NOTE_CREATED' ||
+      event.type === 'JOURNAL_NOTE_UPDATED' ||
+      event.type === 'JOURNAL_NOTE_DELETED' ||
+      event.type === 'JOURNAL_SESSION_CREATED' ||
+      event.type === 'JOURNAL_SESSION_UPDATED' ||
+      event.type === 'JOURNAL_SESSION_DELETED'
+    ) {
+      loadSessions();
+    }
+  });
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!user || user.role !== 'DM') return;
+    const confirmDelete = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/journal/sessions', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, userId: user.id }),
+        });
+        if (res.ok) {
+          if (activeSessionId === sessionId) {
+            setActiveSessionId(null);
+          }
+          await loadSessions();
+        }
+      } catch (e) {
+        console.error('Erro ao excluir sessão:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Tem certeza que deseja excluir esta sessão e todas as suas anotações?')) {
+        confirmDelete();
+      }
+    } else {
+      Alert.alert('Excluir Sessão', 'Deseja excluir este capítulo e todas as anotações?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: confirmDelete },
+      ]);
+    }
+  };
 
   const handleCreateSession = async () => {
     if (!newSessionTitle.trim() || !user) return;
@@ -276,12 +326,23 @@ export default function JournalScreen() {
                   <>
                     <Text style={styles.sessionTitle}>{activeSession.title}</Text>
                     {isDM && (
-                      <TouchableOpacity onPress={() => {
-                        setEditSessionTitle(activeSession.title);
-                        setIsEditingSession(true);
-                      }}>
-                        <Edit2 color="#BAAFA0" size={18} />
-                      </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <TouchableOpacity
+                          accessibilityLabel="Editar título da sessão"
+                          onPress={() => {
+                            setEditSessionTitle(activeSession.title);
+                            setIsEditingSession(true);
+                          }}
+                        >
+                          <Edit2 color="#BAAFA0" size={18} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          accessibilityLabel="Excluir sessão"
+                          onPress={() => handleDeleteSession(activeSession.id)}
+                        >
+                          <Trash color="#B82828" size={18} />
+                        </TouchableOpacity>
+                      </View>
                     )}
                   </>
                 )}

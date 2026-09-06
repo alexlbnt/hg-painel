@@ -121,7 +121,9 @@ export default function PlayerModule() {
       const data = await ApiService.getCharacters();
       // Filtra apenas as fichas que pertencem a este usuário (Mestre e Player Mecânico têm acesso a todas as fichas)
       const hasAccessToAll = user?.role === 'DM' || user?.role === 'MECHANIC';
-      const myChars = hasAccessToAll ? data : data.filter((c: CharacterData) => c.username === user?.username);
+      const myChars = hasAccessToAll
+        ? data
+        : data.filter((c: CharacterData) => c.username?.toLowerCase().trim() === user?.username?.toLowerCase().trim());
       
       const serialized = JSON.stringify(myChars);
       if (serialized !== lastDataHash.current) {
@@ -1022,7 +1024,8 @@ export default function PlayerModule() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+      <View style={styles.container}>
       {/* Seletor de Personagens (Carrossel de Couro e Bronze) */}
       <View style={styles.selectorBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectorScroll}>
@@ -1384,31 +1387,60 @@ export default function PlayerModule() {
               return (
                 <View style={{ gap: 16 }}>
                   {/* 🔮 1. Painel Mágico no Topo */}
-                  <View style={[styles.spellStatsBanner, isMobile && { padding: 10, gap: 8 }, { borderColor: themeColor, backgroundColor: `${themeColor}0A` }]}>
-                    <View style={styles.spellStatItem}>
-                      <Text style={styles.spellStatLabel}>ATRIBUTO DE CONJURAÇÃO</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                        <Sparkles color={themeColor} size={18} />
-                        <Text style={[styles.spellStatValue, { color: themeColor }, isMobile && { fontSize: 14 }]}>{spellStats.attrName} ({spellStats.modStr})</Text>
+                  {isMobile ? (
+                    <View style={[styles.spellStatsBanner, { flexDirection: 'column', padding: 12, gap: 10, borderColor: themeColor, backgroundColor: `${themeColor}0A`, overflow: 'hidden' }]}>
+                      <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#2D251E' }}>
+                        <Text style={styles.spellStatLabel}>ATRIBUTO DE CONJURAÇÃO</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4 }}>
+                          <Sparkles color={themeColor} size={16} />
+                          <Text style={[styles.spellStatValue, { color: themeColor, fontSize: 15 }]}>{spellStats.attrName} ({spellStats.modStr})</Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%' }}>
+                        <View style={styles.spellStatItem}>
+                          <Text style={styles.spellStatLabel}>CD DE RESISTÊNCIA</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                            <Shield color="#E6C280" size={16} />
+                            <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 18 }]}>{spellStats.saveDc}</Text>
+                          </View>
+                        </View>
+                        <View style={[styles.spellStatDivider, { height: 28 }]} />
+                        <View style={styles.spellStatItem}>
+                          <Text style={styles.spellStatLabel}>BÔNUS DE ATAQUE</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                            <Crosshair color="#4E9C8E" size={16} />
+                            <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: 18 }]}>{spellStats.attackBonus}</Text>
+                          </View>
+                        </View>
                       </View>
                     </View>
-                    {!isMobile && <View style={styles.spellStatDivider} />}
-                    <View style={styles.spellStatItem}>
-                      <Text style={styles.spellStatLabel}>CD DE RESISTÊNCIA</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                        <Shield color="#E6C280" size={18} />
-                        <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: isMobile ? 18 : 22 }]}>{spellStats.saveDc}</Text>
+                  ) : (
+                    <View style={[styles.spellStatsBanner, { borderColor: themeColor, backgroundColor: `${themeColor}0A` }]}>
+                      <View style={styles.spellStatItem}>
+                        <Text style={styles.spellStatLabel}>ATRIBUTO DE CONJURAÇÃO</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <Sparkles color={themeColor} size={18} />
+                          <Text style={[styles.spellStatValue, { color: themeColor }]}>{spellStats.attrName} ({spellStats.modStr})</Text>
+                        </View>
+                      </View>
+                      <View style={styles.spellStatDivider} />
+                      <View style={styles.spellStatItem}>
+                        <Text style={styles.spellStatLabel}>CD DE RESISTÊNCIA</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <Shield color="#E6C280" size={18} />
+                          <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 22 }]}>{spellStats.saveDc}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.spellStatDivider} />
+                      <View style={styles.spellStatItem}>
+                        <Text style={styles.spellStatLabel}>BÔNUS DE ATAQUE</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <Crosshair color="#4E9C8E" size={18} />
+                          <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: 22 }]}>{spellStats.attackBonus}</Text>
+                        </View>
                       </View>
                     </View>
-                    {!isMobile && <View style={styles.spellStatDivider} />}
-                    <View style={styles.spellStatItem}>
-                      <Text style={styles.spellStatLabel}>BÔNUS DE ATAQUE</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                        <Crosshair color="#4E9C8E" size={18} />
-                        <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: isMobile ? 18 : 22 }]}>{spellStats.attackBonus}</Text>
-                      </View>
-                    </View>
-                  </View>
+                  )}
 
                   {/* 🎛️ Barra Superior de Gestão Rápida de Espaços */}
                   <View
@@ -1621,99 +1653,203 @@ export default function PlayerModule() {
                         <View key={`spell-lvl-${levelNum}`} style={[styles.spellAccordionCard, isExpanded && { borderColor: themeColor }]}>
                           {/* Header do Acordeão */}
                           <TouchableOpacity
-                            style={styles.spellAccordionHeader}
+                            style={[
+                              styles.spellAccordionHeader,
+                              isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 8, paddingVertical: 10, paddingHorizontal: 12 }
+                            ]}
                             onPress={() => toggleLevelAccordion(levelNum)}
                             activeOpacity={0.8}
                           >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
-                              <View style={[styles.levelBadgeIcon, levelNum === 0 ? { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' } : { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}>
-                                <BookOpen color={levelNum === 0 ? '#4E9C8E' : themeColor} size={18} />
-                              </View>
-                              <View style={{ flex: 1 }}>
-                                <Text style={[styles.spellAccordionTitle, isMobile && { fontSize: 13 }]} numberOfLines={1}>
-                                  {levelNum === 0 ? (isMobile ? '✨ TRUQUES' : '✨ TRUQUES') : (isMobile ? `📜 ${levelNum}º NÍVEL` : `📜 ${levelNum}º NÍVEL`)}
-                                </Text>
-                                <Text style={styles.spellAccordionSub}>
-                                  {spellsInThisLevel.length} {isMobile ? 'cadastrada(s)' : (spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas')}
-                                </Text>
-                              </View>
-                            </View>
+                            {isMobile ? (
+                              <>
+                                {/* Linha 1 Mobile: Ícone + Título/Subtítulo + Chevron */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
+                                    <View style={[styles.levelBadgeIcon, { width: 34, height: 34, borderRadius: 17 }, levelNum === 0 ? { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' } : { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}>
+                                      <BookOpen color={levelNum === 0 ? '#4E9C8E' : themeColor} size={16} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                      <Text style={[styles.spellAccordionTitle, { fontSize: 14 }]} numberOfLines={1}>
+                                        {levelNum === 0 ? '✨ TRUQUES' : `📜 ${levelNum}º NÍVEL`}
+                                      </Text>
+                                      <Text style={styles.spellAccordionSub}>
+                                        {spellsInThisLevel.length} {spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas'}
+                                      </Text>
+                                    </View>
+                                  </View>
 
-                            {/* Tokens de Espaço no Header (se for nível 1+) */}
-                            {levelNum > 0 && !isWarlock && (
-                              <View style={[styles.accordionSlotsBox, isMobile && { paddingHorizontal: 6, paddingVertical: 4, gap: 4 }]} onStartShouldSetResponder={() => true}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                  <Text style={[styles.accordionSlotsText, isMobile && { fontSize: 10 }]}>
-                                    {isMobile ? '' : 'Usados: '}<Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel?.used || 0}</Text> / {slotForLevel?.total || 0}
-                                  </Text>
-                                  {/* Botões rápidos para alterar total de espaços do nível */}
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                                    <TouchableOpacity
-                                      style={{
-                                        width: 20,
-                                        height: 20,
-                                        borderRadius: 4,
-                                        backgroundColor: '#26221E',
-                                        borderWidth: 1,
-                                        borderColor: '#3D342C',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        opacity: (!slotForLevel || slotForLevel.total <= 0) ? 0.3 : 1
-                                      }}
-                                      disabled={!slotForLevel || slotForLevel.total <= 0}
-                                      onPress={(e) => {
-                                        // @ts-ignore
-                                        e?.stopPropagation?.();
-                                        upsertSpellSlot(levelNum, (slotForLevel?.total || 0) - 1);
-                                      }}
-                                      accessibilityLabel="Diminuir 1 espaço total deste nível"
-                                    >
-                                      <Minus color="#E2D8C3" size={10} />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                      style={{
-                                        width: 20,
-                                        height: 20,
-                                        borderRadius: 4,
-                                        backgroundColor: '#26221E',
-                                        borderWidth: 1,
-                                        borderColor: '#3D342C',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                      }}
-                                      onPress={(e) => {
-                                        // @ts-ignore
-                                        e?.stopPropagation?.();
-                                        upsertSpellSlot(levelNum, (slotForLevel?.total || 0) + 1);
-                                      }}
-                                      accessibilityLabel="Adicionar 1 espaço total a este nível"
-                                    >
-                                      <Plus color="#E2D8C3" size={10} />
-                                    </TouchableOpacity>
+                                  <View style={styles.accordionChevronBox}>
+                                    {isExpanded ? <ChevronUp color={themeColor} size={22} /> : <ChevronDown color="#80776C" size={22} />}
                                   </View>
                                 </View>
-                                {slotForLevel && slotForLevel.total > 0 && (
-                                  <View style={[styles.accordionTokensRow, isMobile && { gap: 2 }]}>
-                                    {Array.from({ length: slotForLevel.total }).map((_, idx) => {
-                                      const isUsed = idx < slotForLevel.used;
-                                      return (
+
+                                {/* Linha 2 Mobile: Espaços e Tokens de Magia */}
+                                {levelNum > 0 && !isWarlock && (
+                                  <View
+                                    style={[styles.accordionSlotsBox, { width: '100%', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 6, backgroundColor: 'rgba(10, 9, 8, 0.75)' }]}
+                                    onStartShouldSetResponder={() => true}
+                                  >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                      <Text style={[styles.accordionSlotsText, { fontSize: 11 }]}>
+                                        Espaços: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel?.used || 0}</Text> / {slotForLevel?.total || 0}
+                                      </Text>
+                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                         <TouchableOpacity
-                                          key={`accordion-token-${slotForLevel.id}-${idx}`}
-                                          style={[styles.accordionTokenBtn, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
-                                          onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
+                                          style={{
+                                            width: 22,
+                                            height: 22,
+                                            borderRadius: 4,
+                                            backgroundColor: '#26221E',
+                                            borderWidth: 1,
+                                            borderColor: '#3D342C',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            opacity: (!slotForLevel || slotForLevel.total <= 0) ? 0.3 : 1
+                                          }}
+                                          disabled={!slotForLevel || slotForLevel.total <= 0}
+                                          onPress={(e) => {
+                                            // @ts-ignore
+                                            e?.stopPropagation?.();
+                                            upsertSpellSlot(levelNum, (slotForLevel?.total || 0) - 1);
+                                          }}
+                                          accessibilityLabel="Diminuir 1 espaço total deste nível"
                                         >
-                                          <Scroll color={isUsed ? '#3D342C' : themeColor} size={isMobile ? 12 : 14} />
+                                          <Minus color="#E2D8C3" size={11} />
                                         </TouchableOpacity>
-                                      );
-                                    })}
+                                        <TouchableOpacity
+                                          style={{
+                                            width: 22,
+                                            height: 22,
+                                            borderRadius: 4,
+                                            backgroundColor: '#26221E',
+                                            borderWidth: 1,
+                                            borderColor: '#3D342C',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                          }}
+                                          onPress={(e) => {
+                                            // @ts-ignore
+                                            e?.stopPropagation?.();
+                                            upsertSpellSlot(levelNum, (slotForLevel?.total || 0) + 1);
+                                          }}
+                                          accessibilityLabel="Adicionar 1 espaço total a este nível"
+                                        >
+                                          <Plus color="#E2D8C3" size={11} />
+                                        </TouchableOpacity>
+                                      </View>
+                                    </View>
+                                    {slotForLevel && slotForLevel.total > 0 && (
+                                      <View style={[styles.accordionTokensRow, { gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }]}>
+                                        {Array.from({ length: slotForLevel.total }).map((_, idx) => {
+                                          const isUsed = idx < slotForLevel.used;
+                                          return (
+                                            <TouchableOpacity
+                                              key={`accordion-token-${slotForLevel.id}-${idx}`}
+                                              style={[styles.accordionTokenBtn, { width: 24, height: 24 }, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
+                                              onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
+                                            >
+                                              <Scroll color={isUsed ? '#3D342C' : themeColor} size={12} />
+                                            </TouchableOpacity>
+                                          );
+                                        })}
+                                      </View>
+                                    )}
                                   </View>
                                 )}
-                              </View>
-                            )}
+                              </>
+                            ) : (
+                              <>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
+                                  <View style={[styles.levelBadgeIcon, levelNum === 0 ? { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' } : { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}>
+                                    <BookOpen color={levelNum === 0 ? '#4E9C8E' : themeColor} size={18} />
+                                  </View>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.spellAccordionTitle} numberOfLines={1}>
+                                      {levelNum === 0 ? '✨ TRUQUES' : `📜 ${levelNum}º NÍVEL`}
+                                    </Text>
+                                    <Text style={styles.spellAccordionSub}>
+                                      {spellsInThisLevel.length} {spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas'}
+                                    </Text>
+                                  </View>
+                                </View>
 
-                            <View style={styles.accordionChevronBox}>
-                              {isExpanded ? <ChevronUp color={themeColor} size={22} /> : <ChevronDown color="#80776C" size={22} />}
-                            </View>
+                                {/* Tokens de Espaço no Header (se for nível 1+) */}
+                                {levelNum > 0 && !isWarlock && (
+                                  <View style={styles.accordionSlotsBox} onStartShouldSetResponder={() => true}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                      <Text style={styles.accordionSlotsText}>
+                                        Usados: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel?.used || 0}</Text> / {slotForLevel?.total || 0}
+                                      </Text>
+                                      {/* Botões rápidos para alterar total de espaços do nível */}
+                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                        <TouchableOpacity
+                                          style={{
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: 4,
+                                            backgroundColor: '#26221E',
+                                            borderWidth: 1,
+                                            borderColor: '#3D342C',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            opacity: (!slotForLevel || slotForLevel.total <= 0) ? 0.3 : 1
+                                          }}
+                                          disabled={!slotForLevel || slotForLevel.total <= 0}
+                                          onPress={(e) => {
+                                            // @ts-ignore
+                                            e?.stopPropagation?.();
+                                            upsertSpellSlot(levelNum, (slotForLevel?.total || 0) - 1);
+                                          }}
+                                          accessibilityLabel="Diminuir 1 espaço total deste nível"
+                                        >
+                                          <Minus color="#E2D8C3" size={10} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                          style={{
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: 4,
+                                            backgroundColor: '#26221E',
+                                            borderWidth: 1,
+                                            borderColor: '#3D342C',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                          }}
+                                          onPress={(e) => {
+                                            // @ts-ignore
+                                            e?.stopPropagation?.();
+                                            upsertSpellSlot(levelNum, (slotForLevel?.total || 0) + 1);
+                                          }}
+                                          accessibilityLabel="Adicionar 1 espaço total a este nível"
+                                        >
+                                          <Plus color="#E2D8C3" size={10} />
+                                        </TouchableOpacity>
+                                      </View>
+                                    </View>
+                                    {slotForLevel && slotForLevel.total > 0 && (
+                                      <View style={styles.accordionTokensRow}>
+                                        {Array.from({ length: slotForLevel.total }).map((_, idx) => {
+                                          const isUsed = idx < slotForLevel.used;
+                                          return (
+                                            <TouchableOpacity
+                                              key={`accordion-token-${slotForLevel.id}-${idx}`}
+                                              style={[styles.accordionTokenBtn, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
+                                              onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
+                                            >
+                                              <Scroll color={isUsed ? '#3D342C' : themeColor} size={14} />
+                                            </TouchableOpacity>
+                                          );
+                                        })}
+                                      </View>
+                                    )}
+                                  </View>
+                                )}
+
+                                <View style={styles.accordionChevronBox}>
+                                  {isExpanded ? <ChevronUp color={themeColor} size={22} /> : <ChevronDown color="#80776C" size={22} />}
+                                </View>
+                              </>
+                            )}
                           </TouchableOpacity>
 
                           {/* Corpo do Acordeão */}
@@ -2805,7 +2941,8 @@ export default function PlayerModule() {
           </View>
         </View>
       </Modal>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -3844,6 +3981,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 14,
     paddingHorizontal: 16,
+    overflow: 'hidden',
   },
   spellStatItem: {
     alignItems: 'center',

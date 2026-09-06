@@ -5,7 +5,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { DarkTheme, ThemeProvider, Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,12 +21,9 @@ export default function RootLayout() {
       <ThemeProvider value={DarkTheme}>
         <View style={styles.container}>
           <HeaderNav />
-          <ScrollView
-            style={styles.mainScroll}
-            contentContainerStyle={[styles.mainContent, isMobile && { paddingBottom: 80 }]}
-          >
+          <View style={[styles.mainContent, isMobile && { paddingBottom: 70 }]}>
             <Slot />
-          </ScrollView>
+          </View>
           <BottomNav />
         </View>
       </ThemeProvider>
@@ -39,12 +36,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#110F0D',
     minHeight: '100%' as any,
-  },
-  mainScroll: {
-    flex: 1,
+    ...Platform.select({
+      web: {
+        height: '100vh' as any,
+        maxHeight: '100vh' as any,
+        overflow: 'hidden' as any,
+      },
+    }),
   },
   mainContent: {
-    flexGrow: 1,
-    paddingBottom: 40,
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
   },
 });

@@ -6,20 +6,20 @@ import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp, Key } from 'lucide-react-native';
 import { useEffect, useState, useRef } from 'react';
-import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 export default function DmModule() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!user || user.role !== 'DM') {
+    if (!authLoading && (!user || user.role !== 'DM')) {
       router.replace('/');
     }
-  }, [user, router]);
+  }, [authLoading, user, router]);
 
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedChar, setSelectedChar] = useState<CharacterData | null>(null);
@@ -143,8 +143,17 @@ export default function DmModule() {
     return mod >= 0 ? `+${mod}` : `${mod}`;
   };
 
+  if (authLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#110F0D', minHeight: 400 }}>
+        <ActivityIndicator size="large" color="#C5A059" />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+      <View style={styles.container}>
       {/* Header do Escudo do Mestre */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -483,7 +492,8 @@ export default function DmModule() {
           fetchTableData(true);
         }}
       />
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 

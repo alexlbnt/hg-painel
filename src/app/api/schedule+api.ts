@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma';
+import { broadcastEvent } from '../../lib/eventBus';
 
 export async function GET(req: Request) {
   try {
@@ -105,6 +106,7 @@ export async function POST(req: Request) {
       });
     }
 
+    broadcastEvent({ type: 'SCHEDULE_UPDATED', data: activeSession });
     return Response.json(activeSession, { status: 200 });
   } catch (error) {
     console.error('Erro ao agendar sessão:', error);

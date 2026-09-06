@@ -58,6 +58,7 @@ export async function DELETE(req: Request, context: any) {
       return Response.json({ error: 'User not found' }, { status: 404 });
     }
 
+    await prisma.sessionRsvp.deleteMany({ where: { userId: id } });
     await prisma.journalNote.deleteMany({ where: { authorId: id } });
     await prisma.user.delete({ where: { id } });
 

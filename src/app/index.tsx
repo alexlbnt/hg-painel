@@ -48,6 +48,7 @@ import {
   RsvpStatus,
 } from '@/services/api';
 import { CharacterData, TaskData } from '@/lib/mockData';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 const TASK_CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   LORE: { bg: 'rgba(253, 253, 150, 0.15)', text: '#FDFD96', border: '#C5A059' },
@@ -160,6 +161,19 @@ export default function HomeScreen() {
     const timer = setInterval(calc, 1000);
     return () => clearInterval(timer);
   }, [scheduleData?.session?.scheduledAt]);
+
+  // Sincronização em tempo real via SSE
+  useRealtimeSync((event) => {
+    if (event.type === 'SCHEDULE_UPDATED' || event.type === 'RSVP_UPDATED') {
+      ApiService.getScheduledSession().then(setScheduleData).catch(() => {});
+    } else if (event.type === 'TASK_CREATED' || event.type === 'TASK_UPDATED' || event.type === 'TASK_DELETED') {
+      ApiService.getTasks().then(setTasks).catch(() => {});
+    } else if (event.type === 'CHARACTER_UPDATED' || event.type === 'CHARACTER_CREATED' || event.type === 'CHARACTER_DELETED') {
+      ApiService.getCharacters().then(setCharacters).catch(() => {});
+    } else if (event.type === 'JOURNAL_NOTE_CREATED' || event.type === 'JOURNAL_SESSION_CREATED') {
+      ApiService.getSessions().then(setSessions).catch(() => {});
+    }
+  });
 
   // Ação de confirmar presença (RSVP)
   const handleRsvp = async (status: RsvpStatus) => {
@@ -306,7 +320,11 @@ export default function HomeScreen() {
   const isWide = width >= 900;
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.scrollWrapper}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       {/* ============================================================ */}
       {/* 1. HERO & BANNER DE BOAS-VINDAS CONTEXTUAL                  */}
       {/* ============================================================ */}
@@ -1217,11 +1235,15 @@ export default function HomeScreen() {
           Honra & Egoísmo • Sistema D&D 5e • Forjado em React Native (Expo) & Neon PostgreSQL
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollWrapper: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     maxWidth: 1200,
     marginHorizontal: 'auto',

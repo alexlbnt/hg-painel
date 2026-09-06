@@ -1,4 +1,5 @@
 import { prisma } from '../../../lib/prisma';
+import { broadcastEvent } from '../../../lib/eventBus';
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
       },
     });
 
+    broadcastEvent({ type: 'JOURNAL_NOTE_CREATED', sessionId, id: newNote.id, data: newNote });
     return Response.json(newNote, { status: 201 });
   } catch (error) {
     console.error('Error creating note:', error);
@@ -54,6 +56,7 @@ export async function DELETE(req: Request) {
       where: { id: noteId },
     });
 
+    broadcastEvent({ type: 'JOURNAL_NOTE_DELETED', sessionId: note.sessionId, id: noteId });
     return Response.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error('Error deleting note:', error);
@@ -88,6 +91,7 @@ export async function PUT(req: Request) {
       data: { content },
     });
 
+    broadcastEvent({ type: 'JOURNAL_NOTE_UPDATED', sessionId: note.sessionId, id: noteId, data: updatedNote });
     return Response.json(updatedNote, { status: 200 });
   } catch (error) {
     console.error('Error updating note:', error);

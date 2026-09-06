@@ -2,7 +2,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { usePathname, useRouter } from 'expo-router';
-import { BookOpen, ClipboardList, Crown, Home, Shield, Sword, X } from 'lucide-react-native';
+import { BookOpen, ClipboardList, Crown, Home, Shield, Sparkles, Sword, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -38,7 +38,7 @@ export default function HeaderNav() {
     { name: 'Diário da Campanha', mobileName: 'Diário', path: '/journal', icon: BookOpen },
     { name: 'Tarefas da Mesa', mobileName: 'Tarefas', path: '/tasks', icon: ClipboardList },
     { name: 'Grimório do Jogador', mobileName: 'Jogador', path: '/player', icon: Shield },
-    ...((!user || user.role === 'DM') ? [{ name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown }] : []),
+    ...(user?.role === 'DM' ? [{ name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown }] : []),
   ];
 
   const renderLoginModal = () => (
@@ -103,15 +103,29 @@ export default function HeaderNav() {
 
           {/* Usuário / Login */}
           {user ? (
-            <TouchableOpacity
-              style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, flexShrink: 0 }]}
-              onPress={() => {
-                logout();
-                router.push('/');
-              }}
-            >
-              <Text style={[styles.roomCode, { marginTop: 0, fontSize: 11 }]}>SAIR ↗</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <View style={styles.userBadgeMobile}>
+                {user.role === 'DM' ? (
+                  <Crown size={12} color="#C5A059" />
+                ) : user.role === 'MECHANIC' ? (
+                  <Sparkles size={12} color="#4E9C8E" />
+                ) : (
+                  <Shield size={12} color="#C5A059" />
+                )}
+                <Text style={styles.userBadgeMobileText} numberOfLines={1}>
+                  {user.name.split(' ')[0]}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 6, flexShrink: 0 }]}
+                onPress={() => {
+                  logout();
+                  router.push('/');
+                }}
+              >
+                <Text style={[styles.roomCode, { marginTop: 0, fontSize: 11 }]}>SAIR ↗</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <TouchableOpacity
               style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, flexShrink: 0 }]}
@@ -165,15 +179,37 @@ export default function HeaderNav() {
 
         {/* Emblema de Campanha / Login */}
         {user ? (
-          <TouchableOpacity
-            style={styles.roomBadge}
-            onPress={() => {
-              logout();
-              router.push('/');
-            }}
-          >
-            <Text style={[styles.roomCode, { marginTop: 0 }]}>SAIR</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={styles.userBadgeDesktop}>
+              <View style={styles.userAvatarBox}>
+                {user.role === 'DM' ? (
+                  <Crown size={15} color="#C5A059" />
+                ) : user.role === 'MECHANIC' ? (
+                  <Sparkles size={15} color="#4E9C8E" />
+                ) : (
+                  <Shield size={15} color="#C5A059" />
+                )}
+              </View>
+              <View>
+                <Text style={styles.userBadgeNameDesktop}>{user.name}</Text>
+                <Text style={[
+                  styles.userBadgeRoleDesktop,
+                  { color: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#80776C' }
+                ]}>
+                  {user.role === 'DM' ? 'Mestre da Mesa' : user.role === 'MECHANIC' ? 'Mecânico Artífice' : 'Aventureiro'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.roomBadge}
+              onPress={() => {
+                logout();
+                router.push('/');
+              }}
+            >
+              <Text style={[styles.roomCode, { marginTop: 0 }]}>SAIR</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <TouchableOpacity
             style={styles.roomBadge}
@@ -370,5 +406,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 12,
     textAlign: 'center',
-  }
+  },
+  userBadgeMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#1A1714',
+    borderWidth: 1,
+    borderColor: '#5C4E40',
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  userBadgeMobileText: {
+    color: '#E2D8C3',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  userBadgeDesktop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#1A1714',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  userAvatarBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#110F0D',
+    borderWidth: 1,
+    borderColor: '#5C4E40',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userBadgeNameDesktop: {
+    color: '#E2D8C3',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  userBadgeRoleDesktop: {
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
 });
