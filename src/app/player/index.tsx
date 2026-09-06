@@ -1,9 +1,10 @@
 import CharacterModal from '@/components/player/CharacterModal';
 import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal';
+import { EditItemModal } from '@/components/player/EditItemModal';
 import { SrdSearchModal } from '@/components/player/SrdSearchModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
-import { CharacterData, SpellItemData, SpellSlotData } from '@/lib/mockData';
+import { CharacterData, ItemData, SpellItemData, SpellSlotData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
 import { useRouter } from 'expo-router';
@@ -98,6 +99,8 @@ export default function PlayerModule() {
   const [editEntityVisible, setEditEntityVisible] = useState(false);
   const [editEntityType, setEditEntityType] = useState<'spell'|'ability'>('spell');
   const [entityToEdit, setEntityToEdit] = useState<any>(null);
+  const [editItemModalVisible, setEditItemModalVisible] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<ItemData | null>(null);
   const [expandedLevels, setExpandedLevels] = useState<number[]>([]);
   const [addingSpellForLevel, setAddingSpellForLevel] = useState<number | null>(null);
   const [newSpellName, setNewSpellName] = useState('');
@@ -760,6 +763,25 @@ export default function PlayerModule() {
       setEntityToEdit(null);
     } catch (error) {
       console.error(error);
+      loadCharacters(true); // Reverter em caso de erro
+    }
+  };
+
+  const handleSaveEditedItem = async (updatedItem: ItemData) => {
+    if (!selectedChar) return;
+    try {
+      const currentItems = selectedChar.items || [];
+      const newItems = currentItems.map(i => i.id === updatedItem.id ? updatedItem : i);
+
+      // Optimistic Update
+      setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, items: newItems } : c));
+      setEditItemModalVisible(false);
+      setItemToEdit(null);
+
+      const updated = await ApiService.updateCharacter(selectedChar.id, { items: newItems });
+      setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
+    } catch (error) {
+      console.error('Erro ao atualizar equipamento:', error);
       loadCharacters(true); // Reverter em caso de erro
     }
   };
@@ -2190,7 +2212,7 @@ export default function PlayerModule() {
                                 </View>
                               )}
                             </View>
-                            <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                               {item.isArmor && (
                                 <TouchableOpacity 
                                   style={[styles.delItemBtn, { backgroundColor: item.isEquipped ? '#38783C' : '#24201C', paddingHorizontal: 8 }]} 
@@ -2201,6 +2223,16 @@ export default function PlayerModule() {
                                   </Text>
                                 </TouchableOpacity>
                               )}
+                              <TouchableOpacity
+                                style={styles.delItemBtn}
+                                onPress={() => {
+                                  setItemToEdit(item);
+                                  setEditItemModalVisible(true);
+                                }}
+                                accessibilityLabel={`Editar ${item.name}`}
+                              >
+                                <Edit color="#4E9C8E" size={16} />
+                              </TouchableOpacity>
                               <TouchableOpacity style={styles.delItemBtn} onPress={() => removeItem(item.id)}>
                                 <Trash2 color="#80776C" size={16} />
                               </TouchableOpacity>
@@ -2416,6 +2448,19 @@ export default function PlayerModule() {
             setEntityToEdit(null);
           }}
           onSave={handleSaveEditedEntity}
+          themeColor={selectedChar.themeColor}
+        />
+      )}
+
+      {editItemModalVisible && selectedChar && itemToEdit && (
+        <EditItemModal
+          visible={editItemModalVisible}
+          item={itemToEdit}
+          onClose={() => {
+            setEditItemModalVisible(false);
+            setItemToEdit(null);
+          }}
+          onSave={handleSaveEditedItem}
           themeColor={selectedChar.themeColor}
         />
       )}

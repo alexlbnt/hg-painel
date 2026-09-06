@@ -46,6 +46,7 @@ export async function PUT(request: Request, context: any) {
               ? Number(ab.currentUses)
               : max;
             return {
+              ...(typeof ab.id === 'string' && ab.id.length > 20 && !ab.id.startsWith('ab-') ? { id: ab.id } : {}),
               name: String(ab.name || 'Habilidade'),
               description: ab.description || '',
               maxUses: max,
@@ -77,6 +78,7 @@ export async function PUT(request: Request, context: any) {
       await prisma.item.deleteMany({ where: { characterId: id } });
       await prisma.item.createMany({
         data: body.items.map((i: any) => ({
+          ...(typeof i.id === 'string' && i.id.length > 20 && !i.id.startsWith('item-') ? { id: i.id } : {}),
           name: String(i.name || 'Item'),
           description: i.description || '',
           weight: toSafeNumber(i.weight, 0),
@@ -96,6 +98,7 @@ export async function PUT(request: Request, context: any) {
       if (body.spells.length > 0) {
         await prisma.spell.createMany({
           data: body.spells.map((s: any) => ({
+            ...(typeof s.id === 'string' && s.id.length > 20 && !s.id.startsWith('spell-') ? { id: s.id } : {}),
             name: String(s.name || 'Magia'),
             level: toSafeNumber(s.level, 0),
             castingTime: s.castingTime || '',
