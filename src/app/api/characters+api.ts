@@ -116,58 +116,108 @@ export async function GET() {
   }
 }
 
+function toSafeNumber(val: any, fallback: number = 0): number {
+  if (val === undefined || val === null) return fallback;
+  const n = Number(val);
+  return isNaN(n) ? fallback : n;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const newChar = await prisma.character.create({
       data: {
-        name: body.name || 'Novo Herói',
-        playerName: body.playerName || 'Jogador',
-        race: body.race || 'Humano',
-        class: body.class || 'Guerreiro',
-        level: Number(body.level) || 1,
-        alignment: body.alignment || 'Neutro',
-        background: body.background || 'Herói do Povo',
-        deity: body.deity || 'Nenhum',
-        lore: body.lore || '',
-        currentHp: Number(body.currentHp) || 10,
-        maxHp: Number(body.maxHp) || 10,
-        tempHp: 0,
-        armorClass: Number(body.armorClass) || 10,
-        initiativeBonus: Number(body.initiativeBonus) || 0,
-        speed: body.speed || '9m',
-        hitDiceType: body.hitDiceType || '1d10',
-        hitDiceTotal: Number(body.hitDiceTotal) || 1,
+        name: String(body.name || 'Novo Herói'),
+        playerName: String(body.playerName || 'Jogador'),
+        race: String(body.race || 'Humano'),
+        class: String(body.class || 'Guerreiro'),
+        level: Math.max(1, toSafeNumber(body.level, 1)),
+        alignment: String(body.alignment || 'Neutro'),
+        background: String(body.background || 'Herói do Povo'),
+        deity: String(body.deity || 'Nenhum'),
+        lore: String(body.lore || ''),
+        currentHp: toSafeNumber(body.currentHp, 10),
+        maxHp: Math.max(1, toSafeNumber(body.maxHp, 10)),
+        tempHp: Math.max(0, toSafeNumber(body.tempHp, 0)),
+        armorClass: toSafeNumber(body.armorClass, 10),
+        initiativeBonus: toSafeNumber(body.initiativeBonus, 0),
+        speed: String(body.speed || '9m'),
+        hitDiceType: String(body.hitDiceType || '1d10'),
+        hitDiceTotal: Math.max(1, toSafeNumber(body.hitDiceTotal, 1)),
         hitDiceSpent: 0,
-        username: body.username || '',
-        str: Number(body.str) || 10,
-        dex: Number(body.dex) || 10,
-        con: Number(body.con) || 10,
-        int: Number(body.int) || 10,
-        wis: Number(body.wis) || 10,
-        cha: Number(body.cha) || 10,
+        username: String(body.username || ''),
+        str: toSafeNumber(body.str, 10),
+        dex: toSafeNumber(body.dex, 10),
+        con: toSafeNumber(body.con, 10),
+        int: toSafeNumber(body.int, 10),
+        wis: toSafeNumber(body.wis, 10),
+        cha: toSafeNumber(body.cha, 10),
         strProf: !!body.strProf,
         dexProf: !!body.dexProf,
         conProf: !!body.conProf,
         intProf: !!body.intProf,
         wisProf: !!body.wisProf,
         chaProf: !!body.chaProf,
-        proficientSkills: body.proficientSkills || '',
-        gold: Number(body.gold) || 15,
-        silver: Number(body.silver) || 10,
-        copper: Number(body.copper) || 30,
-        themeColor: body.themeColor || '#C5A059',
+        proficientSkills: String(body.proficientSkills || ''),
+        gold: toSafeNumber(body.gold, 15),
+        silver: toSafeNumber(body.silver, 10),
+        copper: toSafeNumber(body.copper, 30),
+        themeColor: String(body.themeColor || '#C5A059'),
         spellSlots: {
-          create: body.spellSlots || [],
+          create: Array.isArray(body.spellSlots)
+            ? body.spellSlots.map((s: any) => ({
+                level: toSafeNumber(s.level, 1),
+                total: Math.max(0, toSafeNumber(s.total, 0)),
+                used: Math.max(0, toSafeNumber(s.used, 0)),
+              }))
+            : [],
         },
         abilities: {
-          create: body.abilities || [],
+          create: Array.isArray(body.abilities)
+            ? body.abilities.map((a: any) => {
+                const max = toSafeNumber(a.maxUses, 1);
+                const cur = a.currentUses !== undefined && a.currentUses !== null && !isNaN(Number(a.currentUses))
+                  ? Number(a.currentUses)
+                  : max;
+                return {
+                  name: String(a.name || 'Habilidade'),
+                  description: a.description || '',
+                  maxUses: max,
+                  currentUses: cur,
+                  resetType: a.resetType || 'SHORT_REST',
+                  actionType: a.actionType || 'LIVRE',
+                };
+              })
+            : [],
         },
         spells: {
-          create: body.spells || [],
+          create: Array.isArray(body.spells)
+            ? body.spells.map((s: any) => ({
+                name: String(s.name || 'Magia'),
+                level: toSafeNumber(s.level, 0),
+                castingTime: s.castingTime || '',
+                range: s.range || '',
+                duration: s.duration || '',
+                components: s.components || '',
+                isPrepared: !!s.isPrepared,
+                description: s.description || '',
+              }))
+            : [],
         },
         items: {
-          create: body.items || [],
+          create: Array.isArray(body.items)
+            ? body.items.map((i: any) => ({
+                name: String(i.name || 'Item'),
+                description: i.description || '',
+                weight: toSafeNumber(i.weight, 0),
+                quantity: Math.max(1, toSafeNumber(i.quantity, 1)),
+                isWeapon: !!i.isWeapon,
+                damage: i.damage || '',
+                isArmor: !!i.isArmor,
+                isEquipped: !!i.isEquipped,
+                armorClassBonus: toSafeNumber(i.armorClassBonus, 0),
+              }))
+            : [],
         },
       },
       include: {

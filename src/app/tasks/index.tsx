@@ -564,11 +564,15 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 20,
     borderRadius: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 6,
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: '0 4px 10px rgba(0,0,0,0.35)' } as any)
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 2, height: 6 },
+          shadowOpacity: 0.35,
+          shadowRadius: 6,
+          elevation: 6,
+        }),
     position: 'relative',
   },
   tape: {
@@ -579,9 +583,13 @@ const styles = StyleSheet.create({
     height: 20,
     transform: [{ rotate: '-2deg' }],
     zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: '0 1px 3px rgba(0,0,0,0.15)' } as any)
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+        }),
   },
   postItHeader: {
     flexDirection: 'row',

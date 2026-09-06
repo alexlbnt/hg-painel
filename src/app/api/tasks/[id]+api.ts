@@ -1,21 +1,26 @@
 import { prisma } from '@/lib/prisma';
 
-export async function PUT(request: Request, params: { id: string }) {
+function extractId(context: any): string {
+  if (typeof context === 'string') return context;
+  const raw = context?.id ?? context?.params?.id;
+  return typeof raw === 'string' ? raw : String(raw || '');
+}
+
+export async function PUT(request: Request, context: any) {
   try {
-    const { id } = params;
+    const id = extractId(context);
     const body = await request.json();
-    console.log('PUT BODY:', body);
     
     const updatedTask = await prisma.task.update({
       where: { id },
       data: {
-        title: body.title,
-        description: body.description,
+        title: body.title !== undefined ? String(body.title) : undefined,
+        description: body.description !== undefined ? String(body.description) : undefined,
         category: body.category,
         status: body.status,
-        reward: body.reward,
-        resolution: body.resolution,
-        assignedTo: body.assignedTo,
+        reward: body.reward !== undefined ? String(body.reward) : undefined,
+        resolution: body.resolution !== undefined ? String(body.resolution) : undefined,
+        assignedTo: body.assignedTo !== undefined ? body.assignedTo : undefined,
       },
     });
 
@@ -26,9 +31,9 @@ export async function PUT(request: Request, params: { id: string }) {
   }
 }
 
-export async function DELETE(request: Request, params: { id: string }) {
+export async function DELETE(request: Request, context: any) {
   try {
-    const { id } = params;
+    const id = extractId(context);
     await prisma.task.delete({
       where: { id },
     });
@@ -38,3 +43,4 @@ export async function DELETE(request: Request, params: { id: string }) {
     return Response.json({ error: 'Falha ao deletar a task' }, { status: 500 });
   }
 }
+

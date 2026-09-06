@@ -64,8 +64,6 @@ export default function PlayerModule() {
   const [newItemIsArmor, setNewItemIsArmor] = useState(false);
   const [newItemArmorBonus, setNewItemArmorBonus] = useState('');
   const [newItemDamage, setNewItemDamage] = useState('');
-  const [newSpellLevel, setNewSpellLevel] = useState('1');
-  const [newSpellTotal, setNewSpellTotal] = useState('2');
   const [newAbName, setNewAbName] = useState('');
   const [newAbDesc, setNewAbDesc] = useState('');
   const [newAbUses, setNewAbUses] = useState('1');
@@ -108,7 +106,7 @@ export default function PlayerModule() {
   const [showManageSlots, setShowManageSlots] = useState(false);
   const [editingSorcery, setEditingSorcery] = useState(false);
   const [tempMaxSorcery, setTempMaxSorcery] = useState('');
-  const prevClassAndLevel = useRef<string>('');
+  const lastDataHash = useRef<string>('');
 
   const loadCharacters = async (silent = false) => {
     try {
@@ -116,12 +114,17 @@ export default function PlayerModule() {
       // Filtra apenas as fichas que pertencem a este usuário (Mestre e Player Mecânico têm acesso a todas as fichas)
       const hasAccessToAll = user?.role === 'DM' || user?.role === 'MECHANIC';
       const myChars = hasAccessToAll ? data : data.filter((c: CharacterData) => c.username === user?.username);
-      setCharacters(myChars);
-      if (myChars.length > 0 && !selectedId && !silent) {
-        setSelectedId(myChars[0].id);
+      
+      const serialized = JSON.stringify(myChars);
+      if (serialized !== lastDataHash.current) {
+        lastDataHash.current = serialized;
+        setCharacters(myChars);
+        if (myChars.length > 0 && !selectedId && !silent) {
+          setSelectedId(myChars[0].id);
+        }
       }
-    } catch (e) {
-      console.error('Erro ao carregar fichas medievais', e);
+    } catch (err) {
+      console.error('Erro ao carregar fichas medievais', err);
     }
   };
 
@@ -129,7 +132,6 @@ export default function PlayerModule() {
     if (characters.length > 0) {
       const exists = characters.some(c => c.id === selectedId);
       if (!selectedId || !exists) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedId(characters[0].id);
       }
     } else if (characters.length === 0 && selectedId !== null) {
@@ -141,7 +143,6 @@ export default function PlayerModule() {
 
   useEffect(() => {
     if (selectedChar) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoreText(selectedChar.lore || '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,8 +154,7 @@ export default function PlayerModule() {
       await ApiService.updateCharacter(selectedChar.id, { lore: loreText });
       loadCharacters(true);
       Alert.alert('Lore Salva!', 'A história do seu personagem foi registrada nos pergaminhos.');
-    } catch (error) {
-      console.error(error);
+    } catch {
       Alert.alert('Erro', 'Falha ao salvar a lore.');
     }
   };
@@ -163,8 +163,11 @@ export default function PlayerModule() {
     if (!authLoading && user) {
       loadCharacters();
       const interval = setInterval(() => {
+        if (typeof document !== 'undefined' && document.hidden) {
+          return;
+        }
         loadCharacters(true);
-      }, 2000);
+      }, 5000);
       return () => clearInterval(interval);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -385,7 +388,7 @@ export default function PlayerModule() {
     
     try {
       await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-    } catch (e) {
+    } catch {
       // Reverter em caso de erro
       loadCharacters(true);
     }
@@ -399,7 +402,7 @@ export default function PlayerModule() {
     
     try {
       await ApiService.updateCharacter(selectedChar.id, { sorceryPoints: amount });
-    } catch (e) {
+    } catch {
       loadCharacters(true);
     }
   };
@@ -413,7 +416,7 @@ export default function PlayerModule() {
     
     try {
       await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
-    } catch (e) {
+    } catch {
       loadCharacters(true);
     }
   };
@@ -427,13 +430,6 @@ export default function PlayerModule() {
       const newFailures = selectedChar.deathSaveFailures === index + 1 ? index : index + 1;
       await ApiService.updateCharacter(selectedChar.id, { deathSaveFailures: newFailures });
     }
-    loadCharacters(true);
-  };
-
-  const toggleEquip = async (itemId: string, currentState: boolean) => {
-    if (!selectedChar) return;
-    const updatedItems = (selectedChar.items || []).map(i => i.id === itemId ? { ...i, isEquipped: !currentState } : i);
-    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
     loadCharacters(true);
   };
 
@@ -473,7 +469,7 @@ export default function PlayerModule() {
         if (Platform.OS === 'web') window.alert(msg);
         else Alert.alert('Sucesso', msg);
       }
-    } catch (e) {
+    } catch {
       loadCharacters(true);
     }
   };
@@ -511,7 +507,7 @@ export default function PlayerModule() {
     try {
       await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
       loadCharacters(true);
-    } catch (e) {
+    } catch {
       loadCharacters(true);
     }
   };
@@ -528,6 +524,7 @@ export default function PlayerModule() {
         }).then(() => loadCharacters(true));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChar?.id, selectedChar?.class, selectedChar?.level]);
 
   const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string; isArmor?: boolean; isEquipped?: boolean; armorClassBonus?: number }) => {
@@ -545,6 +542,25 @@ export default function PlayerModule() {
     if (!selectedChar) return;
     const updatedItems = (selectedChar.items || []).filter(i => i.id !== itemId);
     await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
+    loadCharacters(true);
+  };
+
+  const toggleItemEquipped = async (itemId: string) => {
+    if (!selectedChar) return;
+    const item = (selectedChar.items || []).find(i => i.id === itemId);
+    if (!item) return;
+
+    const newEquipped = !item.isEquipped;
+    let newAc = selectedChar.armorClass;
+
+    if (item.armorClassBonus) {
+      newAc = newEquipped ? newAc + item.armorClassBonus : Math.max(10, newAc - item.armorClassBonus);
+    }
+
+    const updatedItems = (selectedChar.items || []).map(i => i.id === itemId ? { ...i, isEquipped: newEquipped } : i);
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, items: updatedItems, armorClass: newAc } : c));
+
+    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems, armorClass: newAc });
     loadCharacters(true);
   };
 
@@ -566,22 +582,6 @@ export default function PlayerModule() {
     
     await ApiService.updateCharacter(selectedChar.id, { proficientSkills: newProfString });
     loadCharacters(true);
-  };
-
-  const addSpellSlot = async () => {
-    if (!selectedChar || !newSpellLevel || !newSpellTotal) return;
-    const levelNum = parseInt(newSpellLevel, 10) || 1;
-    const totalNum = parseInt(newSpellTotal, 10) || 1;
-    await upsertSpellSlot(levelNum, totalNum);
-    setNewSpellLevel('1');
-    setNewSpellTotal('2');
-  };
-
-  const removeSpellSlot = async (slotId: string) => {
-    if (!selectedChar) return;
-    const updatedSlots = selectedChar.spellSlots.filter(s => s.id !== slotId);
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c));
-    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
   };
 
   // --- GRIMÓRIO INTERATIVO: FUNÇÕES AUXILIARES ---
@@ -1323,7 +1323,7 @@ export default function PlayerModule() {
                                 
                                 try {
                                   await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-                                } catch (e) {
+                                } catch {
                                   loadCharacters(true);
                                 }
                               }}
@@ -2157,7 +2157,7 @@ export default function PlayerModule() {
                               {item.isArmor && (
                                 <TouchableOpacity 
                                   style={[styles.delItemBtn, { backgroundColor: item.isEquipped ? '#38783C' : '#24201C', paddingHorizontal: 8 }]} 
-                                  onPress={() => toggleEquip(item.id, !!item.isEquipped)}
+                                  onPress={() => toggleItemEquipped(item.id)}
                                 >
                                   <Text style={{ fontSize: 10, color: item.isEquipped ? '#FFF' : '#80776C', fontWeight: '700' }}>
                                     {item.isEquipped ? 'EQUIPADO' : 'EQUIPAR'}

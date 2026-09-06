@@ -102,7 +102,24 @@ export default function UserManagement() {
   };
 
   useEffect(() => {
-    loadUsers();
+    let isMounted = true;
+    const init = async () => {
+      try {
+        const data = await ApiService.getUsers();
+        if (isMounted) setUsers(data);
+      } catch (err) {
+        console.error('Erro ao carregar usuários:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    };
+    init();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleRefresh = () => {

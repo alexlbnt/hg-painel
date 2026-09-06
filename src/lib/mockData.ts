@@ -93,6 +93,8 @@ export interface CharacterData {
   themeColor?: string;
   sorceryPoints?: number;
   maxSorceryPoints?: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 
 export type TaskCategory = 'LORE' | 'MECANICA' | 'ARTE' | 'DEV' | 'ESPECIAL';

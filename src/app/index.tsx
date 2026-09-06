@@ -24,10 +24,8 @@ import {
   Scroll,
   Shield,
   Sparkles,
-  Sword,
   Zap,
   ClipboardList,
-  CheckCircle,
   Key,
   Users,
   Calendar,
@@ -47,12 +45,9 @@ import {
   ApiService,
   CampaignSessionData,
   ScheduleResponseData,
-  ScheduledSessionData,
-  SessionRsvpData,
   RsvpStatus,
 } from '@/services/api';
 import { CharacterData, TaskData } from '@/lib/mockData';
-import { Colors } from '@/constants/theme';
 
 const TASK_CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   LORE: { bg: 'rgba(253, 253, 150, 0.15)', text: '#FDFD96', border: '#C5A059' },
@@ -104,34 +99,37 @@ export default function HomeScreen() {
     resetRsvps: false,
   });
 
-  const loadTavernData = async () => {
-    try {
-      const [charsData, tasksData, sessionsData, schedData] = await Promise.all([
-        ApiService.getCharacters().catch(() => []),
-        ApiService.getTasks().catch(() => []),
-        ApiService.getSessions().catch(() => []),
-        ApiService.getScheduledSession().catch(() => ({ session: null })),
-      ]);
-      setCharacters(charsData);
-      setTasks(tasksData);
-      setSessions(sessionsData);
-      setScheduleData(schedData);
-    } catch (err) {
-      console.warn('Erro ao carregar dados da taverna:', err);
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
   useEffect(() => {
-    loadTavernData();
+    let isMounted = true;
+    const init = async () => {
+      try {
+        const [charsData, tasksData, sessionsData, schedData] = await Promise.all([
+          ApiService.getCharacters().catch(() => []),
+          ApiService.getTasks().catch(() => []),
+          ApiService.getSessions().catch(() => []),
+          ApiService.getScheduledSession().catch(() => ({ session: null })),
+        ]);
+        if (!isMounted) return;
+        setCharacters(charsData);
+        setTasks(tasksData);
+        setSessions(sessionsData);
+        setScheduleData(schedData);
+      } catch (err) {
+        console.warn('Erro ao carregar dados da taverna:', err);
+      } finally {
+        if (isMounted) setLoadingData(false);
+      }
+    };
+    init();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Cálculo da contagem regressiva
   useEffect(() => {
     const targetIso = scheduleData?.session?.scheduledAt;
     if (!targetIso) {
-      setTimeRemaining(null);
       return;
     }
 
@@ -676,7 +674,7 @@ export default function HomeScreen() {
                 Por {latestNote.author?.name || 'Mestre'}:
               </Text>
               <Text style={styles.chronicleSnippetContent} numberOfLines={3}>
-                "{latestNote.content.replace(/[#*`_]/g, '')}"
+                &ldquo;{latestNote.content.replace(/[#*`_]/g, '')}&rdquo;
               </Text>
             </View>
           ) : (

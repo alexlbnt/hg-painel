@@ -135,7 +135,7 @@ export default function HeaderNav() {
                   key={item.path}
                   style={[
                     styles.navButton,
-                    { flex: 1, justifyContent: 'center', paddingVertical: 6, paddingHorizontal: 4, gap: 4, borderRadius: 4 },
+                    { flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 38, paddingVertical: 8, paddingHorizontal: 4, gap: 4, borderRadius: 6 },
                     isActive && styles.navButtonActive
                   ]}
                   onPress={() => router.push(item.path as any)}

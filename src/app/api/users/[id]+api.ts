@@ -1,9 +1,15 @@
 import { prisma } from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
 
+function extractId(context: any): string {
+  if (typeof context === 'string') return context;
+  const raw = context?.id ?? context?.params?.id;
+  return typeof raw === 'string' ? raw : String(raw || '');
+}
+
 export async function PATCH(req: Request, context: any) {
   try {
-    const id = context?.id || context?.params?.id;
+    const id = extractId(context);
     if (!id) {
       return Response.json({ error: 'Missing user ID' }, { status: 400 });
     }
@@ -42,7 +48,7 @@ export async function PATCH(req: Request, context: any) {
 
 export async function DELETE(req: Request, context: any) {
   try {
-    const id = context?.id || context?.params?.id;
+    const id = extractId(context);
     if (!id) {
       return Response.json({ error: 'Missing user ID' }, { status: 400 });
     }

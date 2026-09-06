@@ -1,7 +1,25 @@
 import { prisma } from '@/lib/prisma';
 
+function toSafeNumber(val: any, fallback: number = 0): number {
+  if (val === undefined || val === null) return fallback;
+  const n = Number(val);
+  return isNaN(n) ? fallback : n;
+}
+
+function toOptionalNumber(val: any): number | undefined {
+  if (val === undefined || val === null) return undefined;
+  const n = Number(val);
+  return isNaN(n) ? undefined : n;
+}
+
+function extractId(context: any): string {
+  if (typeof context === 'string') return context;
+  const raw = context?.id ?? context?.params?.id;
+  return typeof raw === 'string' ? raw : String(raw || '');
+}
+
 export async function PUT(request: Request, context: any) {
-  const id = context?.id || context?.params?.id || (context as any);
+  const id = extractId(context);
   try {
     const body = await request.json();
 
@@ -10,7 +28,7 @@ export async function PUT(request: Request, context: any) {
       await prisma.condition.deleteMany({ where: { characterId: id } });
       await prisma.condition.createMany({
         data: body.conditions.map((c: any) => ({
-          name: c.name,
+          name: String(c.name || ''),
           description: c.description || '',
           characterId: id,
         })),
@@ -22,15 +40,21 @@ export async function PUT(request: Request, context: any) {
       await prisma.ability.deleteMany({ where: { characterId: id } });
       if (body.abilities.length > 0) {
         await prisma.ability.createMany({
-          data: body.abilities.map((ab: any) => ({
-            name: ab.name,
-            description: ab.description || '',
-            maxUses: Number(ab.maxUses) || 1,
-            currentUses: Number(ab.currentUses) !== undefined ? Number(ab.currentUses) : (Number(ab.maxUses) || 1),
-            resetType: ab.resetType || 'SHORT_REST',
-            actionType: ab.actionType || 'LIVRE',
-            characterId: id,
-          })),
+          data: body.abilities.map((ab: any) => {
+            const max = toSafeNumber(ab.maxUses, 1);
+            const cur = ab.currentUses !== undefined && ab.currentUses !== null && !isNaN(Number(ab.currentUses))
+              ? Number(ab.currentUses)
+              : max;
+            return {
+              name: String(ab.name || 'Habilidade'),
+              description: ab.description || '',
+              maxUses: max,
+              currentUses: cur,
+              resetType: ab.resetType || 'SHORT_REST',
+              actionType: ab.actionType || 'LIVRE',
+              characterId: id,
+            };
+          }),
         });
       }
     }
@@ -40,9 +64,9 @@ export async function PUT(request: Request, context: any) {
       if (body.spellSlots.length > 0) {
         await prisma.spellSlot.createMany({
           data: body.spellSlots.map((slot: any) => ({
-            level: Number(slot.level) || 1,
-            total: Math.max(0, Number(slot.total) || 0),
-            used: Math.max(0, Number(slot.used) || 0),
+            level: toSafeNumber(slot.level, 1),
+            total: Math.max(0, toSafeNumber(slot.total, 0)),
+            used: Math.max(0, toSafeNumber(slot.used, 0)),
             characterId: id,
           })),
         });
@@ -53,15 +77,15 @@ export async function PUT(request: Request, context: any) {
       await prisma.item.deleteMany({ where: { characterId: id } });
       await prisma.item.createMany({
         data: body.items.map((i: any) => ({
-          name: i.name,
+          name: String(i.name || 'Item'),
           description: i.description || '',
-          weight: Number(i.weight) || 0,
-          quantity: Number(i.quantity) || 1,
+          weight: toSafeNumber(i.weight, 0),
+          quantity: Math.max(1, toSafeNumber(i.quantity, 1)),
           isWeapon: !!i.isWeapon,
           damage: i.damage || '',
           isArmor: !!i.isArmor,
           isEquipped: !!i.isEquipped,
-          armorClassBonus: Number(i.armorClassBonus) || 0,
+          armorClassBonus: toSafeNumber(i.armorClassBonus, 0),
           characterId: id,
         })),
       });
@@ -72,8 +96,8 @@ export async function PUT(request: Request, context: any) {
       if (body.spells.length > 0) {
         await prisma.spell.createMany({
           data: body.spells.map((s: any) => ({
-            name: s.name,
-            level: Number(s.level) || 0,
+            name: String(s.name || 'Magia'),
+            level: toSafeNumber(s.level, 0),
             castingTime: s.castingTime || '',
             range: s.range || '',
             duration: s.duration || '',
@@ -89,46 +113,46 @@ export async function PUT(request: Request, context: any) {
     const updated = await prisma.character.update({
       where: { id },
       data: {
-        currentHp: body.currentHp !== undefined ? Number(body.currentHp) : undefined,
-        maxHp: body.maxHp !== undefined ? Number(body.maxHp) : undefined,
-        tempHp: body.tempHp !== undefined ? Number(body.tempHp) : undefined,
-        hitDiceSpent: body.hitDiceSpent !== undefined ? Number(body.hitDiceSpent) : undefined,
-        deathSaveSuccesses: body.deathSaveSuccesses !== undefined ? Number(body.deathSaveSuccesses) : undefined,
-        deathSaveFailures: body.deathSaveFailures !== undefined ? Number(body.deathSaveFailures) : undefined,
-        armorClass: body.armorClass !== undefined ? Number(body.armorClass) : undefined,
-        initiativeBonus: body.initiativeBonus !== undefined ? Number(body.initiativeBonus) : undefined,
+        currentHp: toOptionalNumber(body.currentHp),
+        maxHp: toOptionalNumber(body.maxHp),
+        tempHp: toOptionalNumber(body.tempHp),
+        hitDiceSpent: toOptionalNumber(body.hitDiceSpent),
+        deathSaveSuccesses: toOptionalNumber(body.deathSaveSuccesses),
+        deathSaveFailures: toOptionalNumber(body.deathSaveFailures),
+        armorClass: toOptionalNumber(body.armorClass),
+        initiativeBonus: toOptionalNumber(body.initiativeBonus),
         speed: body.speed !== undefined ? String(body.speed) : undefined,
         hitDiceType: body.hitDiceType !== undefined ? String(body.hitDiceType) : undefined,
-        hitDiceTotal: body.hitDiceTotal !== undefined ? Number(body.hitDiceTotal) : undefined,
-        name: body.name,
-        playerName: body.playerName,
+        hitDiceTotal: toOptionalNumber(body.hitDiceTotal),
+        name: body.name !== undefined ? String(body.name) : undefined,
+        playerName: body.playerName !== undefined ? String(body.playerName) : undefined,
         race: body.race !== undefined ? String(body.race) : undefined,
-        class: body.class,
-        level: body.level !== undefined ? Number(body.level) : undefined,
+        class: body.class !== undefined ? String(body.class) : undefined,
+        level: toOptionalNumber(body.level),
         alignment: body.alignment !== undefined ? String(body.alignment) : undefined,
         background: body.background !== undefined ? String(body.background) : undefined,
         deity: body.deity !== undefined ? String(body.deity) : undefined,
         lore: body.lore !== undefined ? String(body.lore) : undefined,
-        gold: body.gold !== undefined ? Number(body.gold) : undefined,
-        silver: body.silver !== undefined ? Number(body.silver) : undefined,
-        copper: body.copper !== undefined ? Number(body.copper) : undefined,
+        gold: toOptionalNumber(body.gold),
+        silver: toOptionalNumber(body.silver),
+        copper: toOptionalNumber(body.copper),
         themeColor: body.themeColor !== undefined ? String(body.themeColor) : undefined,
         proficientSkills: body.proficientSkills !== undefined ? String(body.proficientSkills) : undefined,
         username: body.username !== undefined ? String(body.username) : undefined,
-        str: body.str !== undefined ? Number(body.str) : undefined,
-        dex: body.dex !== undefined ? Number(body.dex) : undefined,
-        con: body.con !== undefined ? Number(body.con) : undefined,
-        int: body.int !== undefined ? Number(body.int) : undefined,
-        wis: body.wis !== undefined ? Number(body.wis) : undefined,
-        cha: body.cha !== undefined ? Number(body.cha) : undefined,
+        str: toOptionalNumber(body.str),
+        dex: toOptionalNumber(body.dex),
+        con: toOptionalNumber(body.con),
+        int: toOptionalNumber(body.int),
+        wis: toOptionalNumber(body.wis),
+        cha: toOptionalNumber(body.cha),
         strProf: body.strProf !== undefined ? Boolean(body.strProf) : undefined,
         dexProf: body.dexProf !== undefined ? Boolean(body.dexProf) : undefined,
         conProf: body.conProf !== undefined ? Boolean(body.conProf) : undefined,
         intProf: body.intProf !== undefined ? Boolean(body.intProf) : undefined,
         wisProf: body.wisProf !== undefined ? Boolean(body.wisProf) : undefined,
         chaProf: body.chaProf !== undefined ? Boolean(body.chaProf) : undefined,
-        sorceryPoints: body.sorceryPoints !== undefined ? Number(body.sorceryPoints) : undefined,
-        maxSorceryPoints: body.maxSorceryPoints !== undefined ? Number(body.maxSorceryPoints) : undefined,
+        sorceryPoints: toOptionalNumber(body.sorceryPoints),
+        maxSorceryPoints: toOptionalNumber(body.maxSorceryPoints),
       },
       include: {
         spellSlots: { orderBy: { level: 'asc' } },
@@ -147,7 +171,7 @@ export async function PUT(request: Request, context: any) {
 }
 
 export async function DELETE(request: Request, context: any) {
-  const id = context?.id || context?.params?.id || (context as any);
+  const id = extractId(context);
   try {
     await prisma.character.delete({ where: { id } });
     return Response.json({ success: true });
@@ -156,3 +180,4 @@ export async function DELETE(request: Request, context: any) {
     return Response.json({ error: 'Falha ao deletar personagem' }, { status: 500 });
   }
 }
+

@@ -5,7 +5,7 @@ import UserManagement from '@/components/dm/UserManagement';
 import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp, Key } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
@@ -28,11 +28,16 @@ export default function DmModule() {
   const [lastSync, setLastSync] = useState<string>('Conectando ao Escudo do Mestre...');
   const [isAllExpanded, setIsAllExpanded] = useState<boolean>(false);
   const [hoveredCond, setHoveredCond] = useState<string | null>(null);
+  const lastDataHash = useRef<string>('');
 
   const fetchTableData = async (silent = false) => {
     try {
       const data = await ApiService.getCharacters();
-      setCharacters(data);
+      const serialized = JSON.stringify(data);
+      if (serialized !== lastDataHash.current) {
+        lastDataHash.current = serialized;
+        setCharacters(data);
+      }
       const now = new Date();
       setLastSync(`Sincronizado: ${now.toLocaleTimeString()}`);
     } catch (e) {
@@ -44,17 +49,20 @@ export default function DmModule() {
   useEffect(() => {
     if (selectedChar) {
       const updated = characters.find(c => c.id === selectedChar.id);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (updated) setSelectedChar(updated);
+      if (updated && (updated.updatedAt !== selectedChar.updatedAt || updated.currentHp !== selectedChar.currentHp || updated.tempHp !== selectedChar.tempHp)) {
+        setSelectedChar(updated);
+      }
     }
   }, [characters, selectedChar]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTableData();
     const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        return;
+      }
       fetchTableData(true);
-    }, 2000);
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -65,13 +73,13 @@ export default function DmModule() {
 
   const executeMassRest = async (type: 'short' | 'long') => {
     try {
-      for (const char of characters) {
-        if (type === 'short') {
-          await ApiService.takeShortRest(char.id, 5, 1);
-        } else {
-          await ApiService.takeLongRest(char.id);
-        }
-      }
+      await Promise.all(
+        characters.map(char =>
+          type === 'short'
+            ? ApiService.takeShortRest(char.id, 5, 1)
+            : ApiService.takeLongRest(char.id)
+        )
+      );
       fetchTableData(true);
       if (Platform.OS === 'web') {
         window.alert(`Ritual de Descanso ${type === 'short' ? 'Curto' : 'Longo'} aplicado a todos os heróis da mesa!`);
