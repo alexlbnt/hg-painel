@@ -1,48 +1,67 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import {
+  CharacterData,
+  ItemData,
+  SpellItemData,
+} from '@/lib/mockData';
+import { ApiService } from '@/services/api';
+import { ExportService } from '@/services/exportService';
+import { confirmAction } from '@/utils/confirm';
+import { getMod, getProfBonus } from '@/utils/dnd5e';
+
+// Subcomponentes Especializados de Alta Performance
+import { CharacterHeader } from '@/components/player/CharacterHeader';
+import { VitalsCombatPanel } from '@/components/player/VitalsCombatPanel';
+import { AttributesGrid } from '@/components/player/AttributesGrid';
+import { CombatAttacksTab } from '@/components/player/CombatAttacksTab';
+import { SpellsManagerTab } from '@/components/player/SpellsManagerTab';
+import { AbilitiesTab } from '@/components/player/AbilitiesTab';
+import { SkillsTab } from '@/components/player/SkillsTab';
+import { InventoryTab } from '@/components/player/InventoryTab';
+import { LoreTab } from '@/components/player/LoreTab';
+
+// Modais
 import CharacterModal from '@/components/player/CharacterModal';
 import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal';
 import { EditItemModal } from '@/components/player/EditItemModal';
 import { SrdSearchModal } from '@/components/player/SrdSearchModal';
-import { useAuth } from '@/contexts/AuthContext';
-import { useResponsive } from '@/hooks/useResponsive';
-import { CharacterData, ItemData, SpellItemData, SpellSlotData } from '@/lib/mockData';
-import { ApiService } from '@/services/api';
-import { ExportService } from '@/services/exportService';
-import { useRouter } from 'expo-router';
-import Markdown from 'react-native-markdown-display';
-import { AlertTriangle, Award, BookOpen, ChevronDown, ChevronUp, Clock, Crosshair, Download, Edit, Eye, EyeOff, FastForward, Heart, Minus, Moon, Package, Plus, Scale, Scroll, Shield, Skull, Sparkles, Sun, Sword, Trash2, Upload, Zap } from 'lucide-react-native';
-import { useEffect, useState, useRef } from 'react';
-import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { parseClassesAndCalculateSlots } from '@/utils/spellProgression';
-import { useRealtimeSync } from '@/hooks/useRealtimeSync';
-import { confirmAction } from '@/utils/confirm';
+
+// Ícones
+import {
+  Award,
+  BookOpen,
+  Download,
+  FastForward,
+  Package,
+  Plus,
+  Scroll,
+  Shield,
+  Sword,
+  Upload,
+  Zap,
+} from 'lucide-react-native';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
-
-const SKILLS_LIST = [
-  { name: 'Acrobacia', attr: 'dex', label: 'DES' },
-  { name: 'Arcanismo', attr: 'int', label: 'INT' },
-  { name: 'Atletismo', attr: 'str', label: 'FOR' },
-  { name: 'Atuação', attr: 'cha', label: 'CAR' },
-  { name: 'Enganação', attr: 'cha', label: 'CAR' },
-  { name: 'Furtividade', attr: 'dex', label: 'DES' },
-  { name: 'História', attr: 'int', label: 'INT' },
-  { name: 'Intimidação', attr: 'cha', label: 'CAR' },
-  { name: 'Intuição', attr: 'wis', label: 'SAB' },
-  { name: 'Investigação', attr: 'int', label: 'INT' },
-  { name: 'Lidar com Animais', attr: 'wis', label: 'SAB' },
-  { name: 'Medicina', attr: 'wis', label: 'SAB' },
-  { name: 'Natureza', attr: 'int', label: 'INT' },
-  { name: 'Percepção', attr: 'wis', label: 'SAB' },
-  { name: 'Persuasão', attr: 'cha', label: 'CAR' },
-  { name: 'Prestidigitação', attr: 'dex', label: 'DES' },
-  { name: 'Religião', attr: 'int', label: 'INT' },
-  { name: 'Sobrevivência', attr: 'wis', label: 'SAB' },
-];
 
 export default function PlayerModule() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace('/');
@@ -52,339 +71,161 @@ export default function PlayerModule() {
   const { isMobile } = useResponsive();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Aba ativa: inicia em 'combat' para acesso instantâneo na mesa
+  const [activeTab, setActiveTab] = useState<
+    'combat' | 'spells' | 'abilities' | 'skills' | 'inventory' | 'lore'
+  >('combat');
+
+  // Estado de Concentração da Magia Ativa
+  const [concentratingSpell, setConcentratingSpell] = useState<string | null>(null);
+
+  // Modais de Criação e Edição Geral
   const [modalVisible, setModalVisible] = useState(false);
   const [editingChar, setEditingChar] = useState<CharacterData | null>(null);
-  const [importModalVisible, setImportModalVisible] = useState(false);
-  const [importJsonText, setImportJsonText] = useState('');
+
+  // Modal de Deslocamento
   const [speedModalVisible, setSpeedModalVisible] = useState(false);
   const [quickSpeed, setQuickSpeed] = useState('9m');
-  const [activeTab, setActiveTab] = useState<'spells' | 'abilities' | 'skills' | 'inventory' | 'lore'>('spells');
-  const [loreText, setLoreText] = useState('');
-  const [customHp, setCustomHp] = useState('');
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemDesc, setNewItemDesc] = useState('');
-  const [newItemWeight, setNewItemWeight] = useState('');
-  const [newItemQty, setNewItemQty] = useState('1');
-  const [newItemIsWeapon, setNewItemIsWeapon] = useState(false);
-  const [newItemIsArmor, setNewItemIsArmor] = useState(false);
-  const [newItemArmorBonus, setNewItemArmorBonus] = useState('');
-  const [newItemDamage, setNewItemDamage] = useState('');
-  const [newAbName, setNewAbName] = useState('');
-  const [newAbDesc, setNewAbDesc] = useState('');
-  const [newAbUses, setNewAbUses] = useState('1');
-  const [newAbReset, setNewAbReset] = useState<'SHORT_REST' | 'LONG_REST' | 'NONE'>('SHORT_REST');
-  const [newAbActionType, setNewAbActionType] = useState('LIVRE');
-  const [abilityFilter, setAbilityFilter] = useState('ALL');
-  const [expandedAbilities, setExpandedAbilities] = useState<Record<string, boolean>>({});
 
-  const toggleAbilityExpanded = (id: string) => {
-    setExpandedAbilities(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  // Modal de Backup / Importação
+  const [importModalVisible, setImportModalVisible] = useState(false);
+  const [importJsonText, setImportJsonText] = useState('');
 
-  const adjustAbilityUses = async (abId: string, amount: number) => {
-    if (!selectedChar) return;
-    const ability = selectedChar.abilities.find(a => a.id === abId);
-    if (!ability) return;
-    
-    let newUses = ability.currentUses + amount;
-    if (newUses < 0) newUses = 0;
-    if (newUses > ability.maxUses) newUses = ability.maxUses;
-    
-    const updatedAbilities = selectedChar.abilities.map(a => a.id === abId ? { ...a, currentUses: newUses } : a);
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c));
-    await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
-  };
-
+  // Modais de SRD e Edição de Entidades
   const [srdModalVisible, setSrdModalVisible] = useState(false);
-  const [srdModalType, setSrdModalType] = useState<'spell'|'ability'>('spell');
-  
+  const [srdModalType, setSrdModalType] = useState<'spell' | 'ability'>('spell');
   const [editEntityVisible, setEditEntityVisible] = useState(false);
-  const [editEntityType, setEditEntityType] = useState<'spell'|'ability'>('spell');
+  const [editEntityType, setEditEntityType] = useState<'spell' | 'ability'>('spell');
   const [entityToEdit, setEntityToEdit] = useState<any>(null);
   const [editItemModalVisible, setEditItemModalVisible] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<ItemData | null>(null);
-  const [expandedLevels, setExpandedLevels] = useState<number[]>([]);
-  const [addingSpellForLevel, setAddingSpellForLevel] = useState<number | null>(null);
-  const [newSpellName, setNewSpellName] = useState('');
-  const [newSpellCastTime, setNewSpellCastTime] = useState('1 Ação');
-  const [newSpellRange, setNewSpellRange] = useState('9m');
-  const [newSpellDuration, setNewSpellDuration] = useState('Instantânea');
-  const [newSpellDesc, setNewSpellDesc] = useState('');
-  const [showManageSlots, setShowManageSlots] = useState(false);
-  const [editingSorcery, setEditingSorcery] = useState(false);
-  const [tempMaxSorcery, setTempMaxSorcery] = useState('');
-  const [editingKi, setEditingKi] = useState(false);
-  const [tempMaxKi, setTempMaxKi] = useState('');
+
   const lastDataHash = useRef<string>('');
 
+  // Carregamento de Personagens
   const loadCharacters = async (silent = false) => {
     try {
       const data = await ApiService.getCharacters();
-      // Filtra apenas as fichas que pertencem a este usuário (Mestre e Player Mecânico têm acesso a todas as fichas)
-      const hasAccessToAll = user?.role === 'DM' || user?.role === 'MECHANIC';
-      const myChars = hasAccessToAll
-        ? data
-        : data.filter((c: CharacterData) => c.username?.toLowerCase().trim() === user?.username?.toLowerCase().trim());
-      
-      const serialized = JSON.stringify(myChars);
-      if (serialized !== lastDataHash.current) {
-        lastDataHash.current = serialized;
-        setCharacters(myChars);
-        if (myChars.length > 0 && !selectedId && !silent) {
-          setSelectedId(myChars[0].id);
-        }
+      const currentHash = JSON.stringify(data);
+      if (currentHash === lastDataHash.current) return;
+      lastDataHash.current = currentHash;
+
+      setCharacters(data);
+      if (data.length > 0 && !selectedId) {
+        setSelectedId(data[0].id);
       }
-    } catch (err) {
-      console.error('Erro ao carregar fichas medievais', err);
+    } catch (e) {
+      console.error('Erro ao carregar personagens:', e);
     }
   };
 
   useEffect(() => {
-    if (characters.length > 0) {
-      const exists = characters.some(c => c.id === selectedId);
-      if (!selectedId || !exists) {
-        setSelectedId(characters[0].id);
-      }
-    } else if (characters.length === 0 && selectedId !== null) {
-      setSelectedId(null);
-    }
-  }, [characters, selectedId]);
+    loadCharacters();
+  }, []);
 
-  const selectedChar = characters.find(c => c.id === selectedId) || null;
-
-  useEffect(() => {
-    if (selectedChar) {
-      setLoreText(selectedChar.lore || '');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedChar?.id]); // Only reset when changing character
-
-  const handleSaveLore = async () => {
-    if (!selectedChar) return;
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { lore: loreText });
-      loadCharacters(true);
-      Alert.alert('Lore Salva!', 'A história do seu personagem foi registrada nos pergaminhos.');
-    } catch {
-      Alert.alert('Erro', 'Falha ao salvar a lore.');
-    }
-  };
-
+  // Sincronização em tempo real via SSE
   useRealtimeSync((event) => {
     if (
-      event.type === 'CHARACTER_UPDATED' ||
-      event.type === 'CHARACTER_CREATED' ||
-      event.type === 'CHARACTER_DELETED' ||
-      event.type === 'TABLE_REST'
+      event.type === 'characters' ||
+      event.type === 'character' ||
+      event.type === 'data_changed'
     ) {
       loadCharacters(true);
     }
   });
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      loadCharacters();
-      const interval = setInterval(() => {
-        if (typeof document !== 'undefined' && document.hidden) {
-          return;
-        }
-        loadCharacters(true);
-      }, 60000);
-      return () => clearInterval(interval);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.username, user?.role]);
-
+  const selectedChar = useMemo(
+    () => characters.find((c) => c.id === selectedId) || null,
+    [characters, selectedId]
+  );
 
   const themeColor = selectedChar?.themeColor || '#C5A059';
-  const isMonk = !!(selectedChar?.class?.toLowerCase().includes('monge') || selectedChar?.class?.toLowerCase().includes('monk'));
-  const isSorcerer = !!(selectedChar?.class?.toLowerCase().includes('feiticeiro'));
-  const isWarlock = !!(selectedChar?.class?.toLowerCase().includes('bruxo'));
 
-  const getMod = (score: number) => Math.floor((score - 10) / 2);
-  const profBonus = selectedChar ? Math.floor((selectedChar.level - 1) / 4) + 2 : 2;
-  const passivePerception = selectedChar
-    ? 10 + getMod(selectedChar.wis) + (selectedChar.proficientSkills.includes('Percepção') ? profBonus : 0)
-    : 10;
+  // Percepção Passiva Canônica: 10 + Mod de SAB + (Prof se proficiente)
+  const passivePerception = useMemo(() => {
+    if (!selectedChar) return 10;
+    const wisMod = getMod(selectedChar.wis);
+    const prof = getProfBonus(selectedChar.level);
+    const isProf = (selectedChar.proficientSkills || '').includes('Percepção');
+    const isExp = (selectedChar.proficientSkills || '').includes('Percepção:EXP');
+    const profToAdd = isExp ? prof * 2 : isProf ? prof : 0;
+    return 10 + wisMod + profToAdd;
+  }, [selectedChar]);
 
-  const totalWeight = selectedChar ? (selectedChar.items || []).reduce((acc, i) => acc + ((Number(i.weight) || 0) * (Number(i.quantity) || 1)), 0) : 0;
-  const maxWeight = selectedChar ? (Number(selectedChar.str) || 10) * 7.5 : 75;
-  const isOverloaded = totalWeight > maxWeight;
-
-  const handleCreateOrUpdate = async (data: Partial<CharacterData>) => {
-    try {
-      if (editingChar) {
-        // Optimistic UI imediata
-        setCharacters(prev => prev.map(c => c.id === editingChar.id ? {
-          ...c,
-          ...data,
-          spellSlots: data.spellSlots !== undefined ? data.spellSlots : c.spellSlots,
-        } : c));
-
-        await ApiService.updateCharacter(editingChar.id, data);
-        if (Platform.OS === 'web') {
-          window.alert('Ficha atualizada com sucesso!');
-        } else {
-          Alert.alert('Sucesso', 'Ficha atualizada!');
-        }
-        await loadCharacters(true);
-      } else {
-        const newChar = await ApiService.createCharacter({
-          ...data,
-          username: user?.username || ''
-        });
-        
-        // Optimistic UI: adiciona a ficha imediatamente na lista local para evitar
-        // que o useEffect de validação do selectedId resete a seleção
-        setCharacters(prev => [...prev, newChar]);
-        setSelectedId(newChar.id);
-        if (Platform.OS === 'web') {
-          window.alert('Ficha criada com sucesso!');
-        } else {
-          Alert.alert('Sucesso', 'Ficha criada!');
-        }
-        
-        // Pede a atualização silenciosa em background
-        await loadCharacters(true);
-      }
-      setModalVisible(false);
-      setEditingChar(null);
-    } catch (e) {
-      console.error(e);
-      if (Platform.OS === 'web') {
-        window.alert('Falha ao salvar ficha.');
-      } else {
-        Alert.alert('Erro', 'Falha ao salvar ficha.');
-      }
-    }
-  };
-
-  const handleSaveQuickSpeed = async () => {
-    if (!selectedChar) return;
-    const finalSpeed = quickSpeed.trim() || '9m';
-
-    // Optimistic UI imediata
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, speed: finalSpeed } : c));
-    setSpeedModalVisible(false);
-
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { speed: finalSpeed });
-      await loadCharacters(true);
-    } catch (err) {
-      console.error('Erro ao atualizar deslocamento:', err);
-      if (Platform.OS === 'web') {
-        window.alert('Falha ao salvar deslocamento.');
-      } else {
-        Alert.alert('Erro', 'Falha ao salvar deslocamento.');
-      }
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    const confirmDelete = () => {
-      ApiService.deleteCharacter(id).then(() => {
-        loadCharacters();
-        if (selectedId === id) setSelectedId(null);
-      });
-    };
-
-    confirmAction(
-      'Deseja selar e excluir este grimório de personagem para sempre?',
-      confirmDelete,
-      'Excluir Grimório'
+  // CA Total (Base + Bônus de Armaduras e Escudos Equipados)
+  const totalAc = useMemo(() => {
+    if (!selectedChar) return 10;
+    const baseAc = Number(selectedChar.armorClass || 10);
+    const armorBonus = (selectedChar.items || []).reduce(
+      (acc, i) => acc + (i.isArmor && i.isEquipped ? Number(i.armorClassBonus || 0) : 0),
+      0
     );
-  };
+    return baseAc + armorBonus;
+  }, [selectedChar]);
 
-  const handleExportJson = () => {
-    if (selectedChar) {
-      ExportService.exportCharacterToJson(selectedChar);
-    }
-  };
+  // -------------------------------------------------------------
+  // OPERAÇÕES DO PERSONAGEM
+  // -------------------------------------------------------------
 
-  const handleExportAllJson = () => {
-    if (characters && characters.length > 0) {
-      ExportService.exportAllCharactersToJson(characters);
-    } else {
-      Alert.alert('Aviso', 'Não há fichas na Taverna para exportar.');
-    }
-  };
+  const handleApplyHpDelta = async (delta: number) => {
+    if (!selectedChar) return;
+    let newHp = selectedChar.currentHp + delta;
+    if (newHp > selectedChar.maxHp) newHp = selectedChar.maxHp;
+    if (newHp < 0) newHp = 0;
 
-  const handleSelectJsonFile = () => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (e: any) => {
-        const file = e.target.files?.[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const content = event.target?.result as string;
-            if (content) setImportJsonText(content);
-          };
-          reader.readAsText(file);
-        }
-      };
-      input.click();
-    } else {
-      Alert.alert('Dica', 'No celular ou aplicativo, copie o código JSON da ficha e cole na caixa de texto abaixo.');
-    }
-  };
+    // Atualização otimista
+    setCharacters((prev) =>
+      prev.map((c) => (c.id === selectedChar.id ? { ...c, currentHp: newHp } : c))
+    );
 
-  const handleConfirmImport = async () => {
-    if (!importJsonText.trim()) {
-      Alert.alert('Aviso', 'Cole o código JSON ou selecione um arquivo primeiro.');
-      return;
-    }
-    const res = ExportService.parseImportJson(importJsonText);
-    if (!res.success || !res.characters) {
-      Alert.alert('Erro na Importação', res.error || 'JSON inválido');
-      return;
-    }
     try {
-      let count = 0;
-      for (const charData of res.characters) {
-        await ApiService.createCharacter(charData);
-        count++;
-      }
-      await loadCharacters();
-      setImportModalVisible(false);
-      setImportJsonText('');
-      Alert.alert('Sucesso!', `${count} ficha(s) importada(s) com sucesso para a Taverna!`);
+      await ApiService.updateCharacter(selectedChar.id, { currentHp: newHp });
     } catch (e) {
       console.error(e);
-      Alert.alert('Erro', 'Ocorreu um erro ao salvar as fichas importadas.');
+      loadCharacters();
     }
   };
 
-  const modifyHp = async (delta: number) => {
+  const handleToggleDeathSave = async (type: 'success' | 'fail', index: number) => {
     if (!selectedChar) return;
-    if (delta < 0) {
-      await ApiService.dmIntervene(selectedChar.id, { type: 'DAMAGE', value: Math.abs(delta) });
+    let newSuccess = selectedChar.deathSaveSuccesses;
+    let newFails = selectedChar.deathSaveFailures;
+
+    if (type === 'success') {
+      newSuccess = index + 1 === newSuccess ? index : index + 1;
     } else {
-      await ApiService.dmIntervene(selectedChar.id, { type: 'HEAL', value: delta });
+      newFails = index + 1 === newFails ? index : index + 1;
     }
-    loadCharacters(true);
+
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id
+          ? { ...c, deathSaveSuccesses: newSuccess, deathSaveFailures: newFails }
+          : c
+      )
+    );
+
+    await ApiService.updateCharacter(selectedChar.id, {
+      deathSaveSuccesses: newSuccess,
+      deathSaveFailures: newFails,
+    });
   };
 
-  const handleCustomHpAction = async (isDamage: boolean) => {
-    const val = parseInt(customHp, 10);
-    if (!val || !selectedChar) return;
-    await modifyHp(isDamage ? -val : val);
-    setCustomHp('');
-  };
-
-  const triggerShortRest = async () => {
+  const handleTriggerShortRest = async () => {
     if (!selectedChar) return;
     const executeRest = async () => {
       const healAmt = 8 + getMod(selectedChar.con);
+      const updates: Partial<CharacterData> = {};
       if (selectedChar.maxKiPoints && selectedChar.maxKiPoints > 0) {
-        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, kiPoints: selectedChar.maxKiPoints } : c));
+        updates.kiPoints = selectedChar.maxKiPoints;
       }
       await ApiService.takeShortRest(selectedChar.id, healAmt, 1);
-      loadCharacters();
+      await loadCharacters();
       if (Platform.OS === 'web') {
-        window.alert(`Ritual de Descanso Curto concluído! 1 Dado de Vida gasto, recuperou ${healAmt} HP e restaurou habilidades marciais.`);
+        window.alert(
+          `Ritual de Descanso Curto concluído! 1 Dado de Vida gasto, recuperou ${healAmt} HP e restaurou habilidades de descanso curto.`
+        );
       }
     };
 
@@ -395,4033 +236,1118 @@ export default function PlayerModule() {
     );
   };
 
-  const triggerLongRest = async () => {
+  const handleTriggerLongRest = async () => {
     if (!selectedChar) return;
     const executeRest = async () => {
-      if (selectedChar.maxKiPoints && selectedChar.maxKiPoints > 0) {
-        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, kiPoints: selectedChar.maxKiPoints } : c));
-      }
-      if (selectedChar.maxSorceryPoints && selectedChar.maxSorceryPoints > 0) {
-        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, sorceryPoints: selectedChar.maxSorceryPoints } : c));
-      }
       await ApiService.takeLongRest(selectedChar.id);
-      loadCharacters();
+      setConcentratingSpell(null);
+      await loadCharacters();
       if (Platform.OS === 'web') {
-        window.alert('Ritual de Descanso Longo concluído! Sinais vitais e pergaminhos arcano 100% restaurados!');
+        window.alert('Ritual de Descanso Longo concluído! Sinais vitais, magias e habilidades 100% restaurados!');
       }
     };
 
     confirmAction(
-      'Realizar Descanso Longo? (Restaura 100% dos pontos de vida, limpa maldições temporárias e recarrega todos os feitiços)',
+      'Realizar Descanso Longo? (Restaura 100% dos pontos de vida, recupera metade dos dados de vida e recarrega todos os feitiços)',
       executeRest,
       'Descanso Longo'
     );
   };
 
-  const toggleSpellSlot = async (slotId: string, currentUsed: number, total: number) => {
+  const handleToggleEquipItem = async (itemId: string) => {
     if (!selectedChar) return;
-    const newUsed = currentUsed >= total ? 0 : currentUsed + 1;
-    const updatedSlots = selectedChar.spellSlots.map(s => s.id === slotId ? { ...s, used: newUsed } : s);
-    
-    // Atualização Otimista
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c));
-    
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-    } catch {
-      // Reverter em caso de erro
-      loadCharacters(true);
-    }
-  };
+    const updatedItems = (selectedChar.items || []).map((i) =>
+      i.id === itemId ? { ...i, isEquipped: !i.isEquipped } : i
+    );
 
-  const updateSorceryPoints = async (amount: number) => {
-    if (!selectedChar) return;
-    
-    // Atualização Otimista
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, sorceryPoints: amount } : c));
-    
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { sorceryPoints: amount });
-    } catch {
-      loadCharacters(true);
-    }
-  };
+    setCharacters((prev) =>
+      prev.map((c) => (c.id === selectedChar.id ? { ...c, items: updatedItems } : c))
+    );
 
-  const updateKiPoints = async (amount: number) => {
-    if (!selectedChar) return;
-    
-    // Atualização Otimista
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, kiPoints: amount } : c));
-    
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { kiPoints: amount });
-    } catch {
-      loadCharacters(true);
-    }
-  };
-
-  const handleAutoSyncKi = async () => {
-    if (!selectedChar) return;
-    const calculatedKi = selectedChar.level >= 2 ? selectedChar.level : 0;
-    
-    // Atualização Otimista
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, maxKiPoints: calculatedKi, kiPoints: calculatedKi } : c));
-    
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { maxKiPoints: calculatedKi, kiPoints: calculatedKi });
-      loadCharacters(true);
-      if (Platform.OS === 'web') {
-        window.alert(`Pontos de Qi sincronizados com sucesso para o Nível ${selectedChar.level} (${calculatedKi} Qi)!`);
-      } else {
-        Alert.alert('Sucesso', `Pontos de Qi sincronizados para o Nível ${selectedChar.level} (${calculatedKi} Qi)!`);
-      }
-    } catch {
-      loadCharacters(true);
-    }
-  };
-
-  const consumeAbility = async (abId: string, currentUses: number) => {
-    if (!selectedChar || currentUses <= 0) return;
-    const updatedAbilities = selectedChar.abilities.map(a => a.id === abId ? { ...a, currentUses: currentUses - 1 } : a);
-    
-    // Atualização Otimista
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c));
-    
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
-    } catch {
-      loadCharacters(true);
-    }
-  };
-
-  const toggleDeathSave = async (type: 'success' | 'fail', index: number) => {
-    if (!selectedChar) return;
-    if (type === 'success') {
-      const newSuccesses = selectedChar.deathSaveSuccesses === index + 1 ? index : index + 1;
-      await ApiService.updateCharacter(selectedChar.id, { deathSaveSuccesses: newSuccesses });
-    } else {
-      const newFailures = selectedChar.deathSaveFailures === index + 1 ? index : index + 1;
-      await ApiService.updateCharacter(selectedChar.id, { deathSaveFailures: newFailures });
-    }
-    loadCharacters(true);
-  };
-
-  // Preenchimento automático de espaços de magia segundo tabelas oficiais de D&D 5e
-  const autoFillOfficialSlots = async (notify = true) => {
-    if (!selectedChar) return;
-    const calculated = parseClassesAndCalculateSlots(selectedChar.class || '', selectedChar.level || 1);
-    const { standard, warlock } = calculated;
-
-    const currentSlots = selectedChar.spellSlots || [];
-    let newSlots: SpellSlotData[] = [];
-
-    // Preenche para todos os níveis que têm espaços esperados
-    for (let lvl = 1; lvl <= 9; lvl++) {
-      const expectedStandard = standard[lvl] || 0;
-      const expectedWarlock = (warlock && warlock.level === lvl) ? warlock.count : 0;
-      const totalExpected = expectedStandard + expectedWarlock;
-
-      if (totalExpected > 0) {
-        const existing = currentSlots.find(s => s.level === lvl);
-        newSlots.push({
-          id: existing?.id || `slot-${generateId()}-${lvl}`,
-          level: lvl,
-          total: totalExpected,
-          used: existing ? Math.min(existing.used, totalExpected) : 0,
-        });
-      }
-    }
-
-    newSlots.sort((a, b) => a.level - b.level);
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: newSlots } : c));
-
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { spellSlots: newSlots });
-      if (notify) {
-        const msg = `Espaços de magia sincronizados com sucesso para ${selectedChar.class} Nível ${selectedChar.level}!`;
-        if (Platform.OS === 'web') window.alert(msg);
-        else Alert.alert('Sucesso', msg);
-      }
-    } catch {
-      loadCharacters(true);
-    }
-  };
-
-  // Upsert manual de espaços de magia por nível (permite definir manualmente sem duplicar)
-  const upsertSpellSlot = async (level: number, total: number) => {
-    if (!selectedChar) return;
-    const currentSlots = selectedChar.spellSlots || [];
-    let updatedSlots = [...currentSlots];
-    const existingIndex = updatedSlots.findIndex(s => s.level === level);
-
-    if (total <= 0) {
-      // Remove o slot caso seja zerado
-      updatedSlots = updatedSlots.filter(s => s.level !== level);
-    } else if (existingIndex >= 0) {
-      // Atualiza o slot existente
-      updatedSlots[existingIndex] = {
-        ...updatedSlots[existingIndex],
-        total,
-        used: Math.min(updatedSlots[existingIndex].used, total),
-      };
-    } else {
-      // Insere novo slot para esse nível
-      updatedSlots.push({
-        id: `slot-${generateId()}-${level}`,
-        level,
-        total,
-        used: 0,
-      });
-    }
-
-    updatedSlots.sort((a, b) => a.level - b.level);
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c));
-
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-      loadCharacters(true);
-    } catch {
-      loadCharacters(true);
-    }
-  };
-
-  // Inicialização de Feitiçaria para Sorcerers (se não configurado ainda)
-  useEffect(() => {
-    if (!selectedChar) return;
-
-    if (selectedChar.class?.toLowerCase().includes('feiticeiro')) {
-      if ((selectedChar.maxSorceryPoints === 0 || selectedChar.maxSorceryPoints == null) && selectedChar.level > 0) {
-        ApiService.updateCharacter(selectedChar.id, {
-          maxSorceryPoints: selectedChar.level,
-          sorceryPoints: selectedChar.level,
-        }).then(() => loadCharacters(true));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedChar?.id, selectedChar?.class, selectedChar?.level]);
-
-  // Inicialização e Contabilização de Pontos de QI para Monges pelo Nível
-  useEffect(() => {
-    if (!selectedChar) return;
-
-    const isMonkChar = selectedChar.class?.toLowerCase().includes('monge') || selectedChar.class?.toLowerCase().includes('monk');
-    if (isMonkChar && selectedChar.level > 0) {
-      const calculatedKi = selectedChar.level >= 2 ? selectedChar.level : 0;
-      if ((selectedChar.maxKiPoints === 0 || selectedChar.maxKiPoints == null) && selectedChar.level >= 2) {
-        ApiService.updateCharacter(selectedChar.id, {
-          maxKiPoints: calculatedKi,
-          kiPoints: calculatedKi,
-        }).then(() => loadCharacters(true));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedChar?.id, selectedChar?.class, selectedChar?.level]);
-
-  const addItem = async (newItem: { name: string; description: string; weight: number; quantity: number; isWeapon: boolean; damage?: string; isArmor?: boolean; isEquipped?: boolean; armorClassBonus?: number }) => {
-    if (!selectedChar) return;
-    const itemObj = {
-      id: `item-${generateId()}`,
-      ...newItem,
-    };
-    const updatedItems = [...(selectedChar.items || []), itemObj];
     await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
-    loadCharacters(true);
   };
 
-  const removeItem = async (itemId: string) => {
+  const handleUpdateProficientSkills = async (skillsStr: string) => {
     if (!selectedChar) return;
-    const updatedItems = (selectedChar.items || []).filter(i => i.id !== itemId);
-    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
-    loadCharacters(true);
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, proficientSkills: skillsStr } : c
+      )
+    );
+    await ApiService.updateCharacter(selectedChar.id, { proficientSkills: skillsStr });
   };
 
-  const toggleItemEquipped = async (itemId: string) => {
+  const handleToggleSpellSlot = async (level: number, slotIndex: number) => {
     if (!selectedChar) return;
-    const item = (selectedChar.items || []).find(i => i.id === itemId);
-    if (!item) return;
+    const slots = selectedChar.spellSlots || [];
+    const currentSlot = slots.find((s) => s.level === level);
+    if (!currentSlot) return;
 
-    const newEquipped = !item.isEquipped;
-    let newAc = selectedChar.armorClass;
+    // Se slotIndex < used, diminui; se slotIndex >= used, gasta até slotIndex + 1
+    const newUsed =
+      slotIndex < currentSlot.used ? slotIndex : Math.min(currentSlot.total, slotIndex + 1);
 
-    if (item.armorClassBonus) {
-      newAc = newEquipped ? newAc + item.armorClassBonus : Math.max(10, newAc - item.armorClassBonus);
-    }
+    const updatedSlots = slots.map((s) =>
+      s.level === level ? { ...s, used: newUsed } : s
+    );
 
-    const updatedItems = (selectedChar.items || []).map(i => i.id === itemId ? { ...i, isEquipped: newEquipped } : i);
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, items: updatedItems, armorClass: newAc } : c));
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c
+      )
+    );
 
-    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems, armorClass: newAc });
-    loadCharacters(true);
+    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
   };
 
-  const updateCoins = async (gold: number, silver: number, copper: number) => {
+  const handleRestoreSlotsLevel = async (level: number) => {
     if (!selectedChar) return;
+    const updatedSlots = (selectedChar.spellSlots || []).map((s) =>
+      s.level === level ? { ...s, used: 0 } : s
+    );
+
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c
+      )
+    );
+
+    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+  };
+
+  const handleToggleSpellPrepared = async (spellId: string) => {
+    if (!selectedChar) return;
+    const updatedSpells = (selectedChar.spells || []).map((s) =>
+      s.id === spellId ? { ...s, isPrepared: !s.isPrepared } : s
+    );
+
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, spells: updatedSpells } : c
+      )
+    );
+
+    await ApiService.updateCharacter(selectedChar.id, { spells: updatedSpells });
+  };
+
+  const handleSetConcentration = (spellName: string) => {
+    setConcentratingSpell((prev) => (prev === spellName ? null : spellName));
+  };
+
+  const handleAdjustAbilityUses = async (abilityId: string, delta: number) => {
+    if (!selectedChar) return;
+    const updatedAbilities = (selectedChar.abilities || []).map((a) => {
+      if (a.id !== abilityId) return a;
+      const nextUses = Math.max(0, Math.min(a.maxUses, (a.currentUses ?? a.maxUses) + delta));
+      return { ...a, currentUses: nextUses };
+    });
+
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c
+      )
+    );
+
+    await ApiService.updateCharacter(selectedChar.id, {
+      abilities: updatedAbilities,
+    });
+  };
+
+  const handleResetAbilityUses = async (abilityId: string) => {
+    if (!selectedChar) return;
+    const updatedAbilities = (selectedChar.abilities || []).map((a) =>
+      a.id === abilityId ? { ...a, currentUses: a.maxUses } : a
+    );
+
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c
+      )
+    );
+
+    await ApiService.updateCharacter(selectedChar.id, {
+      abilities: updatedAbilities,
+    });
+  };
+
+  const handleUpdateKiPoints = async (val: number) => {
+    if (!selectedChar) return;
+    setCharacters((prev) =>
+      prev.map((c) => (c.id === selectedChar.id ? { ...c, kiPoints: val } : c))
+    );
+    await ApiService.updateCharacter(selectedChar.id, { kiPoints: val });
+  };
+
+  const handleUpdateSorceryPoints = async (val: number) => {
+    if (!selectedChar) return;
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, sorceryPoints: val } : c
+      )
+    );
+    await ApiService.updateCharacter(selectedChar.id, { sorceryPoints: val });
+  };
+
+  const handleUpdateCoins = async (gold: number, silver: number, copper: number) => {
+    if (!selectedChar) return;
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, gold, silver, copper } : c
+      )
+    );
     await ApiService.updateCharacter(selectedChar.id, { gold, silver, copper });
-    loadCharacters(true);
   };
 
-  const toggleSkillProficiency = async (skillName: string) => {
+  const handleSaveLore = async (newLore: string) => {
     if (!selectedChar) return;
-    const currentList = selectedChar.proficientSkills ? selectedChar.proficientSkills.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const exists = currentList.includes(skillName);
-    const newList = exists ? currentList.filter(s => s !== skillName) : [...currentList, skillName];
-    const newProfString = newList.join(',');
-    
-    const updated = { ...selectedChar, proficientSkills: newProfString };
-    setCharacters(chars => chars.map(c => c.id === selectedChar.id ? updated : c));
-    
-    await ApiService.updateCharacter(selectedChar.id, { proficientSkills: newProfString });
-    loadCharacters(true);
-  };
-
-  // --- GRIMÓRIO INTERATIVO: FUNÇÕES AUXILIARES ---
-  const getSpellcastingStats = (char: CharacterData) => {
-    const cls = (char.class || '').toLowerCase();
-    let attrName = 'INTELIGÊNCIA';
-    let attrScore = char.int;
-    if (cls.includes('clérigo') || cls.includes('clerigo') || cls.includes('druida') || cls.includes('patrulheiro') || cls.includes('monge')) {
-      attrName = 'SABEDORIA';
-      attrScore = char.wis;
-    } else if (cls.includes('bardo') || cls.includes('bruxo') || cls.includes('feiticeiro') || cls.includes('paladino')) {
-      attrName = 'CARISMA';
-      attrScore = char.cha;
-    } else if (cls.includes('mago') || cls.includes('artífice') || cls.includes('artifice')) {
-      attrName = 'INTELIGÊNCIA';
-      attrScore = char.int;
-    } else {
-      if (char.wis >= char.int && char.wis >= char.cha) {
-        attrName = 'SABEDORIA';
-        attrScore = char.wis;
-      } else if (char.cha >= char.int && char.cha >= char.wis) {
-        attrName = 'CARISMA';
-        attrScore = char.cha;
-      }
-    }
-    const mod = Math.floor((attrScore - 10) / 2);
-    const prof = Math.floor(((char.level || 1) - 1) / 4) + 2;
-    const saveDc = 8 + prof + mod;
-    const attackBonus = mod + prof >= 0 ? `+${mod + prof}` : `${mod + prof}`;
-    const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
-    return { attrName, attrScore, modStr, saveDc, attackBonus };
-  };
-
-  const toggleLevelAccordion = (lvl: number) => {
-    setExpandedLevels(prev => prev.includes(lvl) ? prev.filter(x => x !== lvl) : [...prev, lvl]);
-  };
-
-  const updateSpellsForChar = async (charId: string, newSpells: SpellItemData[]) => {
-    // Optimistic Update
-    setCharacters(prev => prev.map(c => c.id === charId ? { ...c, spells: newSpells } : c));
-    try {
-      const updated = await ApiService.updateCharacter(charId, { spells: newSpells });
-      setCharacters(prev => prev.map(c => c.id === charId ? updated : c));
-    } catch (e) {
-      console.error(e);
-      loadCharacters(true); // Reverter em caso de erro
-    }
-  };
-
-  const toggleSpellPrepared = (charId: string, spellId: string) => {
-    if (!selectedChar) return;
-    const current = selectedChar.spells || [];
-    const updated = current.map(sp => sp.id === spellId ? { ...sp, isPrepared: !sp.isPrepared } : sp);
-    updateSpellsForChar(charId, updated);
-  };
-
-  const removeSpellItem = (charId: string, spellId: string) => {
-    if (!selectedChar) return;
-    const current = selectedChar.spells || [];
-    const updated = current.filter(sp => sp.id !== spellId);
-    updateSpellsForChar(charId, updated);
-  };
-
-  const addSpellItem = (charId: string, level: number) => {
-    if (!newSpellName.trim() || !selectedChar) return;
-    const newSp: SpellItemData = {
-      id: `sp-${generateId()}`,
-      name: newSpellName.trim(),
-      level: level,
-      castingTime: newSpellCastTime.trim() || '1 Ação',
-      range: newSpellRange.trim() || '9m',
-      duration: newSpellDuration.trim() || 'Instantânea',
-      components: 'V, S',
-      isPrepared: true,
-      description: newSpellDesc.trim() || undefined,
-    };
-    const current = selectedChar.spells || [];
-    updateSpellsForChar(charId, [...current, newSp]);
-    setNewSpellName('');
-    setNewSpellDesc('');
-    setAddingSpellForLevel(null);
-  };
-
-  const handleSrdSelect = (data: any) => {
-    if (!selectedChar) return;
-    if (srdModalType === 'spell') {
-      const newSp: SpellItemData = {
-        id: `sp-${generateId()}`,
-        name: data.name,
-        level: data.level || (addingSpellForLevel || 0),
-        castingTime: data.castingTime,
-        range: data.range,
-        duration: data.duration,
-        components: data.components,
-        isPrepared: true,
-        description: data.description,
-      };
-      const current = selectedChar.spells || [];
-      updateSpellsForChar(selectedChar.id, [...current, newSp]);
-    } else {
-      addAbilityFromSrd(selectedChar.id, data);
-    }
-    setSrdModalVisible(false);
-  };
-
-  const addAbilityFromSrd = async (charId: string, data: any) => {
-    if (!selectedChar) return;
-    const newAb = {
-      id: `ab-${generateId()}`,
-      name: data.name,
-      description: data.description,
-      maxUses: data.maxUses,
-      currentUses: data.currentUses,
-      resetType: data.resetType as any,
-    };
-    
-    const newAbilities = [...selectedChar.abilities, newAb];
-    // Optimistic Update
-    setCharacters(prev => prev.map(c => c.id === charId ? { ...c, abilities: newAbilities } : c));
-    
-    try {
-      const updated = await ApiService.updateCharacter(charId, { abilities: newAbilities });
-      setCharacters(prev => prev.map(c => c.id === charId ? updated : c));
-    } catch (e) {
-      console.error(e);
-      loadCharacters(true); // Reverter em caso de erro
-    }
+    setCharacters((prev) =>
+      prev.map((c) => (c.id === selectedChar.id ? { ...c, lore: newLore } : c))
+    );
+    await ApiService.updateCharacter(selectedChar.id, { lore: newLore });
   };
 
   const handleSaveEditedEntity = async (updatedData: any) => {
     if (!selectedChar) return;
-    try {
-      if (editEntityType === 'spell') {
-        const currentSpells = selectedChar.spells || [];
-        const newSpells = currentSpells.map(s => s.id === updatedData.id ? updatedData : s);
-        
-        // Optimistic Update
-        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spells: newSpells } : c));
-        
-        const updated = await ApiService.updateCharacter(selectedChar.id, { spells: newSpells });
-        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
-      } else {
-        const currentAbs = selectedChar.abilities || [];
-        const newAbs = currentAbs.map(a => a.id === updatedData.id ? updatedData : a);
-        
-        // Optimistic Update
-        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, abilities: newAbs } : c));
-        
-        const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: newAbs });
-        setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
-      }
-      setEditEntityVisible(false);
-      setEntityToEdit(null);
-    } catch (error) {
-      console.error(error);
-      loadCharacters(true); // Reverter em caso de erro
+    if (editEntityType === 'spell') {
+      const updatedSpells = (selectedChar.spells || []).map((s) =>
+        s.id === updatedData.id ? { ...s, ...updatedData } : s
+      );
+      setCharacters((prev) =>
+        prev.map((c) =>
+          c.id === selectedChar.id ? { ...c, spells: updatedSpells } : c
+        )
+      );
+      await ApiService.updateCharacter(selectedChar.id, { spells: updatedSpells });
+    } else {
+      const updatedAbilities = (selectedChar.abilities || []).map((a) =>
+        a.id === updatedData.id ? { ...a, ...updatedData } : a
+      );
+      setCharacters((prev) =>
+        prev.map((c) =>
+          c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c
+        )
+      );
+      await ApiService.updateCharacter(selectedChar.id, {
+        abilities: updatedAbilities,
+      });
     }
+    setEditEntityVisible(false);
+    setEntityToEdit(null);
   };
 
   const handleSaveEditedItem = async (updatedItem: ItemData) => {
     if (!selectedChar) return;
-    try {
-      const currentItems = selectedChar.items || [];
-      const newItems = currentItems.map(i => i.id === updatedItem.id ? updatedItem : i);
-
-      // Optimistic Update
-      setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, items: newItems } : c));
-      setEditItemModalVisible(false);
-      setItemToEdit(null);
-
-      const updated = await ApiService.updateCharacter(selectedChar.id, { items: newItems });
-      setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
-    } catch (error) {
-      console.error('Erro ao atualizar equipamento:', error);
-      loadCharacters(true); // Reverter em caso de erro
-    }
+    const updatedItems = (selectedChar.items || []).map((i) =>
+      i.id === updatedItem.id ? updatedItem : i
+    );
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, items: updatedItems } : c
+      )
+    );
+    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
+    setEditItemModalVisible(false);
+    setItemToEdit(null);
   };
 
-  const castSpellItem = (char: CharacterData, spell: SpellItemData) => {
-    if (spell.level === 0) {
-      Alert.alert('⚡ Truque Conjurado!', `${char.name} conjurou ${spell.name}!\n(Truques são ilimitados e não consomem espaços de magia)`);
-      return;
-    }
-    const targetSlot = char.spellSlots.find(s => s.level === spell.level);
-    if (!targetSlot) {
-      Alert.alert('⚠️ Espaço de Magia Inexistente', `Seu personagem não possui espaços de ${spell.level}º Nível cadastrados!`);
-      return;
-    }
-    if (targetSlot.used >= targetSlot.total) {
-      Alert.alert(
-        '⚠️ Sem Espaços de Magia',
-        `Você gastou todos os espaços de ${spell.level}º Nível!\nRealize um descanso para recuperar ou utilize um espaço de nível superior.`
-      );
-      return;
-    }
-    toggleSpellSlot(targetSlot.id, targetSlot.used, targetSlot.total);
-    Alert.alert('⚡ Magia Conjurada!', `${char.name} conjurou ${spell.name}!\n(1 espaço de ${spell.level}º Nível foi consumido automaticamente)`);
-  };
-
-  const addAbility = async () => {
-    if (!selectedChar || !newAbName.trim()) return;
-    const newAb = {
-      id: `ab-${generateId()}`,
-      name: newAbName.trim(),
-      description: newAbDesc.trim(),
-      maxUses: parseInt(newAbUses, 10) || 1,
-      currentUses: parseInt(newAbUses, 10) || 1,
-      resetType: newAbReset,
-      actionType: newAbActionType,
-    };
-    const updatedAbilities = [...selectedChar.abilities, newAb];
-    const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
-    setNewAbName('');
-    setNewAbDesc('');
-    setNewAbUses('1');
-    setNewAbReset('SHORT_REST');
-    setNewAbActionType('LIVRE');
-  };
-
-  const removeAbility = async (abId: string) => {
+  const handleSaveQuickSpeed = async () => {
     if (!selectedChar) return;
-    const updatedAbilities = selectedChar.abilities.filter(a => a.id !== abId);
-    
-    // Optimistic Update
-    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c));
-    
-    try {
-      const updated = await ApiService.updateCharacter(selectedChar.id, { abilities: updatedAbilities });
-      setCharacters(prev => prev.map(c => c.id === selectedChar.id ? updated : c));
-    } catch (e) {
-      console.error(e);
-      loadCharacters(true); // Reverter em caso de erro
-    }
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, speed: quickSpeed } : c
+      )
+    );
+    await ApiService.updateCharacter(selectedChar.id, { speed: quickSpeed });
+    setSpeedModalVisible(false);
   };
 
-  const renderMonkKiBanner = () => {
-    if (!selectedChar) return null;
-    const isMonkChar = selectedChar.class?.toLowerCase().includes('monge') || selectedChar.class?.toLowerCase().includes('monk');
-    if (!isMonkChar) return null;
-
-    const currentKi = selectedChar.kiPoints != null ? selectedChar.kiPoints : 0;
-    const maxKi = selectedChar.maxKiPoints != null && selectedChar.maxKiPoints > 0 ? selectedChar.maxKiPoints : (selectedChar.level >= 2 ? selectedChar.level : 0);
-    const expectedKi = selectedChar.level >= 2 ? selectedChar.level : 0;
-
-    return (
-      <View style={[styles.spellStatsBanner, { borderColor: '#D4883A', backgroundColor: 'rgba(212, 136, 58, 0.1)', marginTop: 0, marginBottom: 14 }]}>
-        <View style={{ flex: 1, flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 0 }}>
-          <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <Text style={[styles.spellStatLabel, { color: '#E2D8C3' }]}>☯️ PONTOS DE QI (ENERGIA VITAL)</Text>
-              <TouchableOpacity
-                style={{ backgroundColor: 'rgba(212, 136, 58, 0.2)', borderColor: '#D4883A', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}
-                onPress={handleAutoSyncKi}
-                accessibilityLabel="Recalcular Qi por Nível"
-              >
-                <Text style={{ color: '#E6C280', fontSize: 10, fontWeight: '700' }}>
-                  Nível {selectedChar.level} ({expectedKi} Qi) • Sincronizar
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {editingKi ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <TextInput
-                  style={{ backgroundColor: '#1A1714', color: '#E6C280', fontSize: 18, padding: 4, borderRadius: 4, width: 50, textAlign: 'center', borderWidth: 1, borderColor: '#D4883A' }}
-                  value={tempMaxKi}
-                  onChangeText={setTempMaxKi}
-                  keyboardType="numeric"
-                  autoFocus
-                />
-                <TouchableOpacity onPress={async () => {
-                  const newMax = parseInt(tempMaxKi, 10);
-                  if (!isNaN(newMax)) {
-                    await ApiService.updateCharacter(selectedChar.id, { maxKiPoints: newMax, kiPoints: Math.min(newMax, currentKi) });
-                    loadCharacters(true);
-                  }
-                  setEditingKi(false);
-                }}>
-                  <Text style={{ color: '#4E9C8E', fontWeight: 'bold' }}>✓ SALVAR</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setEditingKi(false)}>
-                  <Text style={{ color: '#80776C', fontWeight: 'bold' }}>CANCELAR</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 24, marginTop: 4 }]}>
-                  {currentKi} / {maxKi}
-                </Text>
-                <TouchableOpacity onPress={() => {
-                  setTempMaxKi(String(maxKi));
-                  setEditingKi(true);
-                }}>
-                  <Edit color="#D4883A" size={16} />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <Text style={[styles.spellAccordionSub, { marginTop: 2, color: '#BAAFA0' }]}>
-              {selectedChar.level < 2
-                ? 'Monges despertam o Qi a partir do 2º Nível (pontos = nível do monge).'
-                : 'Recarrega totalmente com 30 min de meditação (Descanso Curto ou Longo).'}
-            </Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: 8, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end', flexWrap: 'wrap' }}>
-            <TouchableOpacity
-              style={[{ backgroundColor: 'rgba(184, 40, 40, 0.25)', borderColor: '#B82828', borderWidth: 1, padding: 10, borderRadius: 6, alignItems: 'center' }, isMobile && { flex: 1 }]}
-              onPress={() => updateKiPoints(Math.max(0, currentKi - 1))}
-              disabled={currentKi <= 0}
-            >
-              <Text style={{ color: currentKi <= 0 ? '#666' : '#E2D8C3', fontWeight: 'bold' }}>- GASTAR 1 QI</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[{ backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E', borderWidth: 1, padding: 10, borderRadius: 6, alignItems: 'center' }, isMobile && { flex: 1 }]}
-              onPress={() => updateKiPoints(Math.min(maxKi, currentKi + 1))}
-              disabled={currentKi >= maxKi}
-            >
-              <Text style={{ color: currentKi >= maxKi ? '#666' : '#E2D8C3', fontWeight: 'bold' }}>+ RECUPERAR</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[{ backgroundColor: 'rgba(212, 136, 58, 0.25)', borderColor: '#D4883A', borderWidth: 1, padding: 10, borderRadius: 6, alignItems: 'center', flexDirection: 'row', gap: 4 }, isMobile && { flex: 1, justifyContent: 'center' }]}
-              onPress={() => updateKiPoints(maxKi)}
-              disabled={currentKi >= maxKi}
-            >
-              <Sparkles color="#E6C280" size={14} />
-              <Text style={{ color: currentKi >= maxKi ? '#80776C' : '#E6C280', fontWeight: 'bold', fontSize: 11 }}>MEDITAR (MAX)</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+  const handleDelete = async (charId: string) => {
+    confirmAction(
+      'Tem certeza que deseja apagar permanentemente este personagem? Essa ação não pode ser desfeita.',
+      async () => {
+        await ApiService.deleteCharacter(charId);
+        const updated = characters.filter((c) => c.id !== charId);
+        setCharacters(updated);
+        setSelectedId(updated.length > 0 ? updated[0].id : null);
+      },
+      'Excluir Personagem'
     );
   };
 
+  const handleExportJson = () => {
+    if (!selectedChar) return;
+    ExportService.exportCharacterToJson(selectedChar);
+  };
+
+  const handleExportAllJson = () => {
+    ExportService.exportAllCharactersToJson(characters);
+  };
+
+  const handleSelectJsonFile = () => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event: any) => {
+          setImportJsonText(event.target.result);
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importJsonText.trim()) return;
+    const res = ExportService.parseImportJson(importJsonText);
+    if (!res.success || !res.characters || res.characters.length === 0) {
+      if (Platform.OS === 'web') window.alert(res.error || 'Arquivo JSON inválido ou corrompido.');
+      return;
+    }
+
+    for (const char of res.characters) {
+      const { id, ...dataWithoutId } = char;
+      await ApiService.createCharacter(dataWithoutId);
+    }
+    await loadCharacters();
+    setImportModalVisible(false);
+    setImportJsonText('');
+    if (Platform.OS === 'web') window.alert('Personagens importados com sucesso!');
+  };
+
   return (
-    <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={{ flex: 1, width: '100%' }}
+      contentContainerStyle={{ paddingBottom: 60 }}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.container}>
-      {/* Seletor de Personagens (Carrossel de Couro e Bronze) */}
-      <View style={styles.selectorBar}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectorScroll}>
-          {characters.map(char => {
-            const isSelected = char.id === selectedId;
-            const chipColor = char.themeColor || '#C5A059';
-            return (
-              <TouchableOpacity
-                key={char.id}
-                style={[styles.charChip, isSelected && [styles.charChipSelected, { borderColor: chipColor, backgroundColor: `${chipColor}18` }]]}
-                onPress={() => setSelectedId(char.id)}
-              >
-                <Shield color={isSelected ? chipColor : '#80776C'} size={16} />
-                <View>
-                  <Text style={[styles.chipName, isSelected && [styles.chipNameSelected, { color: chipColor }]]}>{char.name}</Text>
-                  <Text style={styles.chipClass}>{char.class} • Nvl {char.level}</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-          <TouchableOpacity
-            style={styles.newCharChip}
-            onPress={() => { setEditingChar(null); setModalVisible(true); }}
+        {/* CARROSSEL SELETOR DE PERSONAGENS */}
+        <View style={styles.selectorBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.selectorScroll}
           >
-            <Plus color="#C5A059" size={18} />
-            <Text style={styles.newCharText}>Criar Personagem</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.newCharChip, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]}
-            onPress={() => setImportModalVisible(true)}
-          >
-            <Upload color="#4A8C59" size={18} />
-            <Text style={[styles.newCharText, { color: '#4A8C59' }]}>Importar / Backup</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+            {characters.map((char) => {
+              const isSelected = char.id === selectedId;
+              const chipColor = char.themeColor || '#C5A059';
 
-      {/* Conteúdo Principal do Grimório do Aventureiro */}
-      {selectedChar ? (
-        <View style={[styles.mainSheet, isMobile && { padding: 14, gap: 16 }, { borderColor: themeColor, borderWidth: 1.5, shadowColor: themeColor, shadowOpacity: 0.2, shadowRadius: 15 }]}>
-          {/* Header Medieval da Ficha */}
-          <View style={[styles.sheetHeader, isMobile && { gap: 12, paddingBottom: 14 }]}>
-            <View style={{ flexShrink: 1, minWidth: isMobile ? '100%' : 180 }}>
-              <View style={[styles.levelBadge, { borderColor: `${themeColor}66`, backgroundColor: `${themeColor}15` }]}>
-                <Scroll color={themeColor} size={14} />
-                <Text style={[styles.levelText, { color: themeColor }]}>NÍVEL {selectedChar.level} • {selectedChar.race.toUpperCase()}</Text>
-              </View>
-              <Text style={[styles.charName, isMobile && { fontSize: 24 }, { color: themeColor }]}>{selectedChar.name}</Text>
-              <Text style={styles.charMeta}>
-                {selectedChar.class} • Jogador: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{selectedChar.playerName}</Text>
-              </Text>
-              {selectedChar.deity && selectedChar.deity !== 'Nenhum' && (
-                <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, borderWidth: 1, borderColor: selectedChar.deity === 'Arcké' ? '#B82828' : selectedChar.deity === 'Vitta' ? '#C5A059' : '#1B3B6F', backgroundColor: selectedChar.deity === 'Arcké' ? '#B8282815' : selectedChar.deity === 'Vitta' ? '#C5A05915' : '#1B3B6F15' }}>
-                  {selectedChar.deity === 'Arcké' && <Scale color="#B82828" size={14} />}
-                  {selectedChar.deity === 'Vitta' && <Sun color="#C5A059" size={14} />}
-                  {selectedChar.deity === 'Thanatos' && <Skull color="#1B3B6F" size={14} />}
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: selectedChar.deity === 'Arcké' ? '#B82828' : selectedChar.deity === 'Vitta' ? '#C5A059' : '#1B3B6F', textTransform: 'uppercase' }}>
-                    DEVOTO DE {selectedChar.deity}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Estatísticas resumidas e compactas no centro do Header */}
-            <View style={[
-              styles.headerStatsRibbon,
-              isMobile && {
-                width: '100%',
-                maxWidth: '100%',
-                justifyContent: 'space-around',
-                gap: 4,
-                paddingVertical: 6,
-              },
-              { borderColor: `${themeColor}44` }
-            ]}>
-              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-                <Text style={styles.headerStatLabel}>PROF.</Text>
-                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: themeColor }]}>+{profBonus}</Text>
-              </View>
-              <View style={styles.headerStatDivider} />
-              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-                <Text style={styles.headerStatLabel}>CA</Text>
-                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#8C6C90' }]}>
-                  {Number(selectedChar.armorClass || 10) + (selectedChar.items || []).reduce((acc, i) => acc + (i.isArmor && i.isEquipped ? Number(i.armorClassBonus || 0) : 0), 0)}
-                </Text>
-              </View>
-              <View style={styles.headerStatDivider} />
-              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-                <Text style={styles.headerStatLabel}>INIC.</Text>
-                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }]}>
-                  {selectedChar.initiativeBonus >= 0 ? `+${selectedChar.initiativeBonus}` : selectedChar.initiativeBonus}
-                </Text>
-              </View>
-              <View style={styles.headerStatDivider} />
-              <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-                <Text style={styles.headerStatLabel}>PERC.</Text>
-                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#38783C' }]}>{passivePerception}</Text>
-              </View>
-              <View style={styles.headerStatDivider} />
-              <TouchableOpacity
-                style={[styles.headerStatItem, isMobile && { minWidth: 28 }, Platform.OS === 'web' && { cursor: 'pointer' } as any]}
-                onPress={() => {
-                  setQuickSpeed(selectedChar.speed || '9m');
-                  setSpeedModalVisible(true);
-                }}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Editar deslocamento do personagem"
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                  <Text style={styles.headerStatLabel}>DESL.</Text>
-                  <Edit size={10} color={themeColor} />
-                </View>
-                <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#E6C280' }]}>
-                  {selectedChar.speed || '9m'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.headerActions, isMobile && { width: '100%', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6, marginTop: 6 }]}>
-              <TouchableOpacity
-                style={[styles.actionBtn, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]}
-                onPress={handleExportJson}
-                accessibilityLabel="Exportar Ficha em JSON"
-              >
-                <Download color="#78C288" size={15} />
-                <Text style={[styles.actionBtnText, { color: '#78C288' }]}>JSON</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, isMobile && { flex: 1, justifyContent: 'center' }, { borderColor: `${themeColor}66` }]}
-                onPress={() => { setEditingChar(selectedChar); setModalVisible(true); }}
-              >
-                <Edit color={themeColor} size={15} />
-                <Text style={[styles.actionBtnText, { color: themeColor }]}>Editar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.deleteBtn]}
-                onPress={() => handleDelete(selectedChar.id)}
-              >
-                <Trash2 color="#B82828" size={15} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Painel de Sinais Vitais (HP) e Combate Medieval */}
-          <View style={[styles.combatPanel, isMobile && { gap: 12 }]}>
-            <View style={[styles.hpSection, isMobile && { padding: 14, minWidth: '100%' }]}>
-              {/* Header Compacto com HP Inline */}
-              <View style={styles.hpHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-                  <Heart color="#B82828" size={18} />
-                  <Text style={styles.hpTitle}>PONTOS DE VIDA</Text>
-                  {selectedChar.tempHp > 0 && (
-                    <View style={styles.tempHpBadge}>
-                      <Shield color="#C5A059" size={12} />
-                      <Text style={styles.tempHpText}>+{selectedChar.tempHp} TEMP</Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Números de HP Direto no Header */}
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-                  <Text style={[styles.hpCurrent, isMobile && { fontSize: 24 }]}>
-                    {selectedChar.currentHp} <Text style={[styles.hpMax, isMobile && { fontSize: 15 }]}>/ {selectedChar.maxHp}</Text>
-                  </Text>
-                </View>
-              </View>
-
-              {/* Barra de Vida Medieval Compacta */}
-              <View style={styles.hpBarBg}>
-                <View
-                  style={[
-                    styles.hpBarFill,
-                    {
-                      width: `${Math.min(100, Math.max(0, (selectedChar.currentHp / selectedChar.maxHp) * 100))}%`,
-                      backgroundColor:
-                        selectedChar.currentHp / selectedChar.maxHp > 0.5
-                          ? '#38783C'
-                          : selectedChar.currentHp / selectedChar.maxHp > 0.25
-                          ? '#C5A059'
-                          : '#B82828',
-                    },
-                  ]}
-                />
-              </View>
-              
-              <View style={[styles.hpNumbers, { marginBottom: 12 }]}>
-                <Text style={styles.hitDiceText}>
-                  Dados de Vida: <Text style={{ color: themeColor, fontWeight: '700' }}>{selectedChar.hitDiceTotal - selectedChar.hitDiceSpent}/{selectedChar.hitDiceTotal}</Text> ({selectedChar.hitDiceType})
-                </Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12, width: '100%' }}>
-                <TouchableOpacity style={[styles.actionBtn, { flex: 1, borderColor: '#C5A059' }]} onPress={triggerShortRest}>
-                  <Text style={[styles.actionBtnText, { color: '#C5A059' }]}>Descanso Curto</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, { flex: 1, borderColor: '#6B4A70' }]} onPress={triggerLongRest}>
-                  <Text style={[styles.actionBtnText, { color: '#6B4A70' }]}>Descanso Longo</Text>
-                </TouchableOpacity>
-              </View>
-
-              {selectedChar.currentHp <= 0 && (
-                <View style={{ marginBottom: 12, backgroundColor: '#1A1714', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#B82828' }}>
-                  <Text style={{ color: '#E2D8C3', fontSize: 14, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>TESTES CONTRA A MORTE</Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <View style={{ alignItems: 'center' }}>
-                      <Text style={{ color: '#78C288', fontSize: 12, marginBottom: 4 }}>Sucessos</Text>
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        {[0, 1, 2].map(i => (
-                          <TouchableOpacity key={`succ-${i}`} onPress={() => toggleDeathSave('success', i)} style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#78C288', backgroundColor: selectedChar.deathSaveSuccesses > i ? '#78C288' : 'transparent' }} />
-                        ))}
-                      </View>
-                    </View>
-                    <View style={{ alignItems: 'center' }}>
-                      <Text style={{ color: '#B82828', fontSize: 12, marginBottom: 4 }}>Falhas</Text>
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        {[0, 1, 2].map(i => (
-                          <TouchableOpacity key={`fail-${i}`} onPress={() => toggleDeathSave('fail', i)} style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#B82828', backgroundColor: selectedChar.deathSaveFailures > i ? '#B82828' : 'transparent' }} />
-                        ))}
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              )}
-
-              {/* Input Customizado de Dano / Poção mais elegante e compacto */}
-              <View style={styles.customHpRow}>
-                <TextInput
-                  style={[styles.customHpInput, isMobile && { paddingVertical: 6, fontSize: 12 }]}
-                  value={customHp}
-                  onChangeText={setCustomHp}
-                  placeholder="Qtd Dano / Cura"
-                  placeholderTextColor="#80776C"
-                  keyboardType="numeric"
-                />
-                <TouchableOpacity style={[styles.customBtn, styles.dmgBtn, isMobile && { paddingVertical: 6 }]} onPress={() => handleCustomHpAction(true)}>
-                  <Text style={styles.dmgBtnText}>- Ferir</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.customBtn, styles.healBtn, isMobile && { paddingVertical: 6 }]} onPress={() => handleCustomHpAction(false)}>
-                  <Text style={styles.healBtnText}>+ Curar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-
-          </View>
-
-          {/* Grid de Atributos Ancestrais (FOR, DES, CON, INT, SAB, CAR) */}
-          <View style={{ marginBottom: 12 }}>
-            <Text style={styles.sectionHeader}>ATRIBUTOS</Text>
-          </View>
-          <View style={[styles.attributesGrid, isMobile && { gap: 8 }]}>
-            {[
-              { name: 'FORÇA', score: selectedChar.str, prof: selectedChar.strProf },
-              { name: 'DESTREZA', score: selectedChar.dex, prof: selectedChar.dexProf },
-              { name: 'CONSTITUIÇÃO', score: selectedChar.con, prof: selectedChar.conProf },
-              { name: 'INTELIGÊNCIA', score: selectedChar.int, prof: selectedChar.intProf },
-              { name: 'SABEDORIA', score: selectedChar.wis, prof: selectedChar.wisProf },
-              { name: 'CARISMA', score: selectedChar.cha, prof: selectedChar.chaProf },
-            ].map((attr) => {
-              const modVal = getMod(attr.score);
-              const saveVal = modVal + (attr.prof ? profBonus : 0);
               return (
-                <View
-                  key={attr.name}
+                <TouchableOpacity
+                  key={char.id}
                   style={[
-                    styles.attrCard,
-                    isMobile && { minWidth: '30%', padding: 10, paddingVertical: 12 },
-                    attr.prof && { borderColor: themeColor, backgroundColor: `${themeColor}12` }
+                    styles.charChip,
+                    isSelected && [
+                      styles.charChipSelected,
+                      { borderColor: chipColor, backgroundColor: `${chipColor}18` },
+                    ],
                   ]}
+                  onPress={() => setSelectedId(char.id)}
+                  activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.attrName,
-                      isMobile && { fontSize: 9.5, letterSpacing: 0.5, marginBottom: 4 },
-                      attr.prof && { color: '#E2D8C3', fontWeight: '700' }
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                  >
-                    {attr.name}
-                  </Text>
-                  <Text style={[styles.attrMod, isMobile && { fontSize: 24, marginBottom: 2 }]}>{saveVal >= 0 ? `+${saveVal}` : saveVal}</Text>
-                  <Text style={[styles.attrScore, isMobile && { fontSize: 11, marginBottom: 6 }]}>Score: {attr.score}</Text>
-                </View>
+                  <Shield color={isSelected ? chipColor : '#80776C'} size={15} />
+                  <View>
+                    <Text
+                      style={[
+                        styles.chipName,
+                        isSelected && [styles.chipNameSelected, { color: chipColor }],
+                      ]}
+                    >
+                      {char.name}
+                    </Text>
+                    <Text style={styles.chipClass}>
+                      {char.class} • Nvl {char.level}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               );
             })}
-          </View>
 
-          {/* Abas de Recursos (Pergaminhos, Poderes, Perícias) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }} contentContainerStyle={[styles.tabsNav, isMobile && { flexWrap: 'nowrap' }]}>
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'spells' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
-              onPress={() => setActiveTab('spells')}
+              style={styles.newCharChip}
+              onPress={() => {
+                setEditingChar(null);
+                setModalVisible(true);
+              }}
+              activeOpacity={0.7}
             >
-              <Scroll color={activeTab === 'spells' ? themeColor : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'spells' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Magias
-              </Text>
+              <Plus color="#C5A059" size={16} />
+              <Text style={styles.newCharText}>Criar Personagem</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'abilities' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
-              onPress={() => setActiveTab('abilities')}
+              style={[
+                styles.newCharChip,
+                { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' },
+              ]}
+              onPress={() => setImportModalVisible(true)}
+              activeOpacity={0.7}
             >
-              <Sword color={activeTab === 'abilities' ? themeColor : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'abilities' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Habilidades
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'skills' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
-              onPress={() => setActiveTab('skills')}
-            >
-              <Award color={activeTab === 'skills' ? themeColor : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'skills' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Perícias
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'inventory' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
-              onPress={() => setActiveTab('inventory')}
-            >
-              <Package color={activeTab === 'inventory' ? themeColor : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'inventory' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Mochila
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'lore' && [styles.tabBtnActive, { borderColor: themeColor, backgroundColor: `${themeColor}15` }]]}
-              onPress={() => setActiveTab('lore')}
-            >
-              <BookOpen color={activeTab === 'lore' ? themeColor : '#80776C'} size={18} />
-              <Text style={[styles.tabBtnText, activeTab === 'lore' && [styles.tabBtnTextActive, { color: '#FFF' }]]}>
-                Lore
+              <Upload color="#4A8C59" size={16} />
+              <Text style={[styles.newCharText, { color: '#4A8C59' }]}>
+                Importar / Backup
               </Text>
             </TouchableOpacity>
           </ScrollView>
+        </View>
 
-          {/* Conteúdo das Abas */}
-          <View style={styles.tabContent}>
-            {/* ABA: Pergaminhos de Magia */}
-            {/* ABA: Pergaminhos de Magia */}
-            {activeTab === 'spells' && (() => {
-              const spellStats = getSpellcastingStats(selectedChar);
-              const charSpells = selectedChar.spells || [];
-              const availableLevelsSet = new Set<number>();
-              charSpells.forEach(s => availableLevelsSet.add(s.level));
-              selectedChar.spellSlots.forEach(s => availableLevelsSet.add(s.level));
-              availableLevelsSet.add(0);
-              availableLevelsSet.add(1);
+        {/* FICHA DO PERSONAGEM SELECIONADO */}
+        {selectedChar ? (
+          <View
+            style={[
+              styles.mainSheet,
+              isMobile && { padding: 12, gap: 14 },
+              {
+                borderColor: themeColor,
+                borderWidth: 1.5,
+              },
+            ]}
+          >
+            {/* 1. Cabeçalho com dados canônicos e CA recalculada com armaduras */}
+            <CharacterHeader
+              char={selectedChar}
+              passivePerception={passivePerception}
+              totalAc={totalAc}
+              themeColor={themeColor}
+              isMobile={isMobile}
+              onOpenSpeedModal={() => {
+                setQuickSpeed(selectedChar.speed || '9m');
+                setSpeedModalVisible(true);
+              }}
+              onExportJson={handleExportJson}
+              onEditChar={() => {
+                setEditingChar(selectedChar);
+                setModalVisible(true);
+              }}
+              onDeleteChar={() => handleDelete(selectedChar.id)}
+            />
 
-              // Garante que todos os níveis suportados oficialmente pela classe e nível apareçam no acordeão
-              const calculatedOfficial = parseClassesAndCalculateSlots(selectedChar.class || '', selectedChar.level || 1);
-              Object.keys(calculatedOfficial.standard).forEach(lvl => availableLevelsSet.add(Number(lvl)));
-              if (calculatedOfficial.warlock) availableLevelsSet.add(calculatedOfficial.warlock.level);
+            {/* 2. Sinais Vitais, Barra de Vida, Descansos e Concentração */}
+            <VitalsCombatPanel
+              char={selectedChar}
+              themeColor={themeColor}
+              isMobile={isMobile}
+              concentratingSpell={concentratingSpell}
+              onClearConcentration={() => setConcentratingSpell(null)}
+              onApplyHpDelta={handleApplyHpDelta}
+              onTriggerShortRest={handleTriggerShortRest}
+              onTriggerLongRest={handleTriggerLongRest}
+              onToggleDeathSave={handleToggleDeathSave}
+            />
 
-              const sortedLevels = Array.from(availableLevelsSet).sort((a, b) => a - b);
+            {/* 4. Grid de Atributos com Modificador Canônico Correto e Saves */}
+            <AttributesGrid
+              char={selectedChar}
+              themeColor={themeColor}
+              isMobile={isMobile}
+            />
 
-              return (
-                <View style={{ gap: 16 }}>
-                  {/* 🔮 1. Painel Mágico no Topo */}
-                  {isMobile ? (
-                    <View style={[styles.spellStatsBanner, { flexDirection: 'column', padding: 12, gap: 10, borderColor: themeColor, backgroundColor: `${themeColor}0A`, overflow: 'hidden' }]}>
-                      <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#2D251E' }}>
-                        <Text style={styles.spellStatLabel}>ATRIBUTO DE CONJURAÇÃO</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4 }}>
-                          <Sparkles color={themeColor} size={16} />
-                          <Text style={[styles.spellStatValue, { color: themeColor, fontSize: 15 }]}>{spellStats.attrName} ({spellStats.modStr})</Text>
-                        </View>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%' }}>
-                        <View style={styles.spellStatItem}>
-                          <Text style={styles.spellStatLabel}>CD DE RESISTÊNCIA</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                            <Shield color="#E6C280" size={16} />
-                            <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 18 }]}>{spellStats.saveDc}</Text>
-                          </View>
-                        </View>
-                        <View style={[styles.spellStatDivider, { height: 28 }]} />
-                        <View style={styles.spellStatItem}>
-                          <Text style={styles.spellStatLabel}>BÔNUS DE ATAQUE</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                            <Crosshair color="#4E9C8E" size={16} />
-                            <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: 18 }]}>{spellStats.attackBonus}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={[styles.spellStatsBanner, { borderColor: themeColor, backgroundColor: `${themeColor}0A` }]}>
-                      <View style={styles.spellStatItem}>
-                        <Text style={styles.spellStatLabel}>ATRIBUTO DE CONJURAÇÃO</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                          <Sparkles color={themeColor} size={18} />
-                          <Text style={[styles.spellStatValue, { color: themeColor }]}>{spellStats.attrName} ({spellStats.modStr})</Text>
-                        </View>
-                      </View>
-                      <View style={styles.spellStatDivider} />
-                      <View style={styles.spellStatItem}>
-                        <Text style={styles.spellStatLabel}>CD DE RESISTÊNCIA</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                          <Shield color="#E6C280" size={18} />
-                          <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 22 }]}>{spellStats.saveDc}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.spellStatDivider} />
-                      <View style={styles.spellStatItem}>
-                        <Text style={styles.spellStatLabel}>BÔNUS DE ATAQUE</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                          <Crosshair color="#4E9C8E" size={18} />
-                          <Text style={[styles.spellStatValue, { color: '#4E9C8E', fontSize: 22 }]}>{spellStats.attackBonus}</Text>
-                        </View>
-                      </View>
-                    </View>
-                  )}
+            {/* 5. Navegador de Abas */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabsNav}
+            >
+              {[
+                { id: 'combat', label: 'Combate & Ataques', icon: Sword },
+                { id: 'spells', label: 'Magias', icon: Scroll },
+                { id: 'abilities', label: 'Habilidades', icon: Zap },
+                { id: 'skills', label: 'Perícias', icon: Award },
+                { id: 'inventory', label: 'Mochila', icon: Package },
+                { id: 'lore', label: 'História', icon: BookOpen },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
 
-                  {/* 🎛️ Barra Superior de Gestão Rápida de Espaços */}
-                  <View
-                    style={{
-                      flexDirection: isMobile ? 'column' : 'row',
-                      alignItems: isMobile ? 'stretch' : 'center',
-                      justifyContent: 'space-between',
-                      gap: 8,
-                      width: '100%',
-                    }}
+                return (
+                  <TouchableOpacity
+                    key={tab.id}
+                    style={[
+                      styles.tabBtn,
+                      isActive && [
+                        styles.tabBtnActive,
+                        { borderColor: themeColor, backgroundColor: `${themeColor}18` },
+                      ],
+                    ]}
+                    onPress={() => setActiveTab(tab.id as any)}
+                    activeOpacity={0.7}
                   >
-                    <TouchableOpacity
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        backgroundColor: showManageSlots ? 'rgba(197, 160, 89, 0.2)' : '#1A1714',
-                        borderWidth: 1,
-                        borderColor: showManageSlots ? '#C5A059' : '#3D342C',
-                        paddingVertical: 8,
-                        paddingHorizontal: 12,
-                        borderRadius: 6,
-                        flex: isMobile ? undefined : 1,
-                        minWidth: isMobile ? '100%' : 150,
-                      }}
-                      onPress={() => setShowManageSlots(!showManageSlots)}
-                    >
-                      <Text
-                        style={{ color: showManageSlots ? '#E6C280' : '#BAAFA0', fontWeight: '700', fontSize: 12 }}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {showManageSlots ? '▲ Ocultar Painel' : '⚙️ Gerenciar Espaços'}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        backgroundColor: 'rgba(78, 156, 142, 0.15)',
-                        borderWidth: 1,
-                        borderColor: '#4E9C8E',
-                        paddingVertical: 8,
-                        paddingHorizontal: 12,
-                        borderRadius: 6,
-                        flex: isMobile ? undefined : 1,
-                        minWidth: isMobile ? '100%' : 150,
-                      }}
-                      onPress={() => {
-                        confirmAction(
-                          `Deseja recalcular e preencher os espaços oficiais de D&D 5e para ${selectedChar.class} Nível ${selectedChar.level}?`,
-                          () => autoFillOfficialSlots(true),
-                          'Auto-preencher Espaços (D&D 5e)'
-                        );
-                      }}
-                    >
-                      <Sparkles color="#4E9C8E" size={14} />
-                      <Text
-                        style={{ color: '#4E9C8E', fontWeight: '700', fontSize: 12 }}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {isMobile ? 'Auto-preencher Espaços' : 'Auto-preencher (D&D 5e)'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* ☯️ Monge: Pontos de Qi */}
-                  {isMonk && renderMonkKiBanner()}
-
-                  {/* ⚡ Feiticeiro: Pontos de Feitiçaria */}
-                  {isSorcerer && (
-                    <View style={[styles.spellStatsBanner, { borderColor: '#8C4A60', backgroundColor: 'rgba(140, 74, 96, 0.1)', marginTop: 0 }]}>
-                      <View style={{ flex: 1, flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 0 }}>
-                        <View>
-                          <Text style={[styles.spellStatLabel, { color: '#E2D8C3' }]}>PONTOS DE FEITIÇARIA</Text>
-                          {editingSorcery ? (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                              <TextInput 
-                                style={{ backgroundColor: '#1A1714', color: '#E6C280', fontSize: 18, padding: 4, borderRadius: 4, width: 50, textAlign: 'center', borderWidth: 1, borderColor: '#8C4A60' }}
-                                value={tempMaxSorcery}
-                                onChangeText={setTempMaxSorcery}
-                                keyboardType="numeric"
-                              />
-                              <TouchableOpacity onPress={async () => {
-                                const newMax = parseInt(tempMaxSorcery, 10);
-                                if (!isNaN(newMax)) {
-                                  await ApiService.updateCharacter(selectedChar.id, { maxSorceryPoints: newMax, sorceryPoints: newMax });
-                                  loadCharacters(true);
-                                }
-                                setEditingSorcery(false);
-                              }}>
-                                <Text style={{ color: '#4E9C8E', fontWeight: 'bold' }}>✓ SALVAR</Text>
-                              </TouchableOpacity>
-                            </View>
-                          ) : (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <Text style={[styles.spellStatValue, { color: '#E6C280', fontSize: 24, marginTop: 4 }]}>
-                                {/* @ts-ignore */}
-                                {selectedChar.sorceryPoints || 0} / {selectedChar.maxSorceryPoints || 0}
-                              </Text>
-                              <TouchableOpacity onPress={() => {
-                                // @ts-ignore
-                                setTempMaxSorcery(String(selectedChar.maxSorceryPoints || 0));
-                                setEditingSorcery(true);
-                              }}>
-                                <Edit color="#8C4A60" size={16} />
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                        </View>
-                        <View style={{ flexDirection: 'row', gap: 10, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end' }}>
-                          <TouchableOpacity 
-                            style={[{ backgroundColor: 'rgba(140, 74, 96, 0.3)', padding: 10, borderRadius: 6, alignItems: 'center' }, isMobile && { flex: 1 }]}
-                            // @ts-ignore
-                            onPress={() => updateSorceryPoints(Math.max(0, (selectedChar.sorceryPoints || 0) - 1))}
-                          >
-                            <Text style={{ color: '#E2D8C3', fontWeight: 'bold' }}>- GASTAR</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity 
-                            style={[{ backgroundColor: 'rgba(78, 156, 142, 0.2)', padding: 10, borderRadius: 6, alignItems: 'center' }, isMobile && { flex: 1 }]}
-                            // @ts-ignore
-                            onPress={() => updateSorceryPoints(Math.min((selectedChar.maxSorceryPoints || 0), (selectedChar.sorceryPoints || 0) + 1))}
-                          >
-                            <Text style={{ color: '#E2D8C3', fontWeight: 'bold' }}>+ RECUPERAR</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* 🌑 Bruxo: Magia de Pacto */}
-                  {isWarlock && (() => {
-                     const pactSlotsLevel = sortedLevels.filter(l => l > 0).pop();
-                     const pactSlot = selectedChar.spellSlots.find(s => s.level === pactSlotsLevel);
-                     if (!pactSlot) return null;
-                     
-                     return (
-                      <View style={[styles.spellStatsBanner, { borderColor: '#6B4A70', backgroundColor: 'rgba(107, 74, 112, 0.1)', marginTop: 0 }]}>
-                        <View style={{ flex: 1, flexDirection: 'column', gap: 12 }}>
-                          <View style={{ flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 0 }}>
-                            <View>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <Text style={[styles.spellStatLabel, { color: '#E2D8C3' }]}>MAGIA DE PACTO (BRUXO)</Text>
-                                <TouchableOpacity onPress={() => setShowManageSlots(true)}>
-                                  <Edit color="#6B4A70" size={14} />
-                                </TouchableOpacity>
-                              </View>
-                              <Text style={[styles.spellAccordionSub, { marginTop: 4 }]}>Espaços de {pactSlotsLevel}º Nível unificados.</Text>
-                            </View>
-                            <TouchableOpacity 
-                              style={{ backgroundColor: 'rgba(107, 74, 112, 0.3)', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 6, width: isMobile ? '100%' : 'auto', justifyContent: 'center' }}
-                              onPress={async () => {
-                                // Recuperação de descanso curto otimista
-                                const updatedSlots = selectedChar.spellSlots.map(s => ({...s, used: 0}));
-                                setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, spellSlots: updatedSlots } : c));
-                                
-                                try {
-                                  await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-                                } catch {
-                                  loadCharacters(true);
-                                }
-                              }}
-                            >
-                              <Moon color="#E2D8C3" size={16} />
-                              <Text style={{ color: '#E2D8C3', fontWeight: 'bold', fontSize: 12 }}>DESCANSO CURTO</Text>
-                            </TouchableOpacity>
-                          </View>
-                          
-                          <View style={{ flexDirection: 'row', gap: 8 }}>
-                            {Array.from({ length: pactSlot.total }).map((_, idx) => {
-                              const isUsed = idx < pactSlot.used;
-                              return (
-                                <TouchableOpacity
-                                  key={`pact-slot-${idx}`}
-                                  style={[styles.accordionTokenBtn, { width: 32, height: 32 }, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
-                                  onPress={() => toggleSpellSlot(pactSlot.id, pactSlot.used, pactSlot.total)}
-                                >
-                                  <Scroll color={isUsed ? '#3D342C' : themeColor} size={16} />
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
-                        </View>
-                      </View>
-                     );
-                  })()}
-
-                  {/* 📜 2. Acordeões de Níveis de Magia */}
-                  <View style={{ gap: 12 }}>
-                    {sortedLevels.map(levelNum => {
-                      const isExpanded = expandedLevels.includes(levelNum);
-                      const spellsInThisLevel = charSpells.filter(sp => sp.level === levelNum);
-                      const slotForLevel = selectedChar.spellSlots.find(s => s.level === levelNum);
-
-                      return (
-                        <View key={`spell-lvl-${levelNum}`} style={[styles.spellAccordionCard, isExpanded && { borderColor: themeColor }]}>
-                          {/* Header do Acordeão */}
-                          <TouchableOpacity
-                            style={[
-                              styles.spellAccordionHeader,
-                              isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 8, paddingVertical: 10, paddingHorizontal: 12 }
-                            ]}
-                            onPress={() => toggleLevelAccordion(levelNum)}
-                            activeOpacity={0.8}
-                          >
-                            {isMobile ? (
-                              <>
-                                {/* Linha 1 Mobile: Ícone + Título/Subtítulo + Chevron */}
-                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
-                                    <View style={[styles.levelBadgeIcon, { width: 34, height: 34, borderRadius: 17 }, levelNum === 0 ? { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' } : { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}>
-                                      <BookOpen color={levelNum === 0 ? '#4E9C8E' : themeColor} size={16} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                      <Text style={[styles.spellAccordionTitle, { fontSize: 14 }]} numberOfLines={1}>
-                                        {levelNum === 0 ? '✨ TRUQUES' : `📜 ${levelNum}º NÍVEL`}
-                                      </Text>
-                                      <Text style={styles.spellAccordionSub}>
-                                        {spellsInThisLevel.length} {spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas'}
-                                      </Text>
-                                    </View>
-                                  </View>
-
-                                  <View style={styles.accordionChevronBox}>
-                                    {isExpanded ? <ChevronUp color={themeColor} size={22} /> : <ChevronDown color="#80776C" size={22} />}
-                                  </View>
-                                </View>
-
-                                {/* Linha 2 Mobile: Espaços e Tokens de Magia */}
-                                {levelNum > 0 && !isWarlock && (
-                                  <View
-                                    style={[styles.accordionSlotsBox, { width: '100%', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 6, backgroundColor: 'rgba(10, 9, 8, 0.75)' }]}
-                                    onStartShouldSetResponder={() => true}
-                                  >
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                      <Text style={[styles.accordionSlotsText, { fontSize: 11 }]}>
-                                        Espaços: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel?.used || 0}</Text> / {slotForLevel?.total || 0}
-                                      </Text>
-                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                        <TouchableOpacity
-                                          style={{
-                                            width: 22,
-                                            height: 22,
-                                            borderRadius: 4,
-                                            backgroundColor: '#26221E',
-                                            borderWidth: 1,
-                                            borderColor: '#3D342C',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            opacity: (!slotForLevel || slotForLevel.total <= 0) ? 0.3 : 1
-                                          }}
-                                          disabled={!slotForLevel || slotForLevel.total <= 0}
-                                          onPress={(e) => {
-                                            // @ts-ignore
-                                            e?.stopPropagation?.();
-                                            upsertSpellSlot(levelNum, (slotForLevel?.total || 0) - 1);
-                                          }}
-                                          accessibilityLabel="Diminuir 1 espaço total deste nível"
-                                        >
-                                          <Minus color="#E2D8C3" size={11} />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                          style={{
-                                            width: 22,
-                                            height: 22,
-                                            borderRadius: 4,
-                                            backgroundColor: '#26221E',
-                                            borderWidth: 1,
-                                            borderColor: '#3D342C',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                          }}
-                                          onPress={(e) => {
-                                            // @ts-ignore
-                                            e?.stopPropagation?.();
-                                            upsertSpellSlot(levelNum, (slotForLevel?.total || 0) + 1);
-                                          }}
-                                          accessibilityLabel="Adicionar 1 espaço total a este nível"
-                                        >
-                                          <Plus color="#E2D8C3" size={11} />
-                                        </TouchableOpacity>
-                                      </View>
-                                    </View>
-                                    {slotForLevel && slotForLevel.total > 0 && (
-                                      <View style={[styles.accordionTokensRow, { gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }]}>
-                                        {Array.from({ length: slotForLevel.total }).map((_, idx) => {
-                                          const isUsed = idx < slotForLevel.used;
-                                          return (
-                                            <TouchableOpacity
-                                              key={`accordion-token-${slotForLevel.id}-${idx}`}
-                                              style={[styles.accordionTokenBtn, { width: 24, height: 24 }, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
-                                              onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
-                                            >
-                                              <Scroll color={isUsed ? '#3D342C' : themeColor} size={12} />
-                                            </TouchableOpacity>
-                                          );
-                                        })}
-                                      </View>
-                                    )}
-                                  </View>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
-                                  <View style={[styles.levelBadgeIcon, levelNum === 0 ? { backgroundColor: 'rgba(78, 156, 142, 0.2)', borderColor: '#4E9C8E' } : { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}>
-                                    <BookOpen color={levelNum === 0 ? '#4E9C8E' : themeColor} size={18} />
-                                  </View>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.spellAccordionTitle} numberOfLines={1}>
-                                      {levelNum === 0 ? '✨ TRUQUES' : `📜 ${levelNum}º NÍVEL`}
-                                    </Text>
-                                    <Text style={styles.spellAccordionSub}>
-                                      {spellsInThisLevel.length} {spellsInThisLevel.length === 1 ? 'magia cadastrada' : 'magias cadastradas'}
-                                    </Text>
-                                  </View>
-                                </View>
-
-                                {/* Tokens de Espaço no Header (se for nível 1+) */}
-                                {levelNum > 0 && !isWarlock && (
-                                  <View style={styles.accordionSlotsBox} onStartShouldSetResponder={() => true}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                      <Text style={styles.accordionSlotsText}>
-                                        Usados: <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{slotForLevel?.used || 0}</Text> / {slotForLevel?.total || 0}
-                                      </Text>
-                                      {/* Botões rápidos para alterar total de espaços do nível */}
-                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                                        <TouchableOpacity
-                                          style={{
-                                            width: 20,
-                                            height: 20,
-                                            borderRadius: 4,
-                                            backgroundColor: '#26221E',
-                                            borderWidth: 1,
-                                            borderColor: '#3D342C',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            opacity: (!slotForLevel || slotForLevel.total <= 0) ? 0.3 : 1
-                                          }}
-                                          disabled={!slotForLevel || slotForLevel.total <= 0}
-                                          onPress={(e) => {
-                                            // @ts-ignore
-                                            e?.stopPropagation?.();
-                                            upsertSpellSlot(levelNum, (slotForLevel?.total || 0) - 1);
-                                          }}
-                                          accessibilityLabel="Diminuir 1 espaço total deste nível"
-                                        >
-                                          <Minus color="#E2D8C3" size={10} />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                          style={{
-                                            width: 20,
-                                            height: 20,
-                                            borderRadius: 4,
-                                            backgroundColor: '#26221E',
-                                            borderWidth: 1,
-                                            borderColor: '#3D342C',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                          }}
-                                          onPress={(e) => {
-                                            // @ts-ignore
-                                            e?.stopPropagation?.();
-                                            upsertSpellSlot(levelNum, (slotForLevel?.total || 0) + 1);
-                                          }}
-                                          accessibilityLabel="Adicionar 1 espaço total a este nível"
-                                        >
-                                          <Plus color="#E2D8C3" size={10} />
-                                        </TouchableOpacity>
-                                      </View>
-                                    </View>
-                                    {slotForLevel && slotForLevel.total > 0 && (
-                                      <View style={styles.accordionTokensRow}>
-                                        {Array.from({ length: slotForLevel.total }).map((_, idx) => {
-                                          const isUsed = idx < slotForLevel.used;
-                                          return (
-                                            <TouchableOpacity
-                                              key={`accordion-token-${slotForLevel.id}-${idx}`}
-                                              style={[styles.accordionTokenBtn, isUsed ? styles.accordionTokenUsed : { borderColor: themeColor, backgroundColor: `${themeColor}22` }]}
-                                              onPress={() => toggleSpellSlot(slotForLevel.id, slotForLevel.used, slotForLevel.total)}
-                                            >
-                                              <Scroll color={isUsed ? '#3D342C' : themeColor} size={14} />
-                                            </TouchableOpacity>
-                                          );
-                                        })}
-                                      </View>
-                                    )}
-                                  </View>
-                                )}
-
-                                <View style={styles.accordionChevronBox}>
-                                  {isExpanded ? <ChevronUp color={themeColor} size={22} /> : <ChevronDown color="#80776C" size={22} />}
-                                </View>
-                              </>
-                            )}
-                          </TouchableOpacity>
-
-                          {/* Corpo do Acordeão */}
-                          {isExpanded && (
-                            <View style={styles.spellAccordionBody}>
-                              {spellsInThisLevel.length === 0 ? (
-                                <View style={styles.emptyLevelBox}>
-                                  <Text style={styles.emptyLevelText}>Nenhuma magia cadastrada neste nível.</Text>
-                                </View>
-                              ) : (
-                                <View style={{ gap: 10 }}>
-                                  {spellsInThisLevel.map(sp => (
-                                    <View key={sp.id} style={[styles.spellItemCard, !sp.isPrepared && sp.level > 0 && styles.spellItemUnprepared]}>
-                                      <View style={[styles.spellItemTop, isMobile && { flexDirection: 'column', alignItems: 'flex-start', gap: 8 }]}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                                          {sp.level > 0 && (
-                                            <TouchableOpacity
-                                              style={[styles.prepBtn, sp.isPrepared ? styles.prepBtnActive : styles.prepBtnInactive]}
-                                              onPress={() => toggleSpellPrepared(selectedChar.id, sp.id)}
-                                            >
-                                              {sp.isPrepared ? <Eye color="#110F0D" size={15} /> : <EyeOff color="#80776C" size={15} />}
-                                            </TouchableOpacity>
-                                          )}
-                                          <Text style={[styles.spellItemName, !sp.isPrepared && sp.level > 0 && { color: '#80776C' }]}>
-                                            {sp.name}
-                                          </Text>
-                                        </View>
-
-                                        <View style={styles.spellActionsRow}>
-                                          <TouchableOpacity
-                                            style={[styles.castSpellBtn, (!sp.isPrepared && sp.level > 0) && { opacity: 0.5 }]}
-                                            onPress={() => castSpellItem(selectedChar, sp)}
-                                          >
-                                            <Zap color="#110F0D" size={14} />
-                                            <Text style={styles.castSpellBtnText}>
-                                              {sp.level === 0 ? '⚡ Conjurar Truque' : '⚡ Conjurar (1 Espaço)'}
-                                            </Text>
-                                          </TouchableOpacity>
-                                          <TouchableOpacity
-                                            style={[styles.delSpellBtn, { backgroundColor: 'transparent', borderColor: '#4E9C8E' }]}
-                                            onPress={() => {
-                                              setEditEntityType('spell');
-                                              setEntityToEdit(sp);
-                                              setEditEntityVisible(true);
-                                            }}
-                                          >
-                                            <Edit color="#4E9C8E" size={15} />
-                                          </TouchableOpacity>
-                                          <TouchableOpacity
-                                            style={styles.delSpellBtn}
-                                            onPress={() => removeSpellItem(selectedChar.id, sp.id)}
-                                          >
-                                            <Trash2 color="#C95B5B" size={15} />
-                                          </TouchableOpacity>
-                                        </View>
-                                      </View>
-
-                                      <View style={[styles.spellBadgesRow, isMobile && { flexWrap: 'wrap', gap: 6 }]}>
-                                        <View style={styles.spellBadge}>
-                                          <Clock color="#C5A059" size={12} />
-                                          <Text style={styles.spellBadgeText}>Tempo: {sp.castingTime}</Text>
-                                        </View>
-                                        <View style={styles.spellBadge}>
-                                          <Crosshair color="#4E9C8E" size={12} />
-                                          <Text style={styles.spellBadgeText}>Alcance: {sp.range}</Text>
-                                        </View>
-                                        <View style={styles.spellBadge}>
-                                          <Sparkles color="#B280E6" size={12} />
-                                          <Text style={styles.spellBadgeText}>Duração: {sp.duration}</Text>
-                                        </View>
-                                        {sp.components && (
-                                          <View style={styles.spellBadge}>
-                                            <Text style={styles.spellBadgeText}>Comp: {sp.components}</Text>
-                                          </View>
-                                        )}
-                                      </View>
-
-                                      {sp.description ? (
-                                        <Text style={styles.spellItemDesc}>{sp.description}</Text>
-                                      ) : null}
-                                    </View>
-                                  ))}
-                                </View>
-                              )}
-
-                              {/* Botão / Formulário para Adicionar Magia Neste Nível */}
-                              {addingSpellForLevel === levelNum ? (
-                                <View style={styles.addSpellInlineForm}>
-                                  <Text style={styles.addSpellFormHeading}>➕ Cadastrar Magia de {levelNum === 0 ? 'Truque (Nível 0)' : `${levelNum}º Nível`}</Text>
-                                  <TextInput
-                                    style={styles.addInput}
-                                    placeholder="Nome da Magia (ex: Bola de Fogo)"
-                                    placeholderTextColor="#80776C"
-                                    value={newSpellName}
-                                    onChangeText={setNewSpellName}
-                                  />
-                                  <View style={[styles.addInputRow, isMobile && { flexDirection: 'column', gap: 8 }]}>
-                                    <TextInput
-                                      style={[styles.addInput, { flex: 1 }]}
-                                      placeholder="Tempo (ex: 1 Ação, Bônus)"
-                                      placeholderTextColor="#80776C"
-                                      value={newSpellCastTime}
-                                      onChangeText={setNewSpellCastTime}
-                                    />
-                                    <TextInput
-                                      style={[styles.addInput, { flex: 1 }]}
-                                      placeholder="Alcance (ex: 9m, Toque)"
-                                      placeholderTextColor="#80776C"
-                                      value={newSpellRange}
-                                      onChangeText={setNewSpellRange}
-                                    />
-                                    <TextInput
-                                      style={[styles.addInput, { flex: 1 }]}
-                                      placeholder="Duração (ex: Instantânea, 1h)"
-                                      placeholderTextColor="#80776C"
-                                      value={newSpellDuration}
-                                      onChangeText={setNewSpellDuration}
-                                    />
-                                  </View>
-                                  <TextInput
-                                    style={[styles.addInput, { height: 60, textAlignVertical: 'top' }]}
-                                    placeholder="Descrição ou efeito da magia..."
-                                    placeholderTextColor="#80776C"
-                                    multiline
-                                    value={newSpellDesc}
-                                    onChangeText={setNewSpellDesc}
-                                  />
-                                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
-                                    <TouchableOpacity style={styles.cancelFormBtn} onPress={() => setAddingSpellForLevel(null)}>
-                                      <Text style={styles.cancelFormBtnText}>Cancelar</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.addItemSubmitBtn} onPress={() => addSpellItem(selectedChar.id, levelNum)}>
-                                      <Plus color="#110F0D" size={16} />
-                                      <Text style={styles.addItemSubmitText}>Salvar</Text>
-                                    </TouchableOpacity>
-                                  </View>
-                                </View>
-                              ) : (
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                  <TouchableOpacity
-                                    style={styles.openAddSpellBtn}
-                                    onPress={() => {
-                                      setAddingSpellForLevel(levelNum);
-                                      setNewSpellCastTime('1 Ação');
-                                      setNewSpellRange('9m');
-                                      setNewSpellDuration('Instantânea');
-                                    }}
-                                  >
-                                    <Plus color="#C5A059" size={16} />
-                                    <Text style={styles.openAddSpellBtnText}>
-                                      Manual
-                                    </Text>
-                                  </TouchableOpacity>
-
-                                  <TouchableOpacity
-                                    style={[styles.openAddSpellBtn, { borderColor: '#4E9C8E', marginLeft: 10 }]}
-                                    onPress={() => {
-                                      setAddingSpellForLevel(levelNum);
-                                      setSrdModalType('spell');
-                                      setSrdModalVisible(true);
-                                    }}
-                                  >
-                                    <BookOpen color="#4E9C8E" size={16} />
-                                    <Text style={[styles.openAddSpellBtnText, { color: '#4E9C8E' }]}>
-                                      Buscar
-                                    </Text>
-                                  </TouchableOpacity>
-                                </View>
-                              )}
-                            </View>
-                          )}
-                        </View>
-                      );
-                    })}
-                  </View>
-
-                  {/* ⚙️ Gerenciar Quantidade de Espaços de Magia por Nível */}
-                  <View style={{ marginTop: 12 }}>
-                    <TouchableOpacity
-                      style={styles.manageSlotsToggleBtn}
-                      onPress={() => setShowManageSlots(!showManageSlots)}
-                    >
-                      <Text style={styles.manageSlotsToggleText}>
-                        {showManageSlots ? '▲ Ocultar Gerenciador de Espaços' : '⚙️ Gerenciar Espaços por Nível (1º ao 9º) ▼'}
-                      </Text>
-                    </TouchableOpacity>
-
-                    {showManageSlots && (
-                      <View style={[styles.addItemBox, { marginTop: 12 }]}>
-                        {/* Botão de Auto-preenchimento oficial D&D 5e */}
-                        <TouchableOpacity
-                          style={{
-                            backgroundColor: 'rgba(78, 156, 142, 0.15)',
-                            borderWidth: 1,
-                            borderColor: '#4E9C8E',
-                            paddingVertical: 10,
-                            paddingHorizontal: 14,
-                            borderRadius: 8,
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 8,
-                            marginBottom: 16,
-                            width: '100%',
-                          }}
-                          activeOpacity={0.8}
-                          onPress={() => {
-                            confirmAction(
-                              `Deseja recalcular e preencher os espaços oficiais de D&D 5e para ${selectedChar.class} Nível ${selectedChar.level}?`,
-                              () => autoFillOfficialSlots(true),
-                              'Auto-preencher Espaços (D&D 5e)'
-                            );
-                          }}
-                        >
-                          <Sparkles color="#4E9C8E" size={16} />
-                          <Text style={{ color: '#4E9C8E', fontWeight: 'bold', fontSize: 13, textAlign: 'center' }} numberOfLines={1} ellipsizeMode="tail">
-                            Auto-preencher Espaços Padrão (D&D 5e)
-                          </Text>
-                        </TouchableOpacity>
-
-                        <Text style={[styles.addItemHeading, { fontSize: 13, marginBottom: 12 }]}>
-                          Controle Manual de Espaços (1º ao 9º Nível):
-                        </Text>
-
-                        {/* Grade Interativa de Níveis 1 a 9 */}
-                        <View style={{ gap: 8 }}>
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => {
-                            const existing = selectedChar.spellSlots.find((s) => s.level === lvl);
-                            const currentTotal = existing ? existing.total : 0;
-                            return (
-                              <View
-                                key={`slot-manage-row-${lvl}`}
-                                style={{
-                                  flexDirection: 'row',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  backgroundColor: currentTotal > 0 ? 'rgba(26, 22, 19, 0.8)' : 'rgba(17, 15, 13, 0.5)',
-                                  paddingVertical: 8,
-                                  paddingHorizontal: 12,
-                                  borderRadius: 8,
-                                  borderWidth: 1,
-                                  borderColor: currentTotal > 0 ? '#3D342C' : '#26221E',
-                                }}
-                              >
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                  <View
-                                    style={{
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: 6,
-                                      backgroundColor: currentTotal > 0 ? `${themeColor}22` : '#1A1714',
-                                      borderWidth: 1,
-                                      borderColor: currentTotal > 0 ? themeColor : '#3D342C',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                  >
-                                    <Text style={{ color: currentTotal > 0 ? themeColor : '#80776C', fontWeight: 'bold', fontSize: 12 }}>
-                                      {lvl}
-                                    </Text>
-                                  </View>
-                                  <Text style={{ color: currentTotal > 0 ? '#E2D8C3' : '#80776C', fontWeight: '600', fontSize: 13 }}>
-                                    {lvl}º Nível
-                                  </Text>
-                                </View>
-
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                  <TouchableOpacity
-                                    style={{
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: 6,
-                                      backgroundColor: '#26221E',
-                                      borderWidth: 1,
-                                      borderColor: '#3D342C',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      opacity: currentTotal <= 0 ? 0.3 : 1,
-                                    }}
-                                    disabled={currentTotal <= 0}
-                                    onPress={() => upsertSpellSlot(lvl, currentTotal - 1)}
-                                  >
-                                    <Minus color="#E2D8C3" size={14} />
-                                  </TouchableOpacity>
-
-                                  <View
-                                    style={{
-                                      minWidth: 42,
-                                      paddingVertical: 5,
-                                      paddingHorizontal: 8,
-                                      backgroundColor: '#110F0D',
-                                      borderRadius: 6,
-                                      borderWidth: 1,
-                                      borderColor: currentTotal > 0 ? '#C5A059' : '#3D342C',
-                                      alignItems: 'center',
-                                    }}
-                                  >
-                                    <Text style={{ color: currentTotal > 0 ? '#E6C280' : '#80776C', fontWeight: 'bold', fontSize: 14 }}>
-                                      {currentTotal}
-                                    </Text>
-                                  </View>
-
-                                  <TouchableOpacity
-                                    style={{
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: 6,
-                                      backgroundColor: '#26221E',
-                                      borderWidth: 1,
-                                      borderColor: '#3D342C',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                    onPress={() => upsertSpellSlot(lvl, currentTotal + 1)}
-                                  >
-                                    <Plus color="#E2D8C3" size={14} />
-                                  </TouchableOpacity>
-                                </View>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              );
-            })()}
-
-            {/* ABA: Habilidades e Poderes */}
-            {activeTab === 'abilities' && (
-              <View>
-                {/* ☯️ Monge: Pontos de Qi */}
-                {isMonk && renderMonkKiBanner()}
-
-                {/* Filtros de Habilidade */}
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                  <TouchableOpacity onPress={() => setAbilityFilter('ALL')} style={[styles.coinBtn, abilityFilter === 'ALL' && { backgroundColor: themeColor, borderColor: '#FFF' }]}>
-                    <Text style={[styles.coinBtnText, abilityFilter === 'ALL' && { color: '#110F0D' }]}>Todas</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setAbilityFilter('ACTIVE')} style={[styles.coinBtn, abilityFilter === 'ACTIVE' && { backgroundColor: themeColor, borderColor: '#FFF' }]}>
-                    <Text style={[styles.coinBtnText, abilityFilter === 'ACTIVE' && { color: '#110F0D' }]}>Ativas</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setAbilityFilter('PASSIVE')} style={[styles.coinBtn, abilityFilter === 'PASSIVE' && { backgroundColor: themeColor, borderColor: '#FFF' }]}>
-                    <Text style={[styles.coinBtnText, abilityFilter === 'PASSIVE' && { color: '#110F0D' }]}>Passivas</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.abilitiesList}>
-                  {selectedChar.abilities.length === 0 ? (
-                    <Text style={styles.emptyText}>Este herói não possui habilidades ou poderes cadastrados.</Text>
-                  ) : (
-                    selectedChar.abilities
-                      .filter(ab => {
-                        if (abilityFilter === 'ACTIVE') return ab.actionType !== 'LIVRE';
-                        if (abilityFilter === 'PASSIVE') return ab.actionType === 'LIVRE';
-                        return true;
-                      })
-                      .map(ab => {
-                      const isActive = ab.actionType !== 'LIVRE';
-                      const isExpanded = expandedAbilities[ab.id];
-                      return (
-                      <View key={ab.id} style={[styles.abilityCard, isActive ? { borderColor: `${themeColor}66`, backgroundColor: '#1A1714' } : { borderColor: '#3D342C' }]}>
-                        <View style={[styles.abilityHeader, isMobile && { flexDirection: 'column', alignItems: 'flex-start', gap: 12 }]}>
-                          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            {ab.actionType === 'ACAO' && <Sword color={themeColor} size={16} />}
-                            {ab.actionType === 'ACAO_BONUS' && <FastForward color={themeColor} size={16} />}
-                            {ab.actionType === 'REACAO' && <Shield color={themeColor} size={16} />}
-                            {ab.actionType === 'LIVRE' && <Zap color={themeColor} size={16} />}
-                            <Text style={[styles.abilityName, isActive && { color: themeColor }]}>{ab.name}</Text>
-                          </View>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                            <View style={[styles.resetBadge, ab.resetType === 'LONG_REST' && styles.resetLongBadge]}>
-                              <Text style={styles.resetBadgeText}>
-                                {ab.resetType === 'SHORT_REST' ? '⚡ Ritual Curto' : ab.resetType === 'LONG_REST' ? '💤 Ritual Longo' : 'Contínuo'}
-                              </Text>
-                            </View>
-                            <TouchableOpacity style={styles.delItemBtn} onPress={() => {
-                              setEditEntityType('ability');
-                              setEntityToEdit(ab);
-                              setEditEntityVisible(true);
-                            }}>
-                              <Edit color="#4E9C8E" size={16} />
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.delItemBtn} onPress={() => removeAbility(ab.id)}>
-                              <Trash2 color="#80776C" size={16} />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                        
-                        {ab.description ? (
-                          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-                            <Markdown style={markdownStyles}>
-                              {isExpanded ? ab.description : ab.description.split('\n').slice(0, 3).join('\n') + (ab.description.split('\n').length > 3 ? '...' : '')}
-                            </Markdown>
-                            {ab.description.split('\n').length > 3 && (
-                              <TouchableOpacity onPress={() => toggleAbilityExpanded(ab.id)} style={{ marginTop: 8 }}>
-                                <Text style={{ color: themeColor, fontSize: 12, fontWeight: '700' }}>{isExpanded ? 'Esconder...' : 'Ler Mais...'}</Text>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        ) : null}
-
-                        {ab.maxUses < 90 && (
-                          <View style={[styles.abilityFooter, isMobile && { flexDirection: 'column', gap: 12, alignItems: 'flex-start' }]}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                              <Text style={styles.abilityUses}>
-                                Usos: <Text style={{ color: '#E6C280', fontWeight: '700' }}>{ab.currentUses} / {ab.maxUses}</Text>
-                              </Text>
-                              <View style={{ flexDirection: 'row', gap: 4 }}>
-                                <TouchableOpacity onPress={() => adjustAbilityUses(ab.id, -1)} style={styles.miniAdjustBtn}>
-                                  <Minus color="#E6C280" size={12} />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => adjustAbilityUses(ab.id, 1)} style={styles.miniAdjustBtn}>
-                                  <Plus color="#E6C280" size={12} />
-                                </TouchableOpacity>
-                              </View>
-                            </View>
-                            {isActive && (
-                              <TouchableOpacity
-                                style={[styles.useBtn, ab.currentUses <= 0 && styles.useBtnDisabled, isMobile && { width: '100%' }]}
-                                disabled={ab.currentUses <= 0}
-                                onPress={() => consumeAbility(ab.id, ab.currentUses)}
-                              >
-                                <Text style={styles.useBtnText}>{ab.currentUses > 0 ? 'Invocar Poder' : 'Esgotado'}</Text>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        )}
-                      </View>
-                    )})
-                  )}
-                </View>
-
-                {/* Cadastrar Nova Habilidade */}
-                <View style={[styles.addItemBox, { marginTop: 24 }]}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={styles.addItemHeading}>➕ CADASTRAR HABILIDADE</Text>
-                    <TouchableOpacity
-                      style={[styles.openAddSpellBtn, { borderColor: '#4E9C8E', paddingVertical: 6 }]}
-                      onPress={() => {
-                        setSrdModalType('ability');
-                        setSrdModalVisible(true);
-                      }}
-                    >
-                      <BookOpen color="#4E9C8E" size={14} />
-                      <Text style={[styles.openAddSpellBtnText, { color: '#4E9C8E', fontSize: 12 }]}>
-                        Buscar
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.addItemForm}>
-                    <View style={styles.addInputRow}>
-                      <TextInput
-                        style={[styles.addInput, { flex: 2 }]}
-                        placeholder="Nome da Habilidade (ex: Fúria, Visão no Escuro...)"
-                        placeholderTextColor="#80776C"
-                        value={newAbName}
-                        onChangeText={setNewAbName}
-                      />
-                      <TextInput
-                        style={[styles.addInput, { flex: 1 }]}
-                        placeholder="Usos Máx (ex: 3, ou 99 para Infinito)"
-                        placeholderTextColor="#80776C"
-                        keyboardType="numeric"
-                        value={newAbUses}
-                        onChangeText={setNewAbUses}
-                      />
-                    </View>
-                    <View style={styles.addInputRow}>
-                      <TextInput
-                        style={[styles.addInput, { flex: 1, minHeight: 60 }]}
-                        placeholder="Descrição do poder e efeitos (suporta Markdown, **negrito**)..."
-                        placeholderTextColor="#80776C"
-                        multiline
-                        value={newAbDesc}
-                        onChangeText={setNewAbDesc}
-                      />
-                    </View>
-                    <View style={styles.addInputRow}>
-                      <Text style={{ color: '#BAAFA0', fontSize: 12, width: '100%', marginBottom: 4 }}>Tipo de Ação</Text>
-                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-
-                        <TouchableOpacity style={[styles.coinBtn, newAbActionType === 'ACAO' && { backgroundColor: themeColor, borderColor: '#FFF' }]} onPress={() => setNewAbActionType('ACAO')}>
-                          <Text style={[styles.coinBtnText, newAbActionType === 'ACAO' && { color: '#110F0D' }]}>⚔️ Ação</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.coinBtn, newAbActionType === 'ACAO_BONUS' && { backgroundColor: themeColor, borderColor: '#FFF' }]} onPress={() => setNewAbActionType('ACAO_BONUS')}>
-                          <Text style={[styles.coinBtnText, newAbActionType === 'ACAO_BONUS' && { color: '#110F0D' }]}>⚡ Bônus</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.coinBtn, newAbActionType === 'REACAO' && { backgroundColor: themeColor, borderColor: '#FFF' }]} onPress={() => setNewAbActionType('REACAO')}>
-                          <Text style={[styles.coinBtnText, newAbActionType === 'REACAO' && { color: '#110F0D' }]}>🛡️ Reação</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.coinBtn, newAbActionType === 'LIVRE' && { backgroundColor: themeColor, borderColor: '#FFF' }]} onPress={() => setNewAbActionType('LIVRE')}>
-                          <Text style={[styles.coinBtnText, newAbActionType === 'LIVRE' && { color: '#110F0D' }]}>💨 Livre / Passiva</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                    <View style={styles.addInputRow}>
-                      <Text style={{ color: '#BAAFA0', fontSize: 12, width: '100%', marginBottom: 4 }}>Recuperação</Text>
-                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-                        <TouchableOpacity
-                          style={[styles.coinBtn, newAbReset === 'SHORT_REST' && { backgroundColor: '#6B4A70', borderColor: '#E6C280' }]}
-                          onPress={() => setNewAbReset('SHORT_REST')}
-                        >
-                          <Text style={[styles.coinBtnText, newAbReset === 'SHORT_REST' && { color: '#FFF' }]}>⚡ Curto</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.coinBtn, newAbReset === 'LONG_REST' && { backgroundColor: '#C5A059', borderColor: '#FFF' }]}
-                          onPress={() => setNewAbReset('LONG_REST')}
-                        >
-                          <Text style={[styles.coinBtnText, newAbReset === 'LONG_REST' && { color: '#FFF' }]}>💤 Longo</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.coinBtn, newAbReset === 'NONE' && { backgroundColor: '#3D342C', borderColor: '#E6C280' }]}
-                          onPress={() => setNewAbReset('NONE')}
-                        >
-                          <Text style={[styles.coinBtnText, newAbReset === 'NONE' && { color: '#FFF' }]}>✨ Contínuo</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                    <TouchableOpacity style={styles.addItemSubmitBtn} onPress={addAbility}>
-                      <Plus color="#110F0D" size={18} />
-                      <Text style={styles.addItemSubmitText}>Cadastrar Habilidade</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {/* ABA: Perícias */}
-            {activeTab === 'skills' && (
-              <View>
-                <View style={styles.skillsGrid}>
-                  {SKILLS_LIST.map(skill => {
-                    const score = (selectedChar as any)[skill.attr] || 10;
-                    const mod = getMod(score);
-                    const isProf = selectedChar.proficientSkills ? selectedChar.proficientSkills.includes(skill.name) : false;
-                    const total = mod + (isProf ? profBonus : 0);
-                    return (
-                      <TouchableOpacity
-                        key={skill.name}
-                        style={[styles.skillItem, isProf && { borderColor: themeColor, backgroundColor: `${themeColor}15` }, isMobile && { paddingHorizontal: 6, paddingVertical: 8 }]}
-                        onPress={() => toggleSkillProficiency(skill.name)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={[styles.skillLeft, { flex: 1, flexShrink: 1 }, isMobile && { gap: 4 }]}>
-                          <View style={[styles.saveDot, isProf && [styles.saveDotProf, { backgroundColor: themeColor }]]} />
-                          <Text style={[styles.skillName, { flexShrink: 1 }, isProf && { color: '#E2D8C3', fontWeight: '700' }, isMobile && { fontSize: 11 }]}>{skill.name}</Text>
-                          <Text style={[styles.skillAttr, isMobile && { fontSize: 9 }]}>({skill.label})</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          {isProf && !isMobile && <Text style={{ color: themeColor, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>PROFICIENTE</Text>}
-                          <Text style={[styles.skillTotal, isProf && { color: '#E6C280', fontWeight: '700' }]}>
-                            {total >= 0 ? `+${total}` : total}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-
-            {/* ABA: Mochila & Armamento */}
-            {activeTab === 'inventory' && (
-              <View style={styles.inventoryContainer}>
-                {/* 1. Alerta de Sobrecarga Se Houver */}
-                {isOverloaded && (
-                  <View style={styles.overloadBanner}>
-                    <AlertTriangle color="#FF4545" size={24} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.overloadBannerTitle}>⚠️ SOBRECARGA ({totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg max)</Text>
-                      <Text style={styles.overloadBannerDesc}>
-                        O aventureiro está carregando excesso de carga! O deslocamento é reduzido em 3m.
-                      </Text>
-                    </View>
-                  </View>
-                )}
-
-                {/* 2. Barra de Peso / Capacidade de Carga */}
-                <View style={styles.weightSection}>
-                  <View style={styles.weightTopRow}>
-                    <Text style={styles.weightTitle}>⚖️ CAPACIDADE</Text>
-                    <Text style={[styles.weightVal, isOverloaded && { color: '#FF4545', fontWeight: '700' }]}>
-                      {totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg
-                    </Text>
-                  </View>
-                  <View style={styles.weightBg}>
-                    <View
-                      style={[
-                        styles.weightFill,
-                        {
-                          width: `${Math.min(100, (totalWeight / maxWeight) * 100)}%`,
-                          backgroundColor: isOverloaded ? '#FF4545' : (totalWeight / maxWeight) > 0.75 ? '#C5A059' : '#38783C',
-                        },
-                      ]}
+                    <Icon
+                      color={isActive ? themeColor : '#80776C'}
+                      size={16}
                     />
-                  </View>
-                </View>
-
-                {/* 3. Tesouro da Guilda / Moedas */}
-                <View style={styles.coinsSection}>
-                  <Text style={styles.sectionHeading}>💰 MOEDAS</Text>
-                  <View style={styles.coinsGrid}>
-                    {/* Ouro */}
-                    <View style={[styles.coinCard, { borderColor: '#E6C280' }]}>
-                      <Text style={[styles.coinLabel, { color: '#E6C280' }]}>🥇 PEÇAS DE OURO (PO)</Text>
-                      <View style={styles.coinControls}>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(Math.max(0, (selectedChar.gold || 0) - 10), selectedChar.silver || 0, selectedChar.copper || 0)}>
-                          <Text style={styles.coinBtnText}>-10</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(Math.max(0, (selectedChar.gold || 0) - 1), selectedChar.silver || 0, selectedChar.copper || 0)}>
-                          <Text style={styles.coinBtnText}>-1</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.coinValue, { color: '#E6C280' }]}>{selectedChar.gold || 0}</Text>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins((selectedChar.gold || 0) + 1, selectedChar.silver || 0, selectedChar.copper || 0)}>
-                          <Text style={styles.coinBtnText}>+1</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins((selectedChar.gold || 0) + 10, selectedChar.silver || 0, selectedChar.copper || 0)}>
-                          <Text style={styles.coinBtnText}>+10</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    {/* Prata */}
-                    <View style={[styles.coinCard, { borderColor: '#C0C0C0' }]}>
-                      <Text style={[styles.coinLabel, { color: '#C0C0C0' }]}>🥈 PEÇAS DE PRATA (PP)</Text>
-                      <View style={styles.coinControls}>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, Math.max(0, (selectedChar.silver || 0) - 10), selectedChar.copper || 0)}>
-                          <Text style={styles.coinBtnText}>-10</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, Math.max(0, (selectedChar.silver || 0) - 1), selectedChar.copper || 0)}>
-                          <Text style={styles.coinBtnText}>-1</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.coinValue, { color: '#C0C0C0' }]}>{selectedChar.silver || 0}</Text>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, (selectedChar.silver || 0) + 1, selectedChar.copper || 0)}>
-                          <Text style={styles.coinBtnText}>+1</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, (selectedChar.silver || 0) + 10, selectedChar.copper || 0)}>
-                          <Text style={styles.coinBtnText}>+10</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    {/* Cobre */}
-                    <View style={[styles.coinCard, { borderColor: '#B87333' }]}>
-                      <Text style={[styles.coinLabel, { color: '#B87333' }]}>🥉 PEÇAS DE COBRE (PC)</Text>
-                      <View style={styles.coinControls}>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, selectedChar.silver || 0, Math.max(0, (selectedChar.copper || 0) - 10))}>
-                          <Text style={styles.coinBtnText}>-10</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, selectedChar.silver || 0, Math.max(0, (selectedChar.copper || 0) - 1))}>
-                          <Text style={styles.coinBtnText}>-1</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.coinValue, { color: '#B87333' }]}>{selectedChar.copper || 0}</Text>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, selectedChar.silver || 0, (selectedChar.copper || 0) + 1)}>
-                          <Text style={styles.coinBtnText}>+1</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.coinBtn} onPress={() => updateCoins(selectedChar.gold || 0, selectedChar.silver || 0, (selectedChar.copper || 0) + 10)}>
-                          <Text style={styles.coinBtnText}>+10</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
-                {/* 4. Lista de Itens & Armas */}
-                <View style={styles.itemsListSection}>
-                  <Text style={styles.sectionHeading}>⚔️ ITENS</Text>
-                  {(selectedChar.items || []).length === 0 ? (
-                    <View style={styles.emptyItems}>
-                      <Text style={styles.emptyItemsText}>A mochila do herói está vazia.</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.itemsGrid}>
-                      {(selectedChar.items || []).map((item) => (
-                        <View key={item.id} style={[styles.itemCard, item.isWeapon && styles.weaponCard]}>
-                          <View style={styles.itemHeader}>
-                            <View style={styles.itemTitleRow}>
-                              {item.isWeapon ? <Sword color="#E6C280" size={18} /> : item.isArmor ? <Shield color="#7895C2" size={18} /> : <Package color="#BAAFA0" size={18} />}
-                              <Text style={[styles.itemName, item.isWeapon && { color: '#E6C280' }, item.isArmor && { color: '#7895C2' }]}>{item.name}</Text>
-                              {item.isWeapon && (
-                                <View style={styles.weaponBadge}>
-                                  <Text style={styles.weaponBadgeText}>Arma • {item.damage || '1d6'}</Text>
-                                </View>
-                              )}
-                              {item.isArmor && (
-                                <View style={[styles.weaponBadge, { backgroundColor: '#2C3440', borderColor: '#4A5B75' }]}>
-                                  <Text style={[styles.weaponBadgeText, { color: '#7895C2' }]}>Armadura • +{item.armorClassBonus || 0} CA</Text>
-                                </View>
-                              )}
-                            </View>
-                            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                              {item.isArmor && (
-                                <TouchableOpacity 
-                                  style={[styles.delItemBtn, { backgroundColor: item.isEquipped ? '#38783C' : '#24201C', paddingHorizontal: 8 }]} 
-                                  onPress={() => toggleItemEquipped(item.id)}
-                                >
-                                  <Text style={{ fontSize: 10, color: item.isEquipped ? '#FFF' : '#80776C', fontWeight: '700' }}>
-                                    {item.isEquipped ? 'EQUIPADO' : 'EQUIPAR'}
-                                  </Text>
-                                </TouchableOpacity>
-                              )}
-                              <TouchableOpacity
-                                style={styles.delItemBtn}
-                                onPress={() => {
-                                  setItemToEdit(item);
-                                  setEditItemModalVisible(true);
-                                }}
-                                accessibilityLabel={`Editar ${item.name}`}
-                              >
-                                <Edit color="#4E9C8E" size={16} />
-                              </TouchableOpacity>
-                              <TouchableOpacity style={styles.delItemBtn} onPress={() => removeItem(item.id)}>
-                                <Trash2 color="#80776C" size={16} />
-                              </TouchableOpacity>
-                            </View>
-                          </View>
-                          {item.description ? <Text style={styles.itemDesc}>{item.description}</Text> : null}
-                          <View style={styles.itemFooter}>
-                            <Text style={styles.itemMeta}>⚖️ Peso: {Number(item.weight || 0).toFixed(1)} kg ({Number(item.weight || 0) * (item.quantity || 1)} kg total)</Text>
-                            <Text style={styles.itemMeta}>📦 Qtd: x{item.quantity || 1}</Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-
-                {/* 5. Adicionar Novo Item */}
-                <View style={styles.addItemBox}>
-                  <Text style={styles.addItemHeading}>➕ ADICIONAR</Text>
-                  <View style={styles.addItemForm}>
-                    <View style={styles.addInputRow}>
-                      <TextInput
-                        style={[styles.addInput, { flex: 2 }]}
-                        placeholder="Nome do Item"
-                        placeholderTextColor="#80776C"
-                        value={newItemName}
-                        onChangeText={setNewItemName}
-                      />
-                      <TextInput
-                        style={[styles.addInput, { flex: 1 }]}
-                        placeholder="Peso (kg)"
-                        placeholderTextColor="#80776C"
-                        keyboardType="numeric"
-                        value={newItemWeight}
-                        onChangeText={setNewItemWeight}
-                      />
-                      <TextInput
-                        style={[styles.addInput, { flex: 0.8 }]}
-                        placeholder="Qtd"
-                        placeholderTextColor="#80776C"
-                        keyboardType="numeric"
-                        value={newItemQty}
-                        onChangeText={setNewItemQty}
-                      />
-                    </View>
-
-                    <View style={styles.addInputRow}>
-                      <TextInput
-                        style={[styles.addInput, { flex: 2 }]}
-                        placeholder="Descrição do item..."
-                        placeholderTextColor="#80776C"
-                        value={newItemDesc}
-                        onChangeText={setNewItemDesc}
-                      />
-                    </View>
-
-                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                      <TouchableOpacity
-                        style={[styles.weaponToggleBtn, { flex: 1 }, !newItemIsWeapon && !newItemIsArmor && styles.weaponToggleBtnActive]}
-                        onPress={() => { setNewItemIsWeapon(false); setNewItemIsArmor(false); }}
-                      >
-                        <Package color={!newItemIsWeapon && !newItemIsArmor ? '#110F0D' : '#BAAFA0'} size={14} />
-                        <Text style={[styles.weaponToggleText, { fontSize: 11 }, !newItemIsWeapon && !newItemIsArmor && { color: '#110F0D' }]}>Normal</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.weaponToggleBtn, { flex: 1 }, newItemIsWeapon && styles.weaponToggleBtnActive]}
-                        onPress={() => { setNewItemIsWeapon(true); setNewItemIsArmor(false); }}
-                      >
-                        <Sword color={newItemIsWeapon ? '#110F0D' : '#BAAFA0'} size={14} />
-                        <Text style={[styles.weaponToggleText, { fontSize: 11 }, newItemIsWeapon && { color: '#110F0D' }]}>Arma</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.weaponToggleBtn, { flex: 1 }, newItemIsArmor && [styles.weaponToggleBtnActive, { backgroundColor: '#7895C2', borderColor: '#4A5B75' }]]}
-                        onPress={() => { setNewItemIsArmor(true); setNewItemIsWeapon(false); }}
-                      >
-                        <Shield color={newItemIsArmor ? '#110F0D' : '#BAAFA0'} size={14} />
-                        <Text style={[styles.weaponToggleText, { fontSize: 11 }, newItemIsArmor && { color: '#110F0D' }]}>Armadura</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {newItemIsWeapon && (
-                      <TextInput
-                        style={styles.addInput}
-                        placeholder="Dano da Arma (ex: 2d6+4 cortante)"
-                        placeholderTextColor="#80776C"
-                        value={newItemDamage}
-                        onChangeText={setNewItemDamage}
-                      />
-                    )}
-                    {newItemIsArmor && (
-                      <TextInput
-                        style={styles.addInput}
-                        placeholder="Bônus de CA (ex: 2, 4)"
-                        placeholderTextColor="#80776C"
-                        value={newItemArmorBonus}
-                        onChangeText={(text) => setNewItemArmorBonus(text.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                      />
-                    )}
-
-                    <TouchableOpacity
-                      style={styles.addItemSubmitBtn}
-                      onPress={() => {
-                        if (!newItemName.trim()) {
-                          if (Platform.OS === 'web') window.alert('Por favor, informe o nome do item!');
-                          else Alert.alert('Erro', 'Por favor, informe o nome do item!');
-                          return;
-                        }
-                        addItem({
-                          name: newItemName.trim(),
-                          description: newItemDesc.trim(),
-                          weight: Number(newItemWeight) || 1.0,
-                          quantity: Number(newItemQty) || 1,
-                          isWeapon: newItemIsWeapon,
-                          damage: newItemIsWeapon ? (newItemDamage.trim() || '1d6 cortante') : '',
-                          isArmor: newItemIsArmor,
-                          isEquipped: false,
-                          armorClassBonus: newItemIsArmor ? (Number(newItemArmorBonus) || 0) : 0,
-                        });
-                        setNewItemName('');
-                        setNewItemDesc('');
-                        setNewItemWeight('');
-                        setNewItemQty('1');
-                        setNewItemIsWeapon(false);
-                        setNewItemIsArmor(false);
-                        setNewItemDamage('');
-                        setNewItemArmorBonus('');
-                      }}
+                    <Text
+                      style={[
+                        styles.tabBtnText,
+                        isActive && [styles.tabBtnTextActive, { color: '#FFF' }],
+                      ]}
                     >
-                      <Plus color="#110F0D" size={18} />
-                      <Text style={styles.addItemSubmitText}>Guardar na Mochila</Text>
-                    </TouchableOpacity>
+                      {tab.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* 6. Conteúdo da Aba Selecionada */}
+            <View style={styles.tabContent}>
+              {activeTab === 'combat' && (
+                <CombatAttacksTab
+                  char={selectedChar}
+                  onToggleEquipWeapon={handleToggleEquipItem}
+                  onGoToInventory={() => setActiveTab('inventory')}
+                  themeColor={themeColor}
+                  isMobile={isMobile}
+                />
+              )}
+
+              {activeTab === 'spells' && (
+                <SpellsManagerTab
+                  char={selectedChar}
+                  onToggleSpellSlot={handleToggleSpellSlot}
+                  onRestoreSlotsLevel={handleRestoreSlotsLevel}
+                  onToggleSpellPrepared={handleToggleSpellPrepared}
+                  onSetConcentration={handleSetConcentration}
+                  activeConcentration={concentratingSpell}
+                  onOpenAddSpellModal={(lvl) => {
+                    setSrdModalType('spell');
+                    setEntityToEdit({ level: lvl || 1 });
+                    setEditEntityType('spell');
+                    setEditEntityVisible(true);
+                  }}
+                  onOpenSrdSearch={() => {
+                    setSrdModalType('spell');
+                    setSrdModalVisible(true);
+                  }}
+                  onEditSpell={(spell) => {
+                    setEntityToEdit(spell);
+                    setEditEntityType('spell');
+                    setEditEntityVisible(true);
+                  }}
+                  onDeleteSpell={async (spellId) => {
+                    const updated = (selectedChar.spells || []).filter((s) => s.id !== spellId);
+                    setCharacters((prev) =>
+                      prev.map((c) =>
+                        c.id === selectedChar.id ? { ...c, spells: updated } : c
+                      )
+                    );
+                    await ApiService.updateCharacter(selectedChar.id, { spells: updated });
+                  }}
+                  themeColor={themeColor}
+                  isMobile={isMobile}
+                />
+              )}
+
+              {activeTab === 'abilities' && (
+                <AbilitiesTab
+                  char={selectedChar}
+                  onAdjustAbilityUses={handleAdjustAbilityUses}
+                  onResetAbilityUses={handleResetAbilityUses}
+                  onOpenAddAbilityModal={() => {
+                    setEntityToEdit({ maxUses: 1, currentUses: 1, resetType: 'SHORT_REST' });
+                    setEditEntityType('ability');
+                    setEditEntityVisible(true);
+                  }}
+                  onEditAbility={(ab) => {
+                    setEntityToEdit(ab);
+                    setEditEntityType('ability');
+                    setEditEntityVisible(true);
+                  }}
+                  onDeleteAbility={async (abilityId) => {
+                    const updated = (selectedChar.abilities || []).filter(
+                      (a) => a.id !== abilityId
+                    );
+                    setCharacters((prev) =>
+                      prev.map((c) =>
+                        c.id === selectedChar.id ? { ...c, abilities: updated } : c
+                      )
+                    );
+                    await ApiService.updateCharacter(selectedChar.id, {
+                      abilities: updated,
+                    });
+                  }}
+                  onUpdateKiPoints={handleUpdateKiPoints}
+                  onUpdateSorceryPoints={handleUpdateSorceryPoints}
+                  themeColor={themeColor}
+                  isMobile={isMobile}
+                />
+              )}
+
+              {activeTab === 'skills' && (
+                <SkillsTab
+                  char={selectedChar}
+                  onUpdateProficientSkills={handleUpdateProficientSkills}
+                  themeColor={themeColor}
+                  isMobile={isMobile}
+                />
+              )}
+
+              {activeTab === 'inventory' && (
+                <InventoryTab
+                  char={selectedChar}
+                  onUpdateCoins={handleUpdateCoins}
+                  onToggleEquipItem={handleToggleEquipItem}
+                  onOpenAddItemModal={() => {
+                    setItemToEdit({
+                      id: generateId(),
+                      name: '',
+                      description: '',
+                      weight: 1.0,
+                      quantity: 1,
+                      isWeapon: false,
+                    });
+                    setEditItemModalVisible(true);
+                  }}
+                  onEditItem={(item) => {
+                    setItemToEdit(item);
+                    setEditItemModalVisible(true);
+                  }}
+                  onDeleteItem={async (itemId) => {
+                    const updated = (selectedChar.items || []).filter((i) => i.id !== itemId);
+                    setCharacters((prev) =>
+                      prev.map((c) =>
+                        c.id === selectedChar.id ? { ...c, items: updated } : c
+                      )
+                    );
+                    await ApiService.updateCharacter(selectedChar.id, { items: updated });
+                  }}
+                  themeColor={themeColor}
+                  isMobile={isMobile}
+                />
+              )}
+
+              {activeTab === 'lore' && (
+                <LoreTab
+                  char={selectedChar}
+                  onSaveLore={handleSaveLore}
+                  themeColor={themeColor}
+                  isMobile={isMobile}
+                />
+              )}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>Nenhum personagem selecionado</Text>
+            <Text style={styles.emptySubtitle}>
+              Crie seu primeiro aventureiro ou selecione uma ficha na barra superior para começar.
+            </Text>
+          </View>
+        )}
+
+        {/* MODAL DE CRIAÇÃO / EDIÇÃO BÁSICA DO PERSONAGEM */}
+        {modalVisible && (
+          <CharacterModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            initialData={editingChar}
+            onSave={async (data) => {
+              if (editingChar) {
+                const updated = await ApiService.updateCharacter(editingChar.id, data);
+                setCharacters((prev) =>
+                  prev.map((c) => (c.id === editingChar.id ? updated : c))
+                );
+              } else {
+                const created = await ApiService.createCharacter(data);
+                setCharacters((prev) => [...prev, created]);
+                setSelectedId(created.id);
+              }
+              setModalVisible(false);
+              loadCharacters();
+            }}
+          />
+        )}
+
+        {/* MODAL DE EDIÇÃO DE HABILIDADE / MAGIA */}
+        {editEntityVisible && selectedChar && (
+          <EditAbilitySpellModal
+            visible={editEntityVisible}
+            type={editEntityType}
+            initialData={entityToEdit}
+            onClose={() => {
+              setEditEntityVisible(false);
+              setEntityToEdit(null);
+            }}
+            onSave={handleSaveEditedEntity}
+            themeColor={selectedChar.themeColor}
+          />
+        )}
+
+        {/* MODAL DE EDIÇÃO DE ITEM */}
+        {editItemModalVisible && selectedChar && itemToEdit && (
+          <EditItemModal
+            visible={editItemModalVisible}
+            item={itemToEdit}
+            onClose={() => {
+              setEditItemModalVisible(false);
+              setItemToEdit(null);
+            }}
+            onSave={handleSaveEditedItem}
+            themeColor={selectedChar.themeColor}
+          />
+        )}
+
+        {/* MODAL DE BUSCA SRD */}
+        {srdModalVisible && selectedChar && (
+          <SrdSearchModal
+            visible={srdModalVisible}
+            type={srdModalType}
+            onClose={() => setSrdModalVisible(false)}
+            onSelect={async (data) => {
+              if (srdModalType === 'spell') {
+                const newSpell: SpellItemData = {
+                  id: generateId(),
+                  name: data.name,
+                  level: data.level || 0,
+                  castingTime: data.casting_time || '1 Ação',
+                  range: data.range || '9m',
+                  duration: data.duration || 'Instantânea',
+                  components: data.components ? data.components.join(', ') : '',
+                  isPrepared: false,
+                  description: data.desc ? data.desc.join('\n\n') : '',
+                };
+                const updatedSpells = [...(selectedChar.spells || []), newSpell];
+                setCharacters((prev) =>
+                  prev.map((c) =>
+                    c.id === selectedChar.id ? { ...c, spells: updatedSpells } : c
+                  )
+                );
+                await ApiService.updateCharacter(selectedChar.id, { spells: updatedSpells });
+              }
+              setSrdModalVisible(false);
+            }}
+            themeColor={selectedChar.themeColor}
+          />
+        )}
+
+        {/* MODAL RÁPIDO DE ALTERAR DESLOCAMENTO */}
+        {speedModalVisible && selectedChar && (
+          <Modal
+            visible={speedModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setSpeedModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalContent, { maxWidth: 440 }]}>
+                <View style={styles.modalHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <FastForward color={themeColor} size={18} />
+                    <Text style={styles.modalTitle}>ALTERAR DESLOCAMENTO</Text>
                   </View>
-                </View>
-              </View>
-            )}
-            
-            {/* ABA: Lore */}
-            {activeTab === 'lore' && (
-              <View style={styles.loreContainer}>
-                <View style={styles.loreHeaderRow}>
-                  <Text style={styles.loreHeaderTitle}>HISTÓRIA</Text>
-                  <TouchableOpacity style={styles.loreSaveBtn} onPress={handleSaveLore}>
-                    <Text style={styles.loreSaveBtnText}>Salvar História</Text>
+                  <TouchableOpacity
+                    onPress={() => setSpeedModalVisible(false)}
+                    style={styles.closeBtn}
+                  >
+                    <Text style={styles.closeBtnText}>✕</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.loreDesc}>
-                  Escreva aqui a história de origem, as cicatrizes e os segredos do seu personagem.
-                </Text>
-                <TextInput
-                  style={[styles.loreInput, isMobile && { minHeight: 400 }]}
-                  multiline
-                  value={loreText}
-                  onChangeText={setLoreText}
-                  placeholder="..."
-                  placeholderTextColor="#5A5043"
-                  textAlignVertical="top"
-                />
-              </View>
-            )}
-          </View>
+                <ScrollView style={styles.modalBody}>
+                  <Text style={styles.modalSectionDesc}>
+                    Defina o deslocamento por turno ou adicione tipos especiais (ex: 7.5m, 9m, 12m, Voo 18m).
+                  </Text>
 
-          {/* Status e Condições Sombrias Ativas */}
-          {selectedChar.conditions && selectedChar.conditions.length > 0 && (
-            <View style={styles.conditionsBox}>
-              <Text style={styles.conditionsHeader}>MALDIÇÕES & CONDIÇÕES ATIVAS (ESCUDO DO MESTRE)</Text>
-              <View style={styles.conditionsRow}>
-                {selectedChar.conditions.map(cond => (
-                  <View key={cond.id} style={styles.conditionChip}>
-                    <Text style={styles.conditionName}>⚠️ {cond.name}</Text>
-                    <Text style={styles.conditionDesc}>{cond.description}</Text>
+                  {/* Atalhos Comuns */}
+                  <Text style={[styles.modalLabel, { marginTop: 4 }]}>
+                    Atalhos Comuns (D&D 5e):
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+                    {[
+                      { label: '7.5m (Anão / Halfling)', val: '7.5m' },
+                      { label: '9m (Padrão 30ft)', val: '9m' },
+                      { label: '10.5m (Elfo)', val: '10.5m' },
+                      { label: '12m (Monge / Bárbaro)', val: '12m' },
+                      { label: '15m (Cavalaria)', val: '15m' },
+                    ].map((preset) => (
+                      <TouchableOpacity
+                        key={preset.val}
+                        onPress={() => setQuickSpeed(preset.val)}
+                        style={[
+                          styles.speedPresetChip,
+                          quickSpeed === preset.val && styles.speedPresetChipActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.speedPresetText,
+                            quickSpeed === preset.val && styles.speedPresetTextActive,
+                          ]}
+                        >
+                          {preset.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                ))}
+
+                  <Text style={styles.modalLabel}>Deslocamento Atual:</Text>
+                  <TextInput
+                    style={[styles.modalInput, { fontSize: 15, color: '#E6C280', marginBottom: 6 }]}
+                    value={quickSpeed}
+                    onChangeText={setQuickSpeed}
+                    placeholder="Ex: 9m, 10.5m, 9m (Voo 18m)"
+                    placeholderTextColor="#80776C"
+                  />
+                </ScrollView>
+
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={() => setSpeedModalVisible(false)}
+                  >
+                    <Text style={styles.cancelBtnText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.saveBtn, { backgroundColor: themeColor }]}
+                    onPress={handleSaveQuickSpeed}
+                  >
+                    <Text style={[styles.saveBtnText, { color: '#110F0D', fontWeight: 'bold' }]}>
+                      Salvar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          )}
-        </View>
-      ) : (
-        <View style={styles.noCharBox}>
-          <Text style={styles.noCharText}>Nenhum personagem selecionado ou encontrado na taverna.</Text>
-          <TouchableOpacity style={styles.createBtnLarge} onPress={() => { setEditingChar(null); setModalVisible(true); }}>
-            <Plus color="#110F0D" size={20} />
-            <Text style={styles.createBtnLargeText}>Criar Primeiro Personagem</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+          </Modal>
+        )}
 
-      {/* Modal de Criação / Edição */}
-      <CharacterModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSave={handleCreateOrUpdate}
-        initialData={editingChar}
-      />
-
-      {srdModalVisible && selectedChar && (
-        <SrdSearchModal
-          visible={srdModalVisible}
-          type={srdModalType}
-          onClose={() => setSrdModalVisible(false)}
-          onSelect={handleSrdSelect}
-          themeColor={selectedChar.themeColor}
-        />
-      )}
-
-      {editEntityVisible && selectedChar && entityToEdit && (
-        <EditAbilitySpellModal
-          visible={editEntityVisible}
-          type={editEntityType}
-          initialData={entityToEdit}
-          onClose={() => {
-            setEditEntityVisible(false);
-            setEntityToEdit(null);
-          }}
-          onSave={handleSaveEditedEntity}
-          themeColor={selectedChar.themeColor}
-        />
-      )}
-
-      {editItemModalVisible && selectedChar && itemToEdit && (
-        <EditItemModal
-          visible={editItemModalVisible}
-          item={itemToEdit}
-          onClose={() => {
-            setEditItemModalVisible(false);
-            setItemToEdit(null);
-          }}
-          onSave={handleSaveEditedItem}
-          themeColor={selectedChar.themeColor}
-        />
-      )}
-
-      {/* Modal Rápido de Alterar Deslocamento */}
-      {speedModalVisible && selectedChar && (
+        {/* MODAL DE IMPORTAÇÃO E BACKUP */}
         <Modal
-          visible={speedModalVisible}
+          visible={importModalVisible}
           transparent
           animationType="fade"
-          onRequestClose={() => setSpeedModalVisible(false)}
+          onRequestClose={() => setImportModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { maxWidth: 440 }]}>
+            <View style={[styles.modalContent, { maxWidth: 580 }]}>
               <View style={styles.modalHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <FastForward color={themeColor} size={18} />
-                  <Text style={styles.modalTitle}>ALTERAR DESLOCAMENTO</Text>
-                </View>
-                <TouchableOpacity onPress={() => setSpeedModalVisible(false)} style={styles.closeBtn}>
+                <Text style={styles.modalTitle}>📤 Backup & Importação de Fichas</Text>
+                <TouchableOpacity
+                  onPress={() => setImportModalVisible(false)}
+                  style={styles.closeBtn}
+                >
                   <Text style={styles.closeBtnText}>✕</Text>
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.modalBody}>
                 <Text style={styles.modalSectionDesc}>
-                  Defina o deslocamento por turno ou adicione tipos especiais (ex: 7.5m, 9m, 12m, Voo 18m).
+                  Guarde suas fichas de D&D 5e com segurança no seu dispositivo ou importe aventureiros salvos anteriormente em formato JSON.
                 </Text>
-
-                {/* Atalhos Rápidos */}
-                <Text style={[styles.modalLabel, { marginTop: 4 }]}>Atalhos Comuns (D&D 5e):</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-                  {[
-                    { label: '7.5m (Anão / Halfling)', val: '7.5m' },
-                    { label: '9m (Padrão 30ft)', val: '9m' },
-                    { label: '10.5m (Elfo Floresta)', val: '10.5m' },
-                    { label: '12m (Monge / Bárbaro)', val: '12m' },
-                    { label: '15m (Cavalaria)', val: '15m' },
-                  ].map(preset => (
+                <View style={styles.backupActionsBox}>
+                  <TouchableOpacity style={styles.backupBtn} onPress={handleExportAllJson}>
+                    <Download color="#C5A059" size={18} />
+                    <Text style={styles.backupBtnText}>
+                      Baixar Backup Completo (Todas as Fichas)
+                    </Text>
+                  </TouchableOpacity>
+                  {Platform.OS === 'web' && (
                     <TouchableOpacity
-                      key={preset.val}
-                      onPress={() => setQuickSpeed(preset.val)}
-                      style={[
-                        styles.speedPresetChip,
-                        quickSpeed === preset.val && styles.speedPresetChipActive,
-                      ]}
+                      style={[styles.backupBtn, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]}
+                      onPress={handleSelectJsonFile}
                     >
-                      <Text
-                        style={[
-                          styles.speedPresetText,
-                          quickSpeed === preset.val && styles.speedPresetTextActive,
-                        ]}
-                      >
-                        {preset.label}
+                      <Upload color="#4A8C59" size={18} />
+                      <Text style={[styles.backupBtnText, { color: '#4A8C59' }]}>
+                        Carregar Arquivo .JSON do Computador
                       </Text>
                     </TouchableOpacity>
-                  ))}
+                  )}
                 </View>
-
-                <Text style={styles.modalLabel}>Deslocamento do Personagem:</Text>
+                <Text style={[styles.modalLabel, { marginTop: 16 }]}>
+                  Ou cole o código JSON abaixo:
+                </Text>
                 <TextInput
-                  style={[styles.modalInput, { fontSize: 15, color: '#E6C280', marginBottom: 6 }]}
-                  value={quickSpeed}
-                  onChangeText={setQuickSpeed}
-                  placeholder="Ex: 9m, 10.5m, 9m (Voo 18m)"
+                  style={[
+                    styles.modalInput,
+                    {
+                      height: 160,
+                      textAlignVertical: 'top',
+                      fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
+                    },
+                  ]}
+                  multiline
+                  placeholder="Colar conteúdo JSON da ficha aqui..."
                   placeholderTextColor="#80776C"
-                  autoFocus
+                  value={importJsonText}
+                  onChangeText={setImportJsonText}
                 />
               </ScrollView>
-
               <View style={styles.modalFooter}>
                 <TouchableOpacity
                   style={styles.cancelBtn}
-                  onPress={() => setSpeedModalVisible(false)}
+                  onPress={() => {
+                    setImportModalVisible(false);
+                    setImportJsonText('');
+                  }}
                 >
                   <Text style={styles.cancelBtnText}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: themeColor, borderColor: themeColor }]}
-                  onPress={handleSaveQuickSpeed}
-                >
-                  <Text style={[styles.actionBtnText, { color: '#110F0D', fontWeight: 'bold' }]}>Salvar</Text>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleConfirmImport}>
+                  <Upload color="#110F0D" size={18} />
+                  <Text style={styles.saveBtnText}>Importar para Taverna</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
-      )}
-
-      {/* Modal de Importação e Backup */}
-      <Modal
-        visible={importModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setImportModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxWidth: 580 }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>📤 Backup & Importação de Fichas</Text>
-              <TouchableOpacity onPress={() => setImportModalVisible(false)} style={styles.closeBtn}>
-                <Text style={styles.closeBtnText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalBody}>
-              <Text style={styles.modalSectionDesc}>
-                Guarde suas fichas de D&D 5e com segurança no seu dispositivo ou importe aventureiros salvos anteriormente em formato JSON.
-              </Text>
-              <View style={styles.backupActionsBox}>
-                <TouchableOpacity style={styles.backupBtn} onPress={handleExportAllJson}>
-                  <Download color="#C5A059" size={18} />
-                  <Text style={styles.backupBtnText}>Baixar Backup Completo (Todas as Fichas)</Text>
-                </TouchableOpacity>
-                {Platform.OS === 'web' && (
-                  <TouchableOpacity style={[styles.backupBtn, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]} onPress={handleSelectJsonFile}>
-                    <Upload color="#4A8C59" size={18} />
-                    <Text style={[styles.backupBtnText, { color: '#4A8C59' }]}>Carregar Arquivo .JSON do Computador</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Text style={[styles.modalLabel, { marginTop: 16 }]}>Ou cole o código JSON abaixo:</Text>
-              <TextInput
-                style={[styles.modalInput, { height: 160, textAlignVertical: 'top', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }]}
-                multiline
-                placeholder="Colar conteúdo JSON da ficha aqui..."
-                placeholderTextColor="#80776C"
-                value={importJsonText}
-                onChangeText={setImportJsonText}
-              />
-            </ScrollView>
-            <View style={styles.modalFooter}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setImportModalVisible(false); setImportJsonText(''); }}>
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleConfirmImport}>
-                <Upload color="#110F0D" size={18} />
-                <Text style={styles.saveBtnText}>Importar para Taverna</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
       </View>
     </ScrollView>
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {
-    maxWidth: 1200,
-    marginHorizontal: 'auto',
-    width: '100%',
-    padding: 20,
+    flex: 1,
+    padding: 16,
+    gap: 16,
   },
   selectorBar: {
-    backgroundColor: '#1A1714',
-    borderRadius: 8,
+    backgroundColor: '#1E1A16',
     borderWidth: 1,
     borderColor: '#3D342C',
-    padding: 14,
-    marginBottom: 24,
+    borderRadius: 8,
+    padding: 8,
   },
   selectorScroll: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   charChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#110F0D',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    gap: 8,
+    backgroundColor: '#151310',
     borderWidth: 1,
-    borderColor: '#3D342C',
+    borderColor: '#332B23',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
   charChipSelected: {
-    borderColor: '#C5A059',
-    backgroundColor: '#24201C',
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
   },
   chipName: {
     color: '#BAAFA0',
     fontSize: 13,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+    fontWeight: 'bold',
   },
   chipNameSelected: {
     color: '#E6C280',
   },
   chipClass: {
     color: '#80776C',
-    fontSize: 10,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+    fontSize: 11,
   },
   newCharChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(197, 160, 89, 0.1)',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    backgroundColor: 'rgba(197, 160, 89, 0.08)',
     borderWidth: 1,
-    borderColor: '#8C704F',
-    borderStyle: 'dashed',
+    borderColor: '#C5A059',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
   newCharText: {
-    color: '#E6C280',
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+    color: '#C5A059',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   mainSheet: {
-    backgroundColor: '#1A1714',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 28,
-    gap: 26,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    backgroundColor: '#161311',
+    borderRadius: 12,
+    padding: 18,
     gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D342C',
-    paddingBottom: 20,
-  },
-  levelBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  levelText: {
-    color: '#C5A059',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  charName: {
-    color: '#E2D8C3',
-    fontSize: 28,
-    fontWeight: '700',
-    flexShrink: 1,
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", "Garamond", serif' : undefined,
-  },
-  charMeta: {
-    color: '#BAAFA0',
-    fontSize: 14,
-    marginTop: 4,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#24201C',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#8C704F',
-  },
-  actionBtnText: {
-    color: '#E6C280',
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  deleteBtn: {
-    borderColor: 'rgba(184, 40, 40, 0.4)',
-    backgroundColor: 'rgba(184, 40, 40, 0.1)',
-  },
-  headerStatsRibbon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    maxWidth: '100%',
-  },
-  headerStatItem: {
-    alignItems: 'center',
-    minWidth: 36,
-    flexShrink: 1,
-  },
-  headerStatLabel: {
-    color: '#80776C',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  headerStatVal: {
-    color: '#E2D8C3',
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-  },
-  headerStatDivider: {
-    width: 1,
-    height: 26,
-    backgroundColor: '#2D251E',
-  },
-  combatPanel: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  hpSection: {
-    flex: 2,
-    minWidth: 280,
-    backgroundColor: '#110F0D',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 16,
-  },
-  hpHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 10,
-  },
-  hpTitle: {
-    color: '#B82828',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    flexShrink: 1,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  tempHpBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#8C704F',
-  },
-  tempHpText: {
-    color: '#E6C280',
-    fontSize: 10,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  hpBarBg: {
-    height: 12,
-    backgroundColor: '#24201C',
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-  },
-  hpBarFill: {
-    height: '100%',
-    borderRadius: 6,
-  },
-  hpNumbers: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  hpCurrent: {
-    color: '#E2D8C3',
-    fontSize: 26,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-  },
-  hpMax: {
-    color: '#80776C',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  hitDiceText: {
-    color: '#BAAFA0',
-    fontSize: 12,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-
-  dmgBtn: {
-    backgroundColor: 'rgba(184, 40, 40, 0.15)',
-    borderColor: 'rgba(184, 40, 40, 0.5)',
-  },
-  dmgBtnText: {
-    color: '#B82828',
-    fontWeight: '700',
-    fontSize: 12,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  healBtn: {
-    backgroundColor: 'rgba(56, 120, 60, 0.15)',
-    borderColor: 'rgba(56, 120, 60, 0.5)',
-  },
-  healBtnText: {
-    color: '#38783C',
-    fontWeight: '700',
-    fontSize: 12,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  customHpRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  customHpInput: {
-    flexGrow: 1,
-    flexBasis: 100,
-    minWidth: 100,
-    backgroundColor: '#1A1714',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    borderRadius: 6,
-    color: '#E2D8C3',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontSize: 12,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  customBtn: {
-    flexGrow: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deathAndRestSection: {
-    flex: 1,
-    minWidth: 260,
-    gap: 12,
-  },
-  deathBox: {
-    backgroundColor: '#110F0D',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 14,
-  },
-  deathTitle: {
-    color: '#E2D8C3',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    flexShrink: 1,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  deathRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  deathLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    marginRight: 2,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  restBox: {
-    backgroundColor: '#110F0D',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 14,
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  restTitle: {
-    color: '#C5A059',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  restButtonsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  shortRestBtn: {
-    flexGrow: 1,
-    flexBasis: 120,
-    minWidth: 120,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(107, 74, 112, 0.15)',
-    borderWidth: 1,
-    borderColor: '#6B4A70',
-    padding: 10,
-    borderRadius: 6,
-  },
-  longRestBtn: {
-    flexGrow: 1,
-    flexBasis: 120,
-    minWidth: 120,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    borderWidth: 1,
-    borderColor: '#8C704F',
-    padding: 10,
-    borderRadius: 6,
-  },
-  restBtnTitle: {
-    color: '#E2D8C3',
-    fontSize: 12,
-    fontWeight: '700',
-    flexShrink: 1,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  restBtnSub: {
-    color: '#BAAFA0',
-    fontSize: 9,
-    flexShrink: 1,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  sectionHeader: {
-    color: '#C5A059',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginTop: 8,
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-  },
-  attributesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  attrCard: {
-    flex: 1,
-    minWidth: 95,
-    backgroundColor: '#110F0D',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 12,
-    alignItems: 'center',
-  },
-  attrName: {
-    color: '#BAAFA0',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 4,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  attrMod: {
-    color: '#E2D8C3',
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 2,
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-  },
-  attrScore: {
-    color: '#80776C',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  saveRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#3D342C',
-    paddingTop: 8,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  saveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#3D342C',
-  },
-  saveDotProf: {
-    backgroundColor: '#E6C280',
-  },
-  saveText: {
-    color: '#BAAFA0',
-    fontSize: 11,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   tabsNav: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D342C',
-    gap: 12,
-    marginTop: 10,
+    gap: 8,
+    paddingVertical: 4,
   },
   tabBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    gap: 6,
+    backgroundColor: '#191613',
+    borderWidth: 1,
+    borderColor: '#332B23',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   tabBtnActive: {
-    borderBottomColor: '#E6C280',
+    backgroundColor: 'rgba(197, 160, 89, 0.18)',
+    borderColor: '#C5A059',
   },
   tabBtnText: {
     color: '#80776C',
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '600',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   tabBtnTextActive: {
-    color: '#E6C280',
-    fontWeight: '700',
+    fontWeight: 'bold',
   },
   tabContent: {
-    paddingTop: 18,
+    marginTop: 4,
   },
-  emptyText: {
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#161311',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    gap: 8,
+  },
+  emptyTitle: {
+    color: '#E2D8C3',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  emptySubtitle: {
     color: '#80776C',
+    fontSize: 13,
     textAlign: 'center',
-    paddingVertical: 32,
-    fontSize: 14,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  slotsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  slotCard: {
-    flex: 1,
-    minWidth: 210,
-    backgroundColor: '#110F0D',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 16,
-  },
-  slotHeader: {
-    marginBottom: 12,
-  },
-  slotLevel: {
-    color: '#C5A059',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  slotCount: {
-    color: '#BAAFA0',
-    fontSize: 11,
-    marginTop: 2,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  slotTokensRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  slotToken: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    borderWidth: 1,
-    borderColor: '#8C704F',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  slotTokenUsed: {
-    backgroundColor: '#1A1714',
-    borderColor: '#3D342C',
-  },
-  abilitiesList: {
-    gap: 12,
-  },
-  abilityCard: {
-    backgroundColor: '#110F0D',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 18,
-    gap: 12,
-  },
-  abilityHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  abilityName: {
-    color: '#E2D8C3',
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  abilityDesc: {
-    color: '#BAAFA0',
-    fontSize: 13,
-    marginTop: 4,
-    lineHeight: 22,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  resetBadge: {
-    backgroundColor: 'rgba(107, 74, 112, 0.2)',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#6B4A70',
-  },
-  resetLongBadge: {
-    backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    borderColor: '#8C704F',
-  },
-  resetBadgeText: {
-    color: '#E2D8C3',
-    fontSize: 10,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  abilityFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#3D342C',
-    paddingTop: 12,
-  },
-  abilityUses: {
-    color: '#BAAFA0',
-    fontSize: 13,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  useBtn: {
-    backgroundColor: '#24201C',
-    borderWidth: 1,
-    borderColor: '#8C704F',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-  },
-  useBtnDisabled: {
-    backgroundColor: '#1A1714',
-    borderColor: '#3D342C',
-  },
-  useBtnText: {
-    color: '#E2D8C3',
-    fontSize: 12,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  skillsBanner: {
-    backgroundColor: '#110F0D',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-  },
-  skillsBannerTitle: {
-    color: '#C5A059',
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  skillsBannerSub: {
-    color: '#BAAFA0',
-    fontSize: 12,
-    lineHeight: 18,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  skillsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  skillItem: {
-    width: Platform.OS === 'web' ? '31%' : '47%',
-    minWidth: 130,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#110F0D',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-  },
-  skillLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  skillName: {
-    color: '#E2D8C3',
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  skillAttr: {
-    color: '#80776C',
-    fontSize: 11,
-  },
-  skillTotal: {
-    color: '#BAAFA0',
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-  },
-  conditionsBox: {
-    backgroundColor: 'rgba(184, 40, 40, 0.1)',
-    borderWidth: 1,
-    borderColor: '#B82828',
-    borderRadius: 8,
-    padding: 18,
-  },
-  conditionsHeader: {
-    color: '#B82828',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 10,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  conditionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  conditionChip: {
-    backgroundColor: '#110F0D',
-    borderWidth: 1,
-    borderColor: '#B82828',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 6,
-  },
-  conditionName: {
-    color: '#B82828',
-    fontWeight: '700',
-    fontSize: 13,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  conditionDesc: {
-    color: '#E2D8C3',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  noCharBox: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  noCharText: {
-    color: '#BAAFA0',
-    fontSize: 16,
-    marginBottom: 20,
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  createBtnLarge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#C5A059',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
-  },
-  createBtnLargeText: {
-    color: '#110F0D',
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  inventoryContainer: {
-    gap: 24,
-  },
-  overloadBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: 'rgba(255, 69, 69, 0.15)',
-    borderWidth: 1,
-    borderColor: '#FF4545',
-    padding: 16,
-    borderRadius: 8,
-  },
-  overloadBannerTitle: {
-    color: '#FF4545',
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  overloadBannerDesc: {
-    color: '#E2D8C3',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  weightSection: {
-    backgroundColor: '#161311',
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#2D251E',
-    gap: 10,
-  },
-  weightTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  weightTitle: {
-    color: '#BAAFA0',
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  weightVal: {
-    color: '#E6C280',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  weightBg: {
-    height: 10,
-    backgroundColor: '#0A0908',
-    borderRadius: 5,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#2D251E',
-  },
-  weightFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
-  coinsSection: {
-    gap: 12,
-  },
-  sectionHeading: {
-    color: '#E2D8C3',
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2D251E',
-    paddingBottom: 8,
-  },
-  coinsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  coinCard: {
-    flex: 1,
-    minWidth: 200,
-    backgroundColor: '#161311',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    gap: 10,
-  },
-  coinLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  coinControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 6,
-  },
-  coinBtn: {
-    backgroundColor: '#26201B',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-  },
-  coinBtnText: {
-    color: '#E2D8C3',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  coinValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    minWidth: 40,
-    textAlign: 'center',
-  },
-  itemsListSection: {
-    gap: 12,
-  },
-  emptyItems: {
-    backgroundColor: '#161311',
-    padding: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2D251E',
-  },
-  emptyItemsText: {
-    color: '#80776C',
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  itemsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  itemCard: {
-    flexGrow: 1,
-    flexBasis: 280,
-    minWidth: 260,
-    backgroundColor: '#161311',
-    borderWidth: 1,
-    borderColor: '#2D251E',
-    borderRadius: 8,
-    padding: 14,
-    gap: 8,
-    justifyContent: 'space-between',
-  },
-  weaponCard: {
-    borderColor: '#5C4A32',
-    backgroundColor: '#1A1612',
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  itemTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-    flex: 1,
-  },
-  itemName: {
-    color: '#E2D8C3',
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  weaponBadge: {
-    backgroundColor: '#3D3020',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#8C704F',
-  },
-  weaponBadgeText: {
-    color: '#E6C280',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  delItemBtn: {
-    padding: 4,
-  },
-  itemDesc: {
-    color: '#BAAFA0',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  itemFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#26201B',
-    paddingTop: 8,
-    marginTop: 4,
-  },
-  itemMeta: {
-    color: '#80776C',
-    fontSize: 12,
-  },
-  addItemBox: {
-    backgroundColor: '#161311',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    borderRadius: 8,
-    padding: 16,
-    gap: 14,
-  },
-  addItemHeading: {
-    color: '#C5A059',
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  addItemForm: {
-    gap: 12,
-  },
-  addInputRow: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  addInput: {
-    backgroundColor: '#0A0908',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    borderRadius: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    color: '#E2D8C3',
-    fontSize: 14,
-    minWidth: 120,
-  },
-  weaponToggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#26201B',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    paddingHorizontal: 14,
-    borderRadius: 6,
-  },
-  weaponToggleBtnActive: {
-    backgroundColor: '#E6C280',
-    borderColor: '#C5A059',
-  },
-  weaponToggleText: {
-    color: '#BAAFA0',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  addItemSubmitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#C5A059',
-    paddingVertical: 12,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  addItemSubmitText: {
-    color: '#110F0D',
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
-  },
-  spellStatsBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(22, 19, 17, 0.85)',
-    borderWidth: 1,
-    borderColor: '#C5A059',
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    overflow: 'hidden',
-  },
-  spellStatItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  spellStatLabel: {
-    color: '#80776C',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  spellStatValue: {
-    color: '#E2D8C3',
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-  },
-  spellStatDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: '#3D342C',
-  },
-  spellAccordionCard: {
-    backgroundColor: '#161311',
-    borderWidth: 1,
-    borderColor: '#2D251E',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  spellAccordionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1C1815',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2D251E',
-  },
-  levelBadgeIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    borderWidth: 1,
-    borderColor: '#C5A059',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spellAccordionTitle: {
-    color: '#E6C280',
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-  },
-  spellAccordionSub: {
-    color: '#80776C',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  accordionSlotsBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(10, 9, 8, 0.6)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-  },
-  accordionSlotsText: {
-    color: '#E2D8C3',
-    fontSize: 12,
-  },
-  accordionTokensRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  accordionTokenBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 4,
-    backgroundColor: 'rgba(230, 194, 128, 0.15)',
-    borderWidth: 1,
-    borderColor: '#C5A059',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  accordionTokenUsed: {
-    backgroundColor: 'rgba(20, 18, 16, 0.8)',
-    borderColor: '#3D342C',
-  },
-  accordionChevronBox: {
-    paddingLeft: 6,
-  },
-  spellAccordionBody: {
-    padding: 14,
-    backgroundColor: '#110F0D',
-  },
-  emptyLevelBox: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyLevelText: {
-    color: '#80776C',
-    fontSize: 13,
-    fontStyle: 'italic',
-  },
-  spellItemCard: {
-    backgroundColor: 'rgba(26, 22, 19, 0.7)',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    borderRadius: 8,
-    padding: 12,
-    gap: 8,
-  },
-  spellItemUnprepared: {
-    opacity: 0.55,
-    borderColor: '#2D251E',
-    backgroundColor: 'rgba(15, 13, 11, 0.4)',
-  },
-  spellItemTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  prepBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  prepBtnActive: {
-    backgroundColor: '#C5A059',
-    borderColor: '#E6C280',
-  },
-  prepBtnInactive: {
-    backgroundColor: 'transparent',
-    borderColor: '#524B43',
-  },
-  spellItemName: {
-    color: '#E2D8C3',
-    fontSize: 15,
-    fontWeight: '700',
-    flex: 1,
-  },
-  spellActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  castSpellBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#C5A059',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 5,
-  },
-  castSpellBtnText: {
-    color: '#110F0D',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  delSpellBtn: {
-    padding: 6,
-  },
-  spellBadgesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  spellBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(10, 9, 8, 0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#2D251E',
-  },
-  spellBadgeText: {
-    color: '#BAAFA0',
-    fontSize: 11,
-  },
-  spellItemDesc: {
-    color: '#D1C7B7',
-    fontSize: 13,
-    lineHeight: 18,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(61, 52, 44, 0.4)',
-    paddingTop: 8,
-    marginTop: 2,
-  },
-  addSpellInlineForm: {
-    backgroundColor: '#191613',
-    padding: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#C5A059',
-    marginTop: 12,
-    gap: 10,
-  },
-  addSpellFormHeading: {
-    color: '#C5A059',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  cancelFormBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#524B43',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelFormBtnText: {
-    color: '#BAAFA0',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  openAddSpellBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(197, 160, 89, 0.1)',
-    borderWidth: 1,
-    borderColor: '#C5A059',
-    borderStyle: 'dashed',
-    paddingVertical: 10,
-    borderRadius: 6,
-    marginTop: 12,
-  },
-  openAddSpellBtnText: {
-    color: '#C5A059',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  manageSlotsToggleBtn: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(26, 22, 19, 0.5)',
-    borderWidth: 1,
-    borderColor: '#2D251E',
-    borderRadius: 6,
-  },
-  manageSlotsToggleText: {
-    color: '#80776C',
-    fontSize: 12,
-    fontWeight: '600',
+    maxWidth: 380,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(17, 15, 13, 0.88)',
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
+    zIndex: 9999,
   },
   modalContent: {
-    backgroundColor: '#1A1714',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    borderRadius: 8,
     width: '100%',
-    maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.8,
-    shadowRadius: 25,
-    elevation: 20,
-    overflow: 'hidden',
+    backgroundColor: '#181512',
+    borderWidth: 1.5,
+    borderColor: '#3D342C',
+    borderRadius: 12,
+    padding: 18,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#3D342C',
-    backgroundColor: '#110F0D',
+    borderBottomColor: '#2D251E',
+    paddingBottom: 10,
+    marginBottom: 12,
   },
   modalTitle: {
-    color: '#C5A059',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 1,
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
+    color: '#E2D8C3',
+    fontSize: 15,
+    fontWeight: 'bold',
   },
   closeBtn: {
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: '#24201C',
+    padding: 4,
   },
   closeBtnText: {
-    color: '#BAAFA0',
-    fontSize: 14,
-    fontWeight: '700',
+    color: '#80776C',
+    fontSize: 16,
   },
   modalBody: {
-    padding: 24,
-    maxHeight: Platform.OS === 'web' ? 550 : 400,
+    maxHeight: 380,
   },
   modalSectionDesc: {
     color: '#BAAFA0',
-    fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  backupActionsBox: {
-    gap: 12,
-    marginBottom: 10,
-  },
-  backupBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    backgroundColor: '#24201C',
-    borderWidth: 1,
-    borderColor: '#C5A059',
-  },
-  backupBtnText: {
-    color: '#C5A059',
-    fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
+    marginBottom: 12,
+    lineHeight: 16,
   },
   modalLabel: {
-    color: '#E6C280',
-    fontSize: 13,
+    color: '#BAAFA0',
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   modalInput: {
-    backgroundColor: '#110F0D',
+    backgroundColor: '#14120F',
     borderWidth: 1,
     borderColor: '#3D342C',
     borderRadius: 6,
-    padding: 12,
-    color: '#F4ECE1',
+    color: '#E2D8C3',
+    padding: 10,
     fontSize: 13,
+  },
+  speedPresetChip: {
+    backgroundColor: '#1E1A16',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  speedPresetChipActive: {
+    borderColor: '#C5A059',
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+  },
+  speedPresetText: {
+    color: '#BAAFA0',
+    fontSize: 11,
+  },
+  speedPresetTextActive: {
+    color: '#E6C280',
+    fontWeight: 'bold',
   },
   modalFooter: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
-    padding: 20,
+    gap: 8,
+    marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#3D342C',
-    backgroundColor: '#110F0D',
+    borderTopColor: '#2D251E',
+    paddingTop: 12,
   },
   cancelBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: '#24201C',
-    borderWidth: 1,
-    borderColor: '#3D342C',
+    backgroundColor: '#1E1A16',
   },
   cancelBtnText: {
     color: '#BAAFA0',
-    fontWeight: '600',
+    fontSize: 12.5,
+    fontWeight: 'bold',
   },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 6,
     backgroundColor: '#C5A059',
   },
   saveBtnText: {
     color: '#110F0D',
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: 'bold',
   },
-  loreContainer: {
-    backgroundColor: '#161311',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 16,
-    gap: 12,
+  backupActionsBox: {
+    gap: 8,
+    marginVertical: 8,
   },
-  loreHeaderRow: {
+  backupBtn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  loreHeaderTitle: {
-    color: '#E2D8C3',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  loreSaveBtn: {
-    backgroundColor: '#2A241F',
-    borderWidth: 1,
-    borderColor: '#524B43',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  loreSaveBtnText: {
-    color: '#C5A059',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  loreDesc: {
-    color: '#80776C',
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  loreInput: {
-    backgroundColor: '#110F0D',
-    color: '#D1C7B7',
-    fontSize: 15,
-    lineHeight: 24,
-    padding: 16,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#2D251E',
-    minHeight: 250,
-  },
-  miniAdjustBtn: {
-    padding: 4,
-    backgroundColor: '#3D342C',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#5C4A3D',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  speedPresetChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    backgroundColor: '#110F0D',
+    gap: 8,
+    backgroundColor: '#1E1A16',
     borderWidth: 1,
     borderColor: '#3D342C',
+    padding: 12,
+    borderRadius: 8,
   },
-  speedPresetChipActive: {
-    backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    borderColor: '#C5A059',
-  },
-  speedPresetText: {
-    color: '#BAAFA0',
-    fontSize: 12,
+  backupBtnText: {
+    color: '#E2D8C3',
+    fontSize: 12.5,
     fontWeight: '600',
   },
-  speedPresetTextActive: {
-    color: '#E6C280',
-    fontWeight: '700',
-  },
 });
-
-const markdownStyles = {
-  body: { color: '#BAAFA0', fontSize: 13, lineHeight: 20 },
-  strong: { color: '#E2D8C3', fontWeight: 'bold' as const },
-  em: { fontStyle: 'italic' as const, color: '#D4C6AB' },
-};
