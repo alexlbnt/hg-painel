@@ -221,10 +221,17 @@ export const ApiService = {
   },
 
   // CHARACTERS
-  async getCharacters(): Promise<CharacterData[]> {
+  async getCharacters(filter?: { username?: string; role?: Role }): Promise<CharacterData[]> {
     try {
       if (Platform.OS === 'web') {
-        const res = await fetch(`/api/characters?t=${Date.now()}`, {
+        const query = new URLSearchParams();
+        query.set('t', Date.now().toString());
+        if (filter?.role === 'PLAYER' && filter.username) {
+          query.set('role', 'PLAYER');
+          query.set('username', filter.username);
+        }
+
+        const res = await fetch(`/api/characters?${query.toString()}`, {
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -233,8 +240,10 @@ export const ApiService = {
         });
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            saveToStorage(data);
+          if (Array.isArray(data)) {
+            if (!filter || filter.role !== 'PLAYER') {
+              saveToStorage(data);
+            }
             return data;
           }
         }

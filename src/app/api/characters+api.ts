@@ -2,9 +2,22 @@ import { prisma } from '@/lib/prisma';
 import { INITIAL_CHARACTERS } from '@/lib/mockData';
 import { broadcastEvent } from '@/lib/eventBus';
 
-export async function GET() {
+export async function GET(request?: Request) {
   try {
+    let where: any = undefined;
+    if (request && request.url) {
+      try {
+        const url = new URL(request.url);
+        const role = url.searchParams.get('role');
+        const username = url.searchParams.get('username')?.toLowerCase()?.trim();
+        if (role === 'PLAYER' && username) {
+          where = { username };
+        }
+      } catch {}
+    }
+
     const characters = await prisma.character.findMany({
+      where,
       include: {
         spellSlots: { orderBy: { level: 'asc' } },
         spells: { orderBy: { level: 'asc' } },
@@ -162,6 +175,7 @@ export async function POST(request: Request) {
         proficientSkills: String(body.proficientSkills || ''),
         gold: toSafeNumber(body.gold, 15),
         silver: toSafeNumber(body.silver, 10),
+        copper: toSafeNumber(body.copper, 30),
         themeColor: String(body.themeColor || '#C5A059'),
         sorceryPoints: toSafeNumber(body.sorceryPoints, 0),
         maxSorceryPoints: toSafeNumber(body.maxSorceryPoints, 0),
@@ -220,6 +234,14 @@ export async function POST(request: Request) {
                 isArmor: !!i.isArmor,
                 isEquipped: !!i.isEquipped,
                 armorClassBonus: toSafeNumber(i.armorClassBonus, 0),
+              }))
+            : [],
+        },
+        conditions: {
+          create: Array.isArray(body.conditions)
+            ? body.conditions.map((c: any) => ({
+                name: String(c.name || ''),
+                description: String(c.description || ''),
               }))
             : [],
         },

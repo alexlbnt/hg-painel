@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -45,12 +46,14 @@ import { SrdSearchModal } from '@/components/player/SrdSearchModal';
 import {
   Award,
   BookOpen,
+  Crown,
   Download,
   FastForward,
   Package,
   Plus,
   Scroll,
   Shield,
+  Sparkles,
   Sword,
   Upload,
   Zap,
@@ -103,30 +106,62 @@ export default function PlayerModule() {
 
   const lastDataHash = useRef<string>('');
 
+  // Usuários com acesso total à mesa (Mestre e Mecânico)
+  const isElevatedUser = user?.role === 'DM' || user?.role === 'MECHANIC';
+
+  // Fichas visíveis: Mestre e Mecânico visualizam todas; Player Comum apenas as suas
+  const visibleCharacters = useMemo(() => {
+    if (!user) return [];
+    if (isElevatedUser) {
+      return characters;
+    }
+    const loggedUser = (user.username || '').trim().toLowerCase();
+    const loggedName = (user.name || '').trim().toLowerCase();
+    return characters.filter((c) => {
+      const charUser = (c.username || '').trim().toLowerCase();
+      const charPlayerName = (c.playerName || '').trim().toLowerCase();
+      return (charUser && charUser === loggedUser) || (charPlayerName && charPlayerName === loggedName);
+    });
+  }, [characters, user, isElevatedUser]);
+
   // Carregamento de Personagens
-  const loadCharacters = async (silent = false) => {
+  const loadCharacters = useCallback(async (silent = false) => {
     try {
-      const data = await ApiService.getCharacters();
+      const data = await ApiService.getCharacters(
+        user ? { role: user.role, username: user.username } : undefined
+      );
       const currentHash = JSON.stringify(data);
       if (currentHash === lastDataHash.current) return;
       lastDataHash.current = currentHash;
 
       setCharacters(data);
-      if (data.length > 0 && !selectedId) {
-        setSelectedId(data[0].id);
-      }
     } catch (e) {
       console.error('Erro ao carregar personagens:', e);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     loadCharacters();
-  }, []);
+  }, [loadCharacters]);
+
+  // Seleciona automaticamente uma ficha válida permitida para o usuário
+  useEffect(() => {
+    if (visibleCharacters.length > 0) {
+      if (!selectedId || !visibleCharacters.some((c) => c.id === selectedId)) {
+        setSelectedId(visibleCharacters[0].id);
+      }
+    } else {
+      setSelectedId(null);
+    }
+  }, [visibleCharacters, selectedId]);
 
   // Sincronização em tempo real via SSE
   useRealtimeSync((event) => {
     if (
+      event.type === 'CHARACTER_UPDATED' ||
+      event.type === 'CHARACTER_CREATED' ||
+      event.type === 'CHARACTER_DELETED' ||
+      event.type === 'TABLE_REST' ||
       event.type === 'characters' ||
       event.type === 'character' ||
       event.type === 'data_changed'
@@ -136,8 +171,8 @@ export default function PlayerModule() {
   });
 
   const selectedChar = useMemo(
-    () => characters.find((c) => c.id === selectedId) || null,
-    [characters, selectedId]
+    () => visibleCharacters.find((c) => c.id === selectedId) || null,
+    [visibleCharacters, selectedId]
   );
 
   const themeColor = selectedChar?.themeColor || '#C5A059';
@@ -170,17 +205,31 @@ export default function PlayerModule() {
 
   const handleApplyHpDelta = async (delta: number) => {
     if (!selectedChar) return;
-    let newHp = selectedChar.currentHp + delta;
-    if (newHp > selectedChar.maxHp) newHp = selectedChar.maxHp;
-    if (newHp < 0) newHp = 0;
+    let newHp = selectedChar.currentHp;
+    let newTempHp = selectedChar.tempHp;
+
+    if (delta < 0) {
+      const dmg = Math.abs(delta);
+      if (newTempHp >= dmg) {
+        newTempHp -= dmg;
+      } else {
+        const remainingDmg = dmg - newTempHp;
+        newTempHp = 0;
+        newHp = Math.max(0, newHp - remainingDmg);
+      }
+    } else {
+      newHp = Math.min(selectedChar.maxHp, newHp + delta);
+    }
 
     // Atualização otimista
     setCharacters((prev) =>
-      prev.map((c) => (c.id === selectedChar.id ? { ...c, currentHp: newHp } : c))
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, currentHp: newHp, tempHp: newTempHp } : c
+      )
     );
 
     try {
-      await ApiService.updateCharacter(selectedChar.id, { currentHp: newHp });
+      await ApiService.updateCharacter(selectedChar.id, { currentHp: newHp, tempHp: newTempHp });
     } catch (e) {
       console.error(e);
       loadCharacters();
@@ -462,13 +511,23 @@ export default function PlayerModule() {
   };
 
   const handleDelete = async (charId: string) => {
+    if (!isElevatedUser) {
+      const target = characters.find((c) => c.id === charId);
+      const loggedUser = (user?.username || '').trim().toLowerCase();
+      const charUser = (target?.username || '').trim().toLowerCase();
+      if (charUser && charUser !== loggedUser) {
+        if (Platform.OS === 'web') window.alert('Você só tem autorização para excluir suas próprias fichas.');
+        else Alert.alert('Acesso Negado', 'Você só tem autorização para excluir suas próprias fichas.');
+        return;
+      }
+    }
+
     confirmAction(
       'Tem certeza que deseja apagar permanentemente este personagem? Essa ação não pode ser desfeita.',
       async () => {
         await ApiService.deleteCharacter(charId);
         const updated = characters.filter((c) => c.id !== charId);
         setCharacters(updated);
-        setSelectedId(updated.length > 0 ? updated[0].id : null);
       },
       'Excluir Personagem'
     );
@@ -480,7 +539,7 @@ export default function PlayerModule() {
   };
 
   const handleExportAllJson = () => {
-    ExportService.exportAllCharactersToJson(characters);
+    ExportService.exportAllCharactersToJson(visibleCharacters);
   };
 
   const handleSelectJsonFile = () => {
@@ -511,6 +570,11 @@ export default function PlayerModule() {
 
     for (const char of res.characters) {
       const { id, ...dataWithoutId } = char;
+      // Garante que jogador comum só possa importar associando a si mesmo
+      if (!isElevatedUser && user) {
+        dataWithoutId.username = user.username.trim().toLowerCase();
+        dataWithoutId.playerName = user.name || dataWithoutId.playerName;
+      }
       await ApiService.createCharacter(dataWithoutId);
     }
     await loadCharacters();
@@ -518,6 +582,14 @@ export default function PlayerModule() {
     setImportJsonText('');
     if (Platform.OS === 'web') window.alert('Personagens importados com sucesso!');
   };
+
+  if (authLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#110F0D', minHeight: 400 }}>
+        <ActivityIndicator size="large" color="#C5A059" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -533,7 +605,31 @@ export default function PlayerModule() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.selectorScroll}
           >
-            {characters.map((char) => {
+            {/* Tag informativa de permissão especial (Mestre / Mecânico) */}
+            {isElevatedUser && (
+              <View
+                style={[
+                  styles.roleAccessTag,
+                  user?.role === 'DM' ? styles.dmAccessTag : styles.mechanicAccessTag,
+                ]}
+              >
+                {user?.role === 'DM' ? (
+                  <Crown size={14} color="#C5A059" />
+                ) : (
+                  <Sparkles size={14} color="#4E9C8E" />
+                )}
+                <Text
+                  style={[
+                    styles.roleAccessText,
+                    { color: user?.role === 'DM' ? '#C5A059' : '#4E9C8E' },
+                  ]}
+                >
+                  {user?.role === 'DM' ? 'MESTRE • TODAS AS FICHAS' : 'MECÂNICO • TODAS AS FICHAS'}
+                </Text>
+              </View>
+            )}
+
+            {visibleCharacters.map((char) => {
               const isSelected = char.id === selectedId;
               const chipColor = char.themeColor || '#C5A059';
 
@@ -562,6 +658,7 @@ export default function PlayerModule() {
                     </Text>
                     <Text style={styles.chipClass}>
                       {char.class} • Nvl {char.level}
+                      {isElevatedUser && char.playerName ? ` (${char.playerName})` : ''}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -580,19 +677,21 @@ export default function PlayerModule() {
               <Text style={styles.newCharText}>Criar Personagem</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.newCharChip,
-                { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' },
-              ]}
-              onPress={() => setImportModalVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Upload color="#4A8C59" size={16} />
-              <Text style={[styles.newCharText, { color: '#4A8C59' }]}>
-                Importar / Backup
-              </Text>
-            </TouchableOpacity>
+            {isElevatedUser && (
+              <TouchableOpacity
+                style={[
+                  styles.newCharChip,
+                  { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' },
+                ]}
+                onPress={() => setImportModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Upload color="#4A8C59" size={16} />
+                <Text style={[styles.newCharText, { color: '#4A8C59' }]}>
+                  Importar / Backup
+                </Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </View>
 
@@ -833,10 +932,30 @@ export default function PlayerModule() {
           </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>Nenhum personagem selecionado</Text>
-            <Text style={styles.emptySubtitle}>
-              Crie seu primeiro aventureiro ou selecione uma ficha na barra superior para começar.
+            <Shield color="#C5A059" size={48} style={{ marginBottom: 12 }} />
+            <Text style={styles.emptyTitle}>
+              {visibleCharacters.length === 0 && !isElevatedUser
+                ? 'Nenhuma ficha vinculada ao seu usuário'
+                : 'Nenhum personagem selecionado'}
             </Text>
+            <Text style={styles.emptySubtitle}>
+              {visibleCharacters.length === 0 && !isElevatedUser
+                ? `Você está identificado como @${user?.username}. Você não possui fichas de personagem associadas ao seu perfil ainda. Crie a sua ficha agora ou solicite ao Mestre para vincular uma ficha existente a você.`
+                : 'Crie seu primeiro aventureiro ou selecione uma ficha na barra superior para começar.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.createFirstCharBtn}
+              onPress={() => {
+                setEditingChar(null);
+                setModalVisible(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Plus color="#110F0D" size={16} />
+              <Text style={styles.createFirstCharBtnText}>
+                {visibleCharacters.length === 0 && !isElevatedUser ? 'Criar Minha Ficha' : 'Criar Personagem'}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -1111,6 +1230,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 8,
   },
+  roleAccessTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  dmAccessTag: {
+    backgroundColor: 'rgba(197, 160, 89, 0.12)',
+    borderColor: '#C5A059',
+  },
+  mechanicAccessTag: {
+    backgroundColor: 'rgba(78, 156, 142, 0.12)',
+    borderColor: '#4E9C8E',
+  },
+  roleAccessText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
   selectorScroll: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1215,6 +1356,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     maxWidth: 380,
+  },
+  createFirstCharBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 14,
+    backgroundColor: '#C5A059',
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: 8,
+  },
+  createFirstCharBtnText: {
+    color: '#110F0D',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
