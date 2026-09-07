@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TaskCategory, TaskData, TaskStatus } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { useResponsive } from '@/hooks/useResponsive';
 import { confirmAction } from '@/utils/confirm';
 import { Picker } from '@react-native-picker/picker';
 import {
@@ -37,7 +38,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
@@ -172,9 +172,7 @@ export default function TasksScreen() {
   const [resolution, setResolution] = useState('');
 
   const isDM = user?.role === 'DM';
-  const { width } = useWindowDimensions();
-  const isMobile = width < 768;
-  const isTablet = width >= 768 && width < 1024;
+  const { width, isMobile, isTablet } = useResponsive();
 
   const boardScrollRef = useRef<ScrollView>(null);
   const mobileColWidth = Math.max(280, width - 40);

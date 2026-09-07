@@ -71,7 +71,7 @@ export default function PlayerModule() {
     }
   }, [authLoading, user, router]);
 
-  const { isMobile } = useResponsive();
+  const { isMobile, isTablet, isDesktop } = useResponsive();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -594,10 +594,22 @@ export default function PlayerModule() {
   return (
     <ScrollView
       style={{ flex: 1, width: '100%' }}
-      contentContainerStyle={{ paddingBottom: 60 }}
+      contentContainerStyle={[
+        styles.scrollContent,
+        isDesktop && styles.scrollContentDesktop,
+        isTablet && styles.scrollContentTablet,
+        isMobile && styles.scrollContentMobile,
+      ]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          isDesktop && styles.containerDesktop,
+          isTablet && styles.containerTablet,
+          isMobile && styles.containerMobile,
+        ]}
+      >
         {/* CARROSSEL SELETOR DE PERSONAGENS */}
         <View style={styles.selectorBar}>
           <ScrollView
@@ -1218,10 +1230,38 @@ export default function PlayerModule() {
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 60,
+    width: '100%',
+  },
+  scrollContentDesktop: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    alignItems: 'center',
+  },
+  scrollContentTablet: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  scrollContentMobile: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+  },
   container: {
-    flex: 1,
-    padding: 16,
+    width: '100%',
     gap: 16,
+  },
+  containerDesktop: {
+    maxWidth: 1200,
+    marginHorizontal: 'auto',
+    alignSelf: 'center',
+  },
+  containerTablet: {
+    width: '100%',
+  },
+  containerMobile: {
+    width: '100%',
+    gap: 12,
   },
   selectorBar: {
     backgroundColor: '#1E1A16',
