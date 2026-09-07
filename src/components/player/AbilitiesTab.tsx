@@ -8,6 +8,7 @@ import {
   Edit2,
   Filter,
   Flame,
+  Infinity as InfinityIcon,
   Minus,
   Moon,
   Plus,
@@ -278,6 +279,16 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                     </TouchableOpacity>
                   </View>
                 </View>
+
+                {/* Usos Ilimitados (Passiva) */}
+                {!hasUses && (
+                  <View style={styles.pipsContainer}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.pipsLabel}>Usos:</Text>
+                      <InfinityIcon size={16} color={themeColor} strokeWidth={2.5} />
+                    </View>
+                  </View>
+                )}
 
                 {/* Contadores / Pips de Uso Tátil */}
                 {hasUses && (

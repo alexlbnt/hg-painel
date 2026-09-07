@@ -13,6 +13,7 @@ interface EditAbilitySpellModalProps {
 }
 
 export function EditAbilitySpellModal({ visible, type, initialData, onClose, onSave, themeColor = '#C5A059' }: EditAbilitySpellModalProps) {
+  const isEditing = Boolean(initialData?.id);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
@@ -24,6 +25,7 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
 
   // Ability specific
   const [maxUses, setMaxUses] = useState('1');
+  const [isPassive, setIsPassive] = useState(false);
   const [resetType, setResetType] = useState<'SHORT_REST' | 'LONG_REST' | 'NONE'>('SHORT_REST');
   const [actionType, setActionType] = useState('LIVRE');
 
@@ -39,7 +41,9 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
         setRange(initialData.range || '');
         setDuration(initialData.duration || '');
       } else {
-        setMaxUses(String(initialData.maxUses || 1));
+        const initialMaxUses = initialData.maxUses ?? 1;
+        setIsPassive(initialMaxUses === 0);
+        setMaxUses(String(initialMaxUses === 0 ? 1 : initialMaxUses));
         setResetType(initialData.resetType || 'SHORT_REST');
         setActionType(initialData.actionType || 'LIVRE');
       }
@@ -61,11 +65,13 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
       };
       onSave(updated);
     } else {
+      const resolvedMaxUses = isPassive ? 0 : (Number(maxUses) || 1);
       const updated: AbilityData = {
         ...initialData,
         name: name.trim(),
         description: description.trim(),
-        maxUses: Number(maxUses) || 1,
+        maxUses: resolvedMaxUses,
+        currentUses: isPassive ? 0 : Math.min(initialData.currentUses ?? resolvedMaxUses, resolvedMaxUses),
         resetType,
         actionType,
       };
@@ -81,7 +87,7 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
             <View style={styles.titleRow}>
               <Edit3 color={themeColor} size={22} />
               <Text style={styles.title}>
-                Editar {type === 'spell' ? 'Magia' : 'Habilidade'}
+                {isEditing ? 'Editar' : 'Nova'} {type === 'spell' ? 'Magia' : 'Habilidade'}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -137,14 +143,27 @@ export function EditAbilitySpellModal({ visible, type, initialData, onClose, onS
 
             {type === 'ability' && (
               <>
-                <Text style={styles.label}>Usos Máximos</Text>
-                <TextInput
-                  style={styles.input}
-                  value={maxUses}
-                  onChangeText={setMaxUses}
-                  keyboardType="numeric"
-                  placeholderTextColor="#80776C"
-                />
+                <TouchableOpacity
+                  style={styles.passiveToggleRow}
+                  onPress={() => setIsPassive(!isPassive)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, isPassive && { backgroundColor: themeColor, borderColor: themeColor }]} />
+                  <Text style={styles.label2}>Passiva (sem limite de uso)</Text>
+                </TouchableOpacity>
+
+                {!isPassive && (
+                  <>
+                    <Text style={styles.label}>Usos Máximos</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={maxUses}
+                      onChangeText={setMaxUses}
+                      keyboardType="numeric"
+                      placeholderTextColor="#80776C"
+                    />
+                  </>
+                )}
 
                 <Text style={styles.label}>Tipo de Ação</Text>
                 <View style={styles.radioGroup}>
@@ -281,6 +300,25 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     outlineStyle: 'none' as any, // Web fix
+  },
+  passiveToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#3D342C',
+    backgroundColor: '#110F0D',
+  },
+  label2: {
+    color: '#BAAFA0',
+    fontSize: 14,
+    fontWeight: '600',
   },
   radioGroup: {
     flexDirection: 'row',

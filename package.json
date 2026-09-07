@@ -1,7 +1,7 @@
 {
   "name": "hg-painel",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.7.6",
   "dependencies": {
     "@expo/server": "^0.7.5",
     "@expo/ui": "~57.0.7",
