@@ -13,7 +13,25 @@ export async function PATCH(req: Request, context: any) {
     if (!id) {
       return Response.json({ error: 'Missing user ID' }, { status: 400 });
     }
+
+    const existing = await prisma.user.findUnique({ where: { id } });
+    if (!existing) {
+      return Response.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+
     const body = await req.json();
+    const requesterId = req.headers.get('x-user-id') || body.requesterId;
+
+    // Apenas o Mestre pode alterar permissões (role)
+    if (body.role !== undefined) {
+      if (!requesterId) {
+        return Response.json({ error: 'Identificação necessária para alterar permissões' }, { status: 401 });
+      }
+      const requester = await prisma.user.findUnique({ where: { id: requesterId } });
+      if (!requester || requester.role !== 'DM') {
+        return Response.json({ error: 'Apenas o Mestre pode alterar cargos de usuários' }, { status: 403 });
+      }
+    }
 
     const dataToUpdate: any = {};
     if (body.name !== undefined) dataToUpdate.name = body.name.trim();
@@ -53,9 +71,19 @@ export async function DELETE(req: Request, context: any) {
       return Response.json({ error: 'Missing user ID' }, { status: 400 });
     }
 
+    const requesterId = req.headers.get('x-user-id');
+    if (!requesterId) {
+      return Response.json({ error: 'Identificação necessária para excluir usuários' }, { status: 401 });
+    }
+
+    const requester = await prisma.user.findUnique({ where: { id: requesterId } });
+    if (!requester || requester.role !== 'DM') {
+      return Response.json({ error: 'Apenas o Mestre pode excluir usuários' }, { status: 403 });
+    }
+
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
-      return Response.json({ error: 'User not found' }, { status: 404 });
+      return Response.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
 
     await prisma.sessionRsvp.deleteMany({ where: { userId: id } });

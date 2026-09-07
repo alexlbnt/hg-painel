@@ -203,6 +203,18 @@ export default function PlayerModule() {
   // OPERAÇÕES DO PERSONAGEM
   // -------------------------------------------------------------
 
+  const safeUpdateCharacter = useCallback(
+    async (charId: string, updates: Partial<CharacterData>) => {
+      try {
+        await ApiService.updateCharacter(charId, updates);
+      } catch (e) {
+        console.error('Falha ao sincronizar alteração com o servidor:', e);
+        loadCharacters(true);
+      }
+    },
+    [loadCharacters]
+  );
+
   const handleApplyHpDelta = async (delta: number) => {
     if (!selectedChar) return;
     let newHp = selectedChar.currentHp;
@@ -228,12 +240,7 @@ export default function PlayerModule() {
       )
     );
 
-    try {
-      await ApiService.updateCharacter(selectedChar.id, { currentHp: newHp, tempHp: newTempHp });
-    } catch (e) {
-      console.error(e);
-      loadCharacters();
-    }
+    safeUpdateCharacter(selectedChar.id, { currentHp: newHp, tempHp: newTempHp });
   };
 
   const handleToggleDeathSave = async (type: 'success' | 'fail', index: number) => {
@@ -255,7 +262,7 @@ export default function PlayerModule() {
       )
     );
 
-    await ApiService.updateCharacter(selectedChar.id, {
+    safeUpdateCharacter(selectedChar.id, {
       deathSaveSuccesses: newSuccess,
       deathSaveFailures: newFails,
     });
@@ -313,7 +320,7 @@ export default function PlayerModule() {
       prev.map((c) => (c.id === selectedChar.id ? { ...c, items: updatedItems } : c))
     );
 
-    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
+    safeUpdateCharacter(selectedChar.id, { items: updatedItems });
   };
 
   const handleUpdateProficientSkills = async (skillsStr: string) => {
@@ -323,7 +330,7 @@ export default function PlayerModule() {
         c.id === selectedChar.id ? { ...c, proficientSkills: skillsStr } : c
       )
     );
-    await ApiService.updateCharacter(selectedChar.id, { proficientSkills: skillsStr });
+    safeUpdateCharacter(selectedChar.id, { proficientSkills: skillsStr });
   };
 
   const handleToggleSpellSlot = async (level: number, slotIndex: number) => {
@@ -346,7 +353,7 @@ export default function PlayerModule() {
       )
     );
 
-    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    safeUpdateCharacter(selectedChar.id, { spellSlots: updatedSlots });
   };
 
   const handleRestoreSlotsLevel = async (level: number) => {
@@ -361,7 +368,7 @@ export default function PlayerModule() {
       )
     );
 
-    await ApiService.updateCharacter(selectedChar.id, { spellSlots: updatedSlots });
+    safeUpdateCharacter(selectedChar.id, { spellSlots: updatedSlots });
   };
 
   const handleToggleSpellPrepared = async (spellId: string) => {
@@ -376,7 +383,7 @@ export default function PlayerModule() {
       )
     );
 
-    await ApiService.updateCharacter(selectedChar.id, { spells: updatedSpells });
+    safeUpdateCharacter(selectedChar.id, { spells: updatedSpells });
   };
 
   const handleSetConcentration = (spellName: string) => {
@@ -397,7 +404,7 @@ export default function PlayerModule() {
       )
     );
 
-    await ApiService.updateCharacter(selectedChar.id, {
+    safeUpdateCharacter(selectedChar.id, {
       abilities: updatedAbilities,
     });
   };
@@ -414,7 +421,7 @@ export default function PlayerModule() {
       )
     );
 
-    await ApiService.updateCharacter(selectedChar.id, {
+    safeUpdateCharacter(selectedChar.id, {
       abilities: updatedAbilities,
     });
   };
@@ -424,7 +431,7 @@ export default function PlayerModule() {
     setCharacters((prev) =>
       prev.map((c) => (c.id === selectedChar.id ? { ...c, kiPoints: val } : c))
     );
-    await ApiService.updateCharacter(selectedChar.id, { kiPoints: val });
+    safeUpdateCharacter(selectedChar.id, { kiPoints: val });
   };
 
   const handleUpdateSorceryPoints = async (val: number) => {
@@ -434,7 +441,7 @@ export default function PlayerModule() {
         c.id === selectedChar.id ? { ...c, sorceryPoints: val } : c
       )
     );
-    await ApiService.updateCharacter(selectedChar.id, { sorceryPoints: val });
+    safeUpdateCharacter(selectedChar.id, { sorceryPoints: val });
   };
 
   const handleUpdateCoins = async (gold: number, silver: number, copper: number) => {
@@ -444,7 +451,7 @@ export default function PlayerModule() {
         c.id === selectedChar.id ? { ...c, gold, silver, copper } : c
       )
     );
-    await ApiService.updateCharacter(selectedChar.id, { gold, silver, copper });
+    safeUpdateCharacter(selectedChar.id, { gold, silver, copper });
   };
 
   const handleSaveLore = async (newLore: string) => {
@@ -452,7 +459,7 @@ export default function PlayerModule() {
     setCharacters((prev) =>
       prev.map((c) => (c.id === selectedChar.id ? { ...c, lore: newLore } : c))
     );
-    await ApiService.updateCharacter(selectedChar.id, { lore: newLore });
+    safeUpdateCharacter(selectedChar.id, { lore: newLore });
   };
 
   const handleSaveEditedEntity = async (updatedData: any) => {
@@ -466,7 +473,7 @@ export default function PlayerModule() {
           c.id === selectedChar.id ? { ...c, spells: updatedSpells } : c
         )
       );
-      await ApiService.updateCharacter(selectedChar.id, { spells: updatedSpells });
+      safeUpdateCharacter(selectedChar.id, { spells: updatedSpells });
     } else {
       const updatedAbilities = (selectedChar.abilities || []).map((a) =>
         a.id === updatedData.id ? { ...a, ...updatedData } : a
@@ -476,7 +483,7 @@ export default function PlayerModule() {
           c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c
         )
       );
-      await ApiService.updateCharacter(selectedChar.id, {
+      safeUpdateCharacter(selectedChar.id, {
         abilities: updatedAbilities,
       });
     }
@@ -494,7 +501,7 @@ export default function PlayerModule() {
         c.id === selectedChar.id ? { ...c, items: updatedItems } : c
       )
     );
-    await ApiService.updateCharacter(selectedChar.id, { items: updatedItems });
+    safeUpdateCharacter(selectedChar.id, { items: updatedItems });
     setEditItemModalVisible(false);
     setItemToEdit(null);
   };
@@ -506,7 +513,7 @@ export default function PlayerModule() {
         c.id === selectedChar.id ? { ...c, speed: quickSpeed } : c
       )
     );
-    await ApiService.updateCharacter(selectedChar.id, { speed: quickSpeed });
+    safeUpdateCharacter(selectedChar.id, { speed: quickSpeed });
     setSpeedModalVisible(false);
   };
 
@@ -847,7 +854,7 @@ export default function PlayerModule() {
                         c.id === selectedChar.id ? { ...c, spells: updated } : c
                       )
                     );
-                    await ApiService.updateCharacter(selectedChar.id, { spells: updated });
+                    safeUpdateCharacter(selectedChar.id, { spells: updated });
                   }}
                   themeColor={themeColor}
                   isMobile={isMobile}
@@ -878,7 +885,7 @@ export default function PlayerModule() {
                         c.id === selectedChar.id ? { ...c, abilities: updated } : c
                       )
                     );
-                    await ApiService.updateCharacter(selectedChar.id, {
+                    safeUpdateCharacter(selectedChar.id, {
                       abilities: updated,
                     });
                   }}
@@ -925,7 +932,7 @@ export default function PlayerModule() {
                         c.id === selectedChar.id ? { ...c, items: updated } : c
                       )
                     );
-                    await ApiService.updateCharacter(selectedChar.id, { items: updated });
+                    safeUpdateCharacter(selectedChar.id, { items: updated });
                   }}
                   themeColor={themeColor}
                   isMobile={isMobile}
@@ -978,15 +985,20 @@ export default function PlayerModule() {
             onClose={() => setModalVisible(false)}
             initialData={editingChar}
             onSave={async (data) => {
-              if (editingChar) {
-                const updated = await ApiService.updateCharacter(editingChar.id, data);
-                setCharacters((prev) =>
-                  prev.map((c) => (c.id === editingChar.id ? updated : c))
-                );
-              } else {
-                const created = await ApiService.createCharacter(data);
-                setCharacters((prev) => [...prev, created]);
-                setSelectedId(created.id);
+              try {
+                if (editingChar) {
+                  const updated = await ApiService.updateCharacter(editingChar.id, data);
+                  setCharacters((prev) =>
+                    prev.map((c) => (c.id === editingChar.id ? updated : c))
+                  );
+                } else {
+                  const created = await ApiService.createCharacter(data);
+                  setCharacters((prev) => [...prev, created]);
+                  setSelectedId(created.id);
+                }
+              } catch (e) {
+                console.error('Erro ao salvar personagem:', e);
+                if (Platform.OS === 'web') window.alert('Erro ao salvar personagem. Tente novamente.');
               }
               setModalVisible(false);
               loadCharacters();
@@ -1048,7 +1060,7 @@ export default function PlayerModule() {
                     c.id === selectedChar.id ? { ...c, spells: updatedSpells } : c
                   )
                 );
-                await ApiService.updateCharacter(selectedChar.id, { spells: updatedSpells });
+                safeUpdateCharacter(selectedChar.id, { spells: updatedSpells });
               }
               setSrdModalVisible(false);
             }}

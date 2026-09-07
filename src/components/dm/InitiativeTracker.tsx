@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import { Sword, Plus, Trash2, Copy, SkipForward, SkipBack, RotateCcw, Users } from 'lucide-react-native';
 import { confirmAction } from '@/utils/confirm';

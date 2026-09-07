@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import { formatMod, getMod, getProfBonus, SKILLS_LIST } from '@/utils/dnd5e';
 import { Award, Edit3, Sparkles, Star } from 'lucide-react-native';
@@ -54,6 +54,95 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({
     onUpdateProficientSkills(nextSkills.join(','));
   };
 
+  // Divisão equilibrada em duas colunas de 9 perícias cada (A-I e I-S)
+  const midPoint = Math.ceil(SKILLS_LIST.length / 2);
+  const leftColumnSkills = SKILLS_LIST.slice(0, midPoint);
+  const rightColumnSkills = SKILLS_LIST.slice(midPoint);
+
+  const renderSkillItem = (skill: (typeof SKILLS_LIST)[0]) => {
+    const score = (char as any)[skill.attr] || 10;
+    const attrMod = getMod(score);
+    const status = getSkillStatus(skill.name);
+
+    const bonus =
+      status === 'exp'
+        ? attrMod + prof * 2
+        : status === 'prof'
+        ? attrMod + prof
+        : attrMod;
+
+    return (
+      <TouchableOpacity
+        key={skill.name}
+        style={[
+          styles.skillRow,
+          status === 'prof' && {
+            borderColor: `${themeColor}66`,
+            backgroundColor: `${themeColor}0D`,
+          },
+          status === 'exp' && {
+            borderColor: '#E5A93C',
+            backgroundColor: 'rgba(229, 169, 60, 0.12)',
+          },
+          isMobile && styles.skillRowMobile,
+          Platform.OS === 'web' && isEditMode && ({ cursor: 'pointer' } as any),
+        ]}
+        onPress={() => isEditMode && handleCycleSkill(skill.name)}
+        disabled={!isEditMode}
+        activeOpacity={isEditMode ? 0.7 : 1}
+      >
+        {/* Esquerda: Marcador, Nome e Atributo */}
+        <View style={styles.skillLeft}>
+          {status === 'exp' ? (
+            <Star size={isMobile ? 11 : 13} color="#E5A93C" fill="#E5A93C" />
+          ) : (
+            <View
+              style={[
+                styles.statusDot,
+                isMobile && styles.statusDotMobile,
+                status === 'prof' && { backgroundColor: themeColor, borderColor: themeColor },
+              ]}
+            />
+          )}
+
+          <Text
+            style={[
+              styles.skillName,
+              status !== 'none' && { color: '#FFF', fontWeight: '700' },
+              isMobile && styles.skillNameMobile,
+            ]}
+            numberOfLines={1}
+          >
+            {skill.name}
+          </Text>
+
+          <Text style={[styles.attrLabel, isMobile && styles.attrLabelMobile]}>
+            ({skill.label})
+          </Text>
+        </View>
+
+        {/* Direita: Modificador Total e Tags */}
+        <View style={styles.skillRight}>
+          {status === 'exp' && !isMobile && (
+            <Text style={styles.expTag}>EXPERTISE</Text>
+          )}
+          {status === 'prof' && !isMobile && (
+            <Text style={[styles.profTag, { color: themeColor }]}>PROF</Text>
+          )}
+          <Text
+            style={[
+              styles.skillBonus,
+              status !== 'none' && { color: '#E6C280', fontWeight: 'bold' },
+              isMobile && styles.skillBonusMobile,
+            ]}
+          >
+            {formatMod(bonus)}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Barra de Topo com Alternância de Modo */}
@@ -97,85 +186,14 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({
         </View>
       )}
 
-      {/* Grid de Perícias */}
-      <View style={styles.skillsGrid}>
-        {SKILLS_LIST.map((skill) => {
-          const score = (char as any)[skill.attr] || 10;
-          const attrMod = getMod(score);
-          const status = getSkillStatus(skill.name);
-
-          const bonus =
-            status === 'exp'
-              ? attrMod + prof * 2
-              : status === 'prof'
-              ? attrMod + prof
-              : attrMod;
-
-          return (
-            <TouchableOpacity
-              key={skill.name}
-              style={[
-                styles.skillRow,
-                status === 'prof' && {
-                  borderColor: `${themeColor}66`,
-                  backgroundColor: `${themeColor}0D`,
-                },
-                status === 'exp' && {
-                  borderColor: '#E5A93C',
-                  backgroundColor: 'rgba(229, 169, 60, 0.12)',
-                },
-                isMobile && { paddingHorizontal: 8, paddingVertical: 8 },
-              ]}
-              onPress={() => isEditMode && handleCycleSkill(skill.name)}
-              disabled={!isEditMode}
-              activeOpacity={isEditMode ? 0.7 : 1}
-            >
-              {/* Esquerda: Marcador, Nome e Atributo */}
-              <View style={styles.skillLeft}>
-                {status === 'exp' ? (
-                  <Star size={13} color="#E5A93C" fill="#E5A93C" />
-                ) : (
-                  <View
-                    style={[
-                      styles.statusDot,
-                      status === 'prof' && { backgroundColor: themeColor, borderColor: themeColor },
-                    ]}
-                  />
-                )}
-
-                <Text
-                  style={[
-                    styles.skillName,
-                    status !== 'none' && { color: '#FFF', fontWeight: '700' },
-                    isMobile && { fontSize: 11.5 },
-                  ]}
-                >
-                  {skill.name}
-                </Text>
-
-                <Text style={styles.attrLabel}>({skill.label})</Text>
-              </View>
-
-              {/* Direita: Modificador Total */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                {status === 'exp' && !isMobile && (
-                  <Text style={styles.expTag}>EXPERTISE</Text>
-                )}
-                {status === 'prof' && !isMobile && (
-                  <Text style={[styles.profTag, { color: themeColor }]}>PROF</Text>
-                )}
-                <Text
-                  style={[
-                    styles.skillBonus,
-                    status !== 'none' && { color: '#E6C280', fontWeight: 'bold' },
-                  ]}
-                >
-                  {formatMod(bonus)}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Grid de Perícias em 2 Colunas */}
+      <View style={[styles.skillsColumnsContainer, isMobile && styles.skillsColumnsContainerMobile]}>
+        <View style={styles.skillColumn}>
+          {leftColumnSkills.map(renderSkillItem)}
+        </View>
+        <View style={styles.skillColumn}>
+          {rightColumnSkills.map(renderSkillItem)}
+        </View>
       </View>
     </View>
   );
@@ -225,7 +243,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     flex: 1,
   },
-  skillsGrid: {
+  skillsColumnsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  skillsColumnsContainerMobile: {
+    gap: 8,
+  },
+  skillColumn: {
+    flex: 1,
     gap: 6,
   },
   skillRow: {
@@ -238,12 +264,19 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
+    minHeight: 38,
+  },
+  skillRowMobile: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    minHeight: 34,
   },
   skillLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
     flex: 1,
+    overflow: 'hidden',
   },
   statusDot: {
     width: 10,
@@ -252,13 +285,32 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#544A3F',
   },
+  statusDotMobile: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.2,
+  },
   skillName: {
     color: '#C4B9A7',
     fontSize: 12.5,
+    flexShrink: 1,
+  },
+  skillNameMobile: {
+    fontSize: 11,
   },
   attrLabel: {
     color: '#73695D',
     fontSize: 10.5,
+  },
+  attrLabelMobile: {
+    fontSize: 9.5,
+  },
+  skillRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
   },
   skillBonus: {
     color: '#D4C9BA',
@@ -266,6 +318,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     minWidth: 26,
     textAlign: 'right',
+  },
+  skillBonusMobile: {
+    fontSize: 12,
+    minWidth: 22,
   },
   profTag: {
     fontSize: 9.5,

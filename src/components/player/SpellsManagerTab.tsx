@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { CharacterData, SpellItemData, SpellSlotData } from '@/lib/mockData';
+import { CharacterData, SpellItemData } from '@/lib/mockData';
 import { getMod, getProfBonus } from '@/utils/dnd5e';
 import { parseClassesAndCalculateSlots } from '@/utils/spellProgression';
 import {
-  BookOpen,
   ChevronDown,
   ChevronUp,
   Crosshair,

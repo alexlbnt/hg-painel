@@ -1,13 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { CharacterData, ItemData, SpellItemData } from '@/lib/mockData';
-import { calculateWeaponAttack, getMod, getProfBonus } from '@/utils/dnd5e';
+import { CharacterData } from '@/lib/mockData';
 import {
-  Crosshair,
-  Shield,
-  Sparkles,
+  calculateWeaponAttack,
+  getMod,
+  getProfBonus,
+  isCombatOffensiveSpell,
+  getSpellDamageFormula,
+} from '@/utils/dnd5e';
+import {
   Sword,
-  Zap,
   Clock,
   Flame,
   CheckCircle,
@@ -33,7 +35,6 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = ({
 
   // Armas do inventário
   const weapons = (char.items || []).filter((i) => i.isWeapon);
-  const equippedWeapons = weapons.filter((w) => w.isEquipped);
 
   // Truques e magias de ataque
   const spellcastingAttr =
@@ -50,16 +51,8 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = ({
   const spellAttackBonus = spellMod + prof;
   const spellSaveDc = 8 + prof + spellMod;
 
-  const combatSpells = (char.spells || []).filter(
-    (s) =>
-      s.level === 0 ||
-      s.description?.toLowerCase().includes('dano') ||
-      s.description?.toLowerCase().includes('ataque') ||
-      s.name.toLowerCase().includes('raio') ||
-      s.name.toLowerCase().includes('fogo') ||
-      s.name.toLowerCase().includes('chama') ||
-      s.name.toLowerCase().includes('míssil')
-  );
+  // Filtra estritamente apenas truques e magias de ataque/dano (D&D 5e)
+  const combatSpells = (char.spells || []).filter((s) => isCombatOffensiveSpell(s));
 
   return (
     <View style={styles.container}>
@@ -175,30 +168,60 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = ({
           </View>
 
           <View style={{ gap: 8 }}>
-            {combatSpells.slice(0, 5).map((spell) => (
-              <View key={spell.id} style={styles.spellCombatCard}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.spellCombatName}>{spell.name}</Text>
-                    <View style={styles.spellLevelBadge}>
-                      <Text style={styles.spellLevelText}>
-                        {spell.level === 0 ? 'TRUQUE' : `NVL ${spell.level}`}
+            {combatSpells.map((spell) => {
+              const dmgFormula = getSpellDamageFormula(spell);
+
+              return (
+                <View key={spell.id} style={styles.spellCombatCard}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.spellCombatName}>{spell.name}</Text>
+                      <View style={styles.spellLevelBadge}>
+                        <Text style={styles.spellLevelText}>
+                          {spell.level === 0 ? 'TRUQUE' : `NVL ${spell.level}`}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.spellDetailsText} numberOfLines={2}>
+                      {spell.range ? `Alcance: ${spell.range} • ` : ''}
+                      {spell.castingTime ? `Tempo: ${spell.castingTime} • ` : ''}
+                      {spell.duration || 'Instantânea'}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      isMobile
+                        ? { flexDirection: 'column', alignItems: 'flex-end', gap: 4 }
+                        : { flexDirection: 'row', alignItems: 'center', gap: 6 },
+                    ]}
+                  >
+                    {dmgFormula && (
+                      <View
+                        style={[
+                          styles.spellRollPill,
+                          {
+                            backgroundColor: 'rgba(201, 91, 91, 0.12)',
+                            borderColor: 'rgba(201, 91, 91, 0.3)',
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.spellRollLabel, { color: '#E57373' }]}>DANO</Text>
+                        <Text style={[styles.spellRollVal, { color: '#FFB4B4' }]}>
+                          {dmgFormula}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.spellRollPill}>
+                      <Text style={styles.spellRollLabel}>Ataque / CD</Text>
+                      <Text style={styles.spellRollVal}>
+                        +{spellAttackBonus} / CD {spellSaveDc}
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.spellDetailsText} numberOfLines={2}>
-                    {spell.range ? `Alcance: ${spell.range} • ` : ''}
-                    {spell.castingTime ? `Tempo: ${spell.castingTime} • ` : ''}
-                    {spell.duration || 'Instantânea'}
-                  </Text>
                 </View>
-
-                <View style={styles.spellRollPill}>
-                  <Text style={styles.spellRollLabel}>Ataque / CD</Text>
-                  <Text style={styles.spellRollVal}>+{spellAttackBonus} / CD {spellSaveDc}</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
       )}

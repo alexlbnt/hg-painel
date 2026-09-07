@@ -245,3 +245,267 @@ export function calculateWeaponAttack(
     modUsed: modType,
   };
 }
+
+/**
+ * Nomes de magias e truques utilitários, de cura, suporte, buff e defesa (NÃO ofensivos).
+ */
+const NON_OFFENSIVE_SPELL_NAMES = new Set([
+  // Truques utilitários (Nível 0)
+  'luz', 'light',
+  'prestidigitação', 'prestidigitacao', 'prestidigitation',
+  'taumaturgia', 'thaumaturgy',
+  'mãos mágicas', 'maos magicas', 'mage hand',
+  'orientação', 'orientacao', 'guidance',
+  'ilusão menor', 'ilusao menor', 'minor illusion',
+  'consertar', 'mending',
+  'mensagem', 'message',
+  'amizade', 'friends',
+  'dança das luzes', 'danca das luzes', 'globos de luz', 'dancing lights',
+  'resistência', 'resistencia', 'resistance',
+  'proteção contra lâminas', 'protecao contra laminas', 'blade ward',
+  'golpe certeiro', 'true strike',
+  'moldar terra', 'mold earth',
+  'moldar água', 'moldar agua', 'shape water',
+  'controlar chamas', 'control flames',
+  'rajada de vento', 'gust',
+
+  // Magias de Cura e Suporte
+  'curar ferimentos', 'cure wounds',
+  'palavra curativa', 'healing word',
+  'palavra de cura',
+  'oração de cura', 'oracao de cura', 'prayer of healing',
+  'restauração menor', 'restauracao menor', 'lesser restoration',
+  'restauração maior', 'restauracao maior', 'greater restoration',
+  'curar ferimentos em massa', 'mass cure wounds',
+  'palavra curativa em massa', 'mass healing word',
+  'cura completa', 'heal',
+  'auxílio', 'auxilio', 'aid',
+  'bom fruto', 'goodberry',
+  'revivificar', 'revivify',
+  'reencarnação', 'reincarnate',
+  'regeneração', 'regenerate',
+  'ressurreição', 'resurrection',
+
+  // Magias de Defesa e Buffs
+  'escudo', 'escudo arcano', 'shield',
+  'escudo da fé', 'escudo da fe', 'shield of faith',
+  'armadura arcana', 'mage armor',
+  'bênção', 'bencao', 'bless',
+  'passo nebuloso', 'misty step',
+  'queda suave', 'feather fall',
+  'salto', 'jump',
+  'passos longos', 'longstrider',
+  'santuário', 'santuario', 'sanctuary',
+  'velocidade', 'haste', 'aceleração', 'aceleracao',
+  'invisibilidade', 'invisibility',
+  'invisibilidade maior', 'greater invisibility',
+  'reflexos', 'mirror image',
+  'pele de árvore', 'barkskin',
+  'pele de pedra', 'stoneskin',
+  'vínculo de proteção', 'warding bond',
+  'proteção contra veneno', 'protection from poison',
+  'proteção contra o bem e mal', 'protection from evil and good',
+  'proteção contra energia', 'protection from energy',
+  'falar com animais', 'speak with animals',
+  'falar com mortos', 'speak with dead',
+  'falar com plantas', 'speak with plants',
+
+  // Magias de Exploração, Controle e Informação
+  'detectar magia', 'detect magic',
+  'detectar pensamentos', 'detect thoughts',
+  'detectar o bem e mal', 'detect evil and good',
+  'identificar', 'identify',
+  'compreender idiomas', 'comprehend languages',
+  'encontrar familiar', 'find familiar',
+  'alarme', 'alarm',
+  'montaria mágica', 'montaria magica', 'find steed',
+  'teia', 'web',
+  'imobilizar pessoa', 'hold person',
+  'imobilizar monstro', 'hold monster',
+  'padrão hipnótico', 'padrao hipnotico', 'hypnotic pattern',
+  'sugestão', 'sugestao', 'suggestion',
+  'sugestão em massa', 'mass suggestion',
+  'contra-feitiço', 'contra-feitico', 'contrafeitiço', 'contrafeitico', 'counterspell',
+  'dissipar magia', 'dispel magic',
+  'graxa', 'grease',
+  'comando', 'command',
+  "tasha's hideous laughter", 'riso histérico de tasha', 'riso histerico de tasha', 'hideous laughter',
+  'sono', 'sleep',
+  'escuridão', 'escuridao', 'darkness',
+  'silêncio', 'silencio', 'silence',
+  'névoa obscurecente', 'nevoa obscurecente', 'fog cloud',
+  'levitação', 'levitacao', 'levitate',
+  'voo', 'fly',
+  'respirar na água', 'water breathing',
+  'caminhar na água', 'water walk',
+  'zona da verdade', 'zone of truth',
+  'cabana de leomund', 'tiny hut', 'tiny hut leomond', "leomund's tiny hut",
+  'portal dimensional', 'dimension door',
+]);
+
+/**
+ * Nomes de magias e truques reconhecidamente ofensivos (jogada de ataque ou dano direto).
+ */
+const OFFENSIVE_SPELL_NAMES = new Set([
+  // Truques ofensivos (Nível 0)
+  'raio de fogo', 'fire bolt',
+  'rajada mística', 'rajada mistica', 'eldritch blast',
+  'raio de gelo', 'ray of frost',
+  'toque arrepiante', 'chill touch',
+  'toque chocante', 'shocking grasp',
+  'chama sagrada', 'sacred flame',
+  'tocar os mortos', 'toll the dead',
+  'rajada venenosa', 'poison spray',
+  'espirro ácido', 'espirro acido', 'acid splash',
+  'chicote de espinhos', 'thorn whip',
+  'zombaria viciosa', 'vicious mockery',
+  'fúria primordial', 'furia primordial', 'primal savagery',
+  'rajada de espadas', 'sword burst',
+  'estrondo trovejante', 'thunderclap',
+  'lâmina da chama verde', 'lamina da chama verde', 'green-flame blade',
+  'lâmina estrondosa', 'lamina estrondosa', 'booming blade',
+  'infestação', 'infestacao', 'infestation',
+  'palavra radiante', 'word of radiance',
+  'bordoada', 'shillelagh',
+
+  // Magias com dano direto
+  'mísseis mágicos', 'misseis magicos', 'missil magico', 'magic missile',
+  'bola de fogo', 'fireball',
+  'raio ardente', 'scorching ray',
+  'onda trovejante', 'thunderwave',
+  'mãos flamejantes', 'maos flamejantes', 'burning hands',
+  'raio de bruxa', 'witch bolt',
+  'raio guiado', 'guiding bolt',
+  'infligir ferimentos', 'inflict wounds',
+  'despedaçar', 'despedacar', 'shatter',
+  'dardo do caos', 'chaos bolt',
+  'flecha ácida', 'flecha acida', 'acid arrow', "melf's acid arrow",
+  'tempestade de gelo', 'ice storm',
+  'cone de frio', 'cone of cold',
+  'relâmpago', 'relampago', 'lightning bolt',
+  'coluna de chamas', 'flame strike',
+  'praga', 'blight',
+  'destruição divina', 'destruicao divina', 'divine smite',
+  'favor divino', 'divine favor',
+  'destruição colérica', 'destruicao colerica', 'wrathful smite',
+  'destruição trovejante', 'destruicao trovejante', 'thunderous smite',
+  'destruição estrondosa', 'destruicao estrondosa',
+  'destruição estigiana', 'branding smite',
+  'destruição cega', 'blinding smite',
+  'destruição banidora', 'banishing smite',
+  'destruição cambiante', 'staggering smite',
+  'desintegrar', 'disintegrate',
+  'dedo da morte', 'finger of death',
+  'toque vampírico', 'toque vampirico', 'vampiric touch',
+  'esfera flamejante', 'flaming sphere',
+  'tempestade de meteoros', 'meteor swarm',
+  'tempestade da vingança', 'storm of vengeance',
+  'erupção de terra', 'erupcao de terra', 'erupting earth',
+  'flecha relâmpago', 'lightning arrow',
+  'flecha de fogo', 'flame arrows',
+]);
+
+/**
+ * Avalia se uma magia/truque é de fato ofensivo (combate/ataque) no D&D 5e.
+ * Exclui truques utilitários (Luz, Prestidigitação), magias de cura (Curar Ferimentos),
+ * buffs, defesas e magias de exploração.
+ */
+export function isCombatOffensiveSpell(spell: {
+  name: string;
+  description?: string;
+  level?: number;
+}): boolean {
+  const nameNorm = (spell.name || '').trim().toLowerCase();
+
+  // 1. Verificação na lista explícita de magias NÃO ofensivas
+  for (const nonOff of NON_OFFENSIVE_SPELL_NAMES) {
+    if (
+      nameNorm === nonOff ||
+      nameNorm.startsWith(nonOff + ' ') ||
+      nameNorm.startsWith(nonOff + '(')
+    ) {
+      return false;
+    }
+  }
+
+  // 2. Verificação na lista explícita de magias OFENSIVAS
+  for (const off of OFFENSIVE_SPELL_NAMES) {
+    if (
+      nameNorm === off ||
+      nameNorm.startsWith(off + ' ') ||
+      nameNorm.startsWith(off + '(')
+    ) {
+      return true;
+    }
+  }
+
+  const descNorm = (spell.description || '').toLowerCase();
+
+  // 3. Checagem de palavras-chave de cura/suporte
+  if (
+    nameNorm.includes('curar') ||
+    nameNorm.includes('cura') ||
+    nameNorm.includes('heal') ||
+    descNorm.includes('pontos de vida recuperados') ||
+    descNorm.includes('recupera pontos de vida') ||
+    descNorm.includes('regain hit points') ||
+    descNorm.includes('regains hit points') ||
+    (descNorm.includes('de cura') && !descNorm.includes('de dano'))
+  ) {
+    return false;
+  }
+
+  // 4. Detecção algorítmica de fórmulas de dano / ataque direto
+  const hasDamageDice = /\b\d+d\d+\b/.test(descNorm);
+  const hasDamageKeyword =
+    descNorm.includes('dano') ||
+    descNorm.includes('damage') ||
+    descNorm.includes('ataque mágico') ||
+    descNorm.includes('spell attack') ||
+    descNorm.includes('ataque a distância') ||
+    descNorm.includes('ataque corpo a corpo');
+
+  if (hasDamageDice && hasDamageKeyword) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Tenta extrair a fórmula e o tipo de dano da descrição da magia
+ * (ex: "1d10 ígneo", "2d6 fogo", "8d6 fogo", "2d12 elétrico")
+ */
+export function getSpellDamageFormula(spell: {
+  name: string;
+  description?: string;
+}): string | null {
+  const desc = spell.description || '';
+  if (!desc) return null;
+
+  // 1. Formato "Dano: 2d12 elétrico" ou "Dano: 1d10 de fogo"
+  const labelMatch = desc.match(/(?:dano|damage)\s*:\s*(\d+d\d+(?:\s*[+-]\s*\d+)?)\s*([a-zá-úA-ZÁ-Ú]+)?/i);
+  if (labelMatch) {
+    const dice = labelMatch[1].trim();
+    const type = labelMatch[2] ? labelMatch[2].trim() : '';
+    return type ? `${dice} ${type}` : dice;
+  }
+
+  // 2. Formato "2d6 de dano de fogo" ou "1d8 de dano gélido" ou "8d6 fire damage"
+  const ptMatch = desc.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)\s*(?:de\s+)?dano\s*(?:de\s+)?([a-zá-úA-ZÁ-Ú]+)?/i);
+  if (ptMatch) {
+    const dice = ptMatch[1].trim();
+    const type = ptMatch[2] ? ptMatch[2].trim() : '';
+    return type ? `${dice} ${type}` : dice;
+  }
+
+  const enMatch = desc.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)\s+([a-zA-Z]+)\s+damage/i);
+  if (enMatch) {
+    const dice = enMatch[1].trim();
+    const type = enMatch[2].trim();
+    return `${dice} ${type}`;
+  }
+
+  return null;
+}
+

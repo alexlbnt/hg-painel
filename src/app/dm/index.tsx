@@ -973,11 +973,16 @@ const styles = StyleSheet.create({
     borderColor: '#8C704F',
     width: 220,
     zIndex: 9999,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 10,
+    ...Platform.select({
+      web: { boxShadow: '0 4px 10px rgba(0, 0, 0, 0.8)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 10,
+      },
+    }),
   },
   tooltipText: {
     color: '#BAAFA0',

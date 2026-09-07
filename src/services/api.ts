@@ -178,8 +178,12 @@ export const ApiService = {
           body: JSON.stringify(newTask),
         });
         if (res.ok) return await res.json();
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Falha ao criar task (status ${res.status})`);
       }
-    } catch {}
+    } catch (e) {
+      if (Platform.OS === 'web') throw e;
+    }
     const tasks = loadTasksFromStorage();
     tasks.push(newTask);
     saveTasksToStorage(tasks);
@@ -195,8 +199,12 @@ export const ApiService = {
           body: JSON.stringify(updates),
         });
         if (res.ok) return await res.json();
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Falha ao atualizar task (status ${res.status})`);
       }
-    } catch {}
+    } catch (e) {
+      if (Platform.OS === 'web') throw e;
+    }
     const tasks = loadTasksFromStorage();
     const idx = tasks.findIndex(t => t.id === id);
     if (idx !== -1) {
@@ -212,8 +220,12 @@ export const ApiService = {
       if (Platform.OS === 'web') {
         const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
         if (res.ok) return true;
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Falha ao deletar task (status ${res.status})`);
       }
-    } catch {}
+    } catch (e) {
+      if (Platform.OS === 'web') throw e;
+    }
     let tasks = loadTasksFromStorage();
     tasks = tasks.filter(t => t.id !== id);
     saveTasksToStorage(tasks);
@@ -326,9 +338,11 @@ export const ApiService = {
           saveToStorage(chars);
           return created;
         }
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Falha ao criar personagem (status ${res.status})`);
       }
-    } catch {
-      // Usar fallback
+    } catch (e) {
+      if (Platform.OS === 'web') throw e;
     }
 
     const chars = loadFromStorage();
@@ -356,12 +370,12 @@ export const ApiService = {
           }
           saveToStorage(chars);
           return updated;
-        } else {
-          console.error(`Falha no PUT /api/characters/${id}: status ${res.status}`);
         }
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Falha ao atualizar personagem (status ${res.status})`);
       }
     } catch (err) {
-      console.error('Erro na requisição PUT de personagem:', err);
+      if (Platform.OS === 'web') throw err;
     }
 
     const chars = loadFromStorage();
@@ -379,9 +393,11 @@ export const ApiService = {
       if (Platform.OS === 'web') {
         const res = await fetch(`/api/characters/${id}`, { method: 'DELETE' });
         if (res.ok) return true;
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Falha ao deletar personagem (status ${res.status})`);
       }
-    } catch {
-      // Usar fallback
+    } catch (e) {
+      if (Platform.OS === 'web') throw e;
     }
 
     let chars = loadFromStorage();
@@ -558,11 +574,13 @@ export const ApiService = {
     throw new Error('Ambiente não suportado para criação de usuário');
   },
 
-  async updateUser(id: string, data: { name?: string; role?: Role; password?: string }): Promise<UserData> {
+  async updateUser(id: string, data: { name?: string; role?: Role; password?: string }, requesterId?: string): Promise<UserData> {
     if (Platform.OS === 'web') {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (requesterId) headers['x-user-id'] = requesterId;
       const res = await fetch(`/api/users/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(data),
       });
       if (res.ok) {
@@ -575,10 +593,13 @@ export const ApiService = {
     throw new Error('Ambiente não suportado para atualização de usuário');
   },
 
-  async deleteUser(id: string): Promise<boolean> {
+  async deleteUser(id: string, requesterId?: string): Promise<boolean> {
     if (Platform.OS === 'web') {
+      const headers: Record<string, string> = {};
+      if (requesterId) headers['x-user-id'] = requesterId;
       const res = await fetch(`/api/users/${id}`, {
         method: 'DELETE',
+        headers,
       });
       if (res.ok) {
         return true;

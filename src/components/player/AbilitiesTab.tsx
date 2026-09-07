@@ -4,10 +4,7 @@ import { AbilityData, CharacterData } from '@/lib/mockData';
 import {
   ChevronDown,
   ChevronUp,
-  Clock,
   Edit2,
-  Filter,
-  Flame,
   Infinity as InfinityIcon,
   Minus,
   Moon,
@@ -15,7 +12,6 @@ import {
   RotateCcw,
   Sparkles,
   Sun,
-  Sword,
   Trash2,
   Zap,
 } from 'lucide-react-native';

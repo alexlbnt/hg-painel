@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
-import { BookOpen, Edit2, Eye, Save } from 'lucide-react-native';
+import { BookOpen, Edit2, Save } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 
 interface LoreTabProps {
