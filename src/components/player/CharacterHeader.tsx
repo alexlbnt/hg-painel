@@ -7,7 +7,6 @@ import {
   Edit,
   Scale,
   Scroll,
-  Shield,
   Skull,
   Sun,
   Trash2,

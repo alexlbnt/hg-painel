@@ -173,7 +173,7 @@ export default function UserManagement() {
     if (!selectedUserForRole) return;
     setUpdatingRole(true);
     try {
-      await ApiService.updateUser(selectedUserForRole.id, { role: targetRole });
+      await ApiService.updateUser(selectedUserForRole.id, { role: targetRole }, currentUser?.id);
       setUsers((prev) =>
         prev.map((item) => (item.id === selectedUserForRole.id ? { ...item, role: targetRole } : item))
       );
@@ -212,7 +212,7 @@ export default function UserManagement() {
     setUpdatingPwd(true);
     setPwdError('');
     try {
-      await ApiService.updateUser(selectedUserForPwd.id, { password: newPwdValue.trim() });
+      await ApiService.updateUser(selectedUserForPwd.id, { password: newPwdValue.trim() }, currentUser?.id);
       setPwdModalVisible(false);
       if (Platform.OS === 'web') {
         window.alert(`Senha de '${selectedUserForPwd.name}' redefinida com sucesso!`);
@@ -242,7 +242,7 @@ export default function UserManagement() {
 
     const confirmDelete = async () => {
       try {
-        await ApiService.deleteUser(u.id);
+        await ApiService.deleteUser(u.id, currentUser?.id);
         setUsers((prev) => prev.filter((item) => item.id !== u.id));
         await loadUsers();
         if (Platform.OS === 'web') {

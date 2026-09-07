@@ -4,17 +4,13 @@ import { AbilityData, CharacterData } from '@/lib/mockData';
 import {
   ChevronDown,
   ChevronUp,
-  Clock,
   Edit2,
-  Filter,
-  Flame,
   Minus,
   Moon,
   Plus,
   RotateCcw,
   Sparkles,
   Sun,
-  Sword,
   Trash2,
   Zap,
 } from 'lucide-react-native';

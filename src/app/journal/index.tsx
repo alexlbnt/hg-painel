@@ -7,7 +7,6 @@ import { confirmAction } from '@/utils/confirm';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Platform,
   ScrollView,

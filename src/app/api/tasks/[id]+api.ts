@@ -10,6 +10,11 @@ function extractId(context: any): string {
 export async function PUT(request: Request, context: any) {
   try {
     const id = extractId(context);
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing) {
+      return Response.json({ error: 'Tarefa não encontrada' }, { status: 404 });
+    }
+
     const body = await request.json();
     
     const updatedTask = await prisma.task.update({
@@ -36,6 +41,11 @@ export async function PUT(request: Request, context: any) {
 export async function DELETE(request: Request, context: any) {
   try {
     const id = extractId(context);
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing) {
+      return Response.json({ error: 'Tarefa não encontrada' }, { status: 404 });
+    }
+
     await prisma.task.delete({
       where: { id },
     });

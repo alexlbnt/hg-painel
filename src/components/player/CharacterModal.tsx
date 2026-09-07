@@ -498,11 +498,16 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 650,
     maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.8,
-    shadowRadius: 25,
-    elevation: 20,
+    ...Platform.select({
+      web: { boxShadow: '0 10px 25px rgba(0, 0, 0, 0.8)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.8,
+        shadowRadius: 25,
+        elevation: 20,
+      },
+    }),
     overflow: 'hidden',
   },
   header: {
