@@ -8,6 +8,7 @@ import {
   isCombatOffensiveSpell,
   getSpellDamageFormula,
 } from '@/utils/dnd5e';
+import { ActionCalculator } from './ActionCalculator';
 import {
   Sword,
   Clock,
@@ -56,6 +57,13 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* ⚔️ 0. CALCULADORA DE AÇÃO & COMBOS */}
+      <ActionCalculator
+        char={char}
+        themeColor={themeColor}
+        isMobile={isMobile}
+      />
+
       {/* ⚔️ 1. SEÇÃO DE ARMAS & ATAQUES CORPO A CORPO / DISTÂNCIA */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeaderRow}>

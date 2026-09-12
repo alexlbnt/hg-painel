@@ -209,13 +209,17 @@ export function calculateWeaponAttack(
     descLower.includes('acuidade') ||
     descLower.includes('finesse');
 
+  const isMonk =
+    (char.class || '').toLowerCase().includes('monge') ||
+    (char.class || '').toLowerCase().includes('monk');
+
   let chosenMod = strMod;
   let modType: 'str' | 'dex' = 'str';
 
   if (isRanged) {
     chosenMod = dexMod;
     modType = 'dex';
-  } else if (isFinesse) {
+  } else if (isFinesse || (isMonk && !descLower.includes('pesada') && !descLower.includes('duas mãos'))) {
     if (dexMod > strMod) {
       chosenMod = dexMod;
       modType = 'dex';
@@ -228,11 +232,16 @@ export function calculateWeaponAttack(
   let baseDmg = (item.damage || '1d6').trim();
   let dmgType = '';
 
+  // Limpa sufixos de atributos comuns digitados pelo usuário (ex: "1d6+dex", "1d8+força")
+  baseDmg = baseDmg
+    .replace(/\s*\+\s*(dex|destreza|str|força|forca)\b/gi, '')
+    .trim();
+
   // Extrai tipo de dano se houver (ex: "1d8 cortante" -> base: 1d8, tipo: cortante)
   const parts = baseDmg.split(' ');
   let dicePart = parts[0] || '1d6';
   if (parts.length > 1) {
-    dmgType = parts.slice(1).join(' ');
+    dmgType = parts.slice(1).join(' ').replace(/^[()]+|[()]+$/g, '');
   }
 
   const modSign = chosenMod >= 0 ? `+ ${chosenMod}` : `- ${Math.abs(chosenMod)}`;
