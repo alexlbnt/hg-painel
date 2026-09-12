@@ -22,7 +22,6 @@ import {
   Info,
   Clock,
   CalendarCheck,
-  CheckCircle2,
   HelpCircle,
   Flame,
   ArrowRight,
@@ -39,6 +38,43 @@ const MONTH_NAMES = [
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+const FANTASY_COLORS = [
+  { bg: '#C5A059', text: '#110F0D', border: '#E6C280' }, // Ouro Nobre
+  { bg: '#4E9C8E', text: '#110F0D', border: '#7AC5B8' }, // Esmeralda Élfica
+  { bg: '#C95B5B', text: '#FFF', border: '#E57373' },    // Rubi Guerreiro
+  { bg: '#7E57C2', text: '#FFF', border: '#B39DDB' },    // Ametista Arcana
+  { bg: '#42A5F5', text: '#110F0D', border: '#90CAF9' }, // Safira Astral
+  { bg: '#FFA726', text: '#110F0D', border: '#FFCC80' }, // Âmbar do Ladino
+  { bg: '#26A69A', text: '#110F0D', border: '#80CBC4' }, // Jade do Ranger
+  { bg: '#AB47BC', text: '#FFF', border: '#CE93D8' },    // Púrpura Feiticeiro
+];
+
+function getPlayerColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % FANTASY_COLORS.length;
+  return FANTASY_COLORS[index];
+}
+
+interface DateAvailabilityItem {
+  dateStr: string;
+  formattedDate: string;
+  dayNum: number;
+  dayOfWeek: string;
+  records: AvailabilityRecord[];
+  confirmedUsers: { id: string; name: string; role: any }[];
+  pendingUsers: { id: string; name: string; role: any }[];
+  count: number;
+  isPerfect: boolean;
+  isMajor: boolean;
+  isPast: boolean;
+  isToday: boolean;
+  isMyAvailable: boolean;
+  quorumPercent: number;
+}
+
 interface AvailabilityModalProps {
   visible: boolean;
   onClose: () => void;
@@ -52,6 +88,10 @@ export default function AvailabilityModal({
 }: AvailabilityModalProps) {
   const { user } = useAuth();
   const { isMobile } = useResponsive();
+
+  // Modo de visualização: Calendário Grid vs Visão em Lista das Melhores Datas
+  const [viewMode, setViewMode] = useState<'CALENDAR' | 'LIST'>('CALENDAR');
+  const [listFilter, setListFilter] = useState<'ALL' | 'PERFECT' | 'MY'>('ALL');
 
   // Mês selecionado no formato YYYY-MM
   const [currentYearMonth, setCurrentYearMonth] = useState<string>(() => {
@@ -168,6 +208,68 @@ export default function AvailabilityModal({
     const d = String(now.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }, []);
+
+  // Lista cronológica de datas para a Visão por Datas / Melhores Datas
+  const datesWithAvailability = useMemo(() => {
+    const list: DateAvailabilityItem[] = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dStr = `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayRecs = recordsByDate.get(dStr) || [];
+      const count = dayRecs.length;
+
+      // Inclui no mural os dias que possuem ao menos 1 aventureiro marcado OU que são hoje/futuros no mês
+      if (count > 0 || dStr >= todayStr) {
+        const dateObj = new Date(currentYear, currentMonthIndex, day);
+        const formattedDate = dateObj.toLocaleDateString('pt-BR', {
+          weekday: 'long',
+          day: '2-digit',
+          month: 'long',
+        });
+        const dayOfWeek = WEEKDAYS[dateObj.getDay()];
+        const confirmedUsers = dayRecs.map((r) => r.user);
+        const confirmedIds = new Set(dayRecs.map((r) => r.userId));
+        const pendingUsers = (availabilityData?.users || []).filter((u) => !confirmedIds.has(u.id));
+
+        const isPerfect = count >= totalPlayers && totalPlayers > 1;
+        const isMajor = count >= Math.ceil(totalPlayers * 0.6) && !isPerfect;
+        const isPast = dStr < todayStr;
+        const isToday = dStr === todayStr;
+        const isMyAvailable = myDates.has(dStr);
+        const quorumPercent = totalPlayers > 0 ? Math.round((count / totalPlayers) * 100) : 0;
+
+        list.push({
+          dateStr: dStr,
+          formattedDate,
+          dayNum: day,
+          dayOfWeek,
+          records: dayRecs,
+          confirmedUsers,
+          pendingUsers,
+          count,
+          isPerfect,
+          isMajor,
+          isPast,
+          isToday,
+          isMyAvailable,
+          quorumPercent,
+        });
+      }
+    }
+
+    // Cronológica por padrão (conforme escolha do usuário)
+    return list;
+  }, [daysInMonth, currentYear, currentMonthIndex, recordsByDate, todayStr, availabilityData, totalPlayers, myDates]);
+
+  // Filtro ativo na Visão em Lista
+  const filteredDatesForList = useMemo(() => {
+    return datesWithAvailability.filter((d) => {
+      if (listFilter === 'PERFECT') return d.isPerfect;
+      if (listFilter === 'MY') return d.isMyAvailable;
+      // 'ALL': exibe todas as datas com marcação ou que ainda vão acontecer no mês
+      return d.count > 0 || !d.isPast;
+    });
+  }, [datesWithAvailability, listFilter]);
 
   // Alternar disponibilidade de uma data específica
   const handleToggleDay = async (dateStr: string) => {
@@ -308,6 +410,33 @@ export default function AvailabilityModal({
           </View>
 
           {/* ============================================================ */}
+          {/* SELETOR DE MODO DE VISUALIZAÇÃO                              */}
+          {/* ============================================================ */}
+          <View style={styles.viewModeSwitcher}>
+            <TouchableOpacity
+              style={[styles.viewModeTab, viewMode === 'CALENDAR' && styles.viewModeTabActive]}
+              onPress={() => setViewMode('CALENDAR')}
+              activeOpacity={0.8}
+            >
+              <CalendarIcon size={14} color={viewMode === 'CALENDAR' ? '#C5A059' : '#80776C'} />
+              <Text style={[styles.viewModeTabText, viewMode === 'CALENDAR' && styles.viewModeTabTextActive]}>
+                Calendário Mensal
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.viewModeTab, viewMode === 'LIST' && styles.viewModeTabActive]}
+              onPress={() => setViewMode('LIST')}
+              activeOpacity={0.8}
+            >
+              <Users size={14} color={viewMode === 'LIST' ? '#C5A059' : '#80776C'} />
+              <Text style={[styles.viewModeTabText, viewMode === 'LIST' && styles.viewModeTabTextActive]}>
+                Visão por Datas ({datesWithAvailability.filter((d) => d.count > 0).length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ============================================================ */}
           {/* NAVEGAÇÃO DE MÊS & DESTAQUE DE QUÓRUM                         */}
           {/* ============================================================ */}
           <View style={styles.monthBar}>
@@ -347,25 +476,31 @@ export default function AvailabilityModal({
           </View>
 
           {/* ============================================================ */}
-          {/* LEGENDA RÁPIDA                                               */}
+          {/* LEGENDA RÁPIDA (MODO CALENDÁRIO)                             */}
           {/* ============================================================ */}
-          <View style={styles.legendRow}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendIndicator, { backgroundColor: '#2E7D32', borderColor: '#4CAF50' }]} />
-              <Text style={styles.legendText}>Meu Dia Livre</Text>
+          {viewMode === 'CALENDAR' && (
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendIndicator, { backgroundColor: '#2E7D32', borderColor: '#4CAF50' }]} />
+                <Text style={styles.legendText}>Meu Dia Livre</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendIndicator, { backgroundColor: 'rgba(197, 160, 89, 0.35)', borderColor: '#C5A059' }]} />
+                <Text style={styles.legendText}>Quórum Total 👑</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendIndicator, { backgroundColor: '#1A1714', borderColor: '#3D342C' }]} />
+                <Text style={styles.legendText}>Parcial</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendIndicator, { backgroundColor: '#C5A059', borderColor: '#E6C280', borderRadius: 6 }]} />
+                <Text style={styles.legendText}>Heróis (Iniciais)</Text>
+              </View>
             </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendIndicator, { backgroundColor: 'rgba(197, 160, 89, 0.35)', borderColor: '#C5A059' }]} />
-              <Text style={styles.legendText}>Quórum Total 👑</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendIndicator, { backgroundColor: '#1A1714', borderColor: '#3D342C' }]} />
-              <Text style={styles.legendText}>Parcial</Text>
-            </View>
-          </View>
+          )}
 
           {/* ============================================================ */}
-          {/* GRID DO CALENDÁRIO                                           */}
+          {/* CORPO DO MODAL (CALENDÁRIO OU LISTA DE DATAS)                */}
           {/* ============================================================ */}
           <ScrollView
             style={styles.scrollArea}
@@ -377,7 +512,7 @@ export default function AvailabilityModal({
                 <ActivityIndicator color="#C5A059" size="large" />
                 <Text style={styles.loadingText}>Consultando oráculo das datas...</Text>
               </View>
-            ) : (
+            ) : viewMode === 'CALENDAR' ? (
               <>
                 {/* Cabeçalho dos dias da semana */}
                 <View style={styles.weekHeaderRow}>
@@ -415,6 +550,12 @@ export default function AvailabilityModal({
                     const count = dayRecs.length;
                     const isPerfect = count >= totalPlayers && totalPlayers > 1;
                     const isMajor = count >= Math.ceil(totalPlayers * 0.6) && !isPerfect;
+                    const confirmedNames = dayRecs.map((r) => r.user.name).join(', ');
+                    const tooltipText = isPast
+                      ? `Dia ${dayNum} (Passado)`
+                      : count > 0
+                      ? `Dia ${dayNum}: ${count}/${totalPlayers} heróis disponíveis (${confirmedNames})`
+                      : `Dia ${dayNum}: Nenhum herói marcado ainda. Toque para inspecionar.`;
 
                     return (
                       <TouchableOpacity
@@ -429,10 +570,9 @@ export default function AvailabilityModal({
                         ]}
                         activeOpacity={isPast ? 1 : 0.7}
                         disabled={isPast}
-                        onPress={() => {
-                          setSelectedDate(dateStr);
-                          handleToggleDay(dateStr);
-                        }}
+                        onPress={() => setSelectedDate(dateStr)}
+                        {...(Platform.OS === 'web' ? ({ title: tooltipText } as any) : {})}
+                        accessibilityLabel={tooltipText}
                       >
                         {/* Indicador superior: número do dia */}
                         <View style={styles.dayNumRow}>
@@ -457,6 +597,37 @@ export default function AvailabilityModal({
                           )}
                         </View>
 
+                        {/* Mini chips dos heróis disponíveis no dia */}
+                        {!isPast && count > 0 && (
+                          <View style={styles.dayPlayersMiniRow}>
+                            {dayRecs.slice(0, 3).map((rec) => {
+                              const pColor = getPlayerColor(rec.user.name);
+                              const initials = rec.user.name.slice(0, 2).toUpperCase();
+                              return (
+                                <View
+                                  key={rec.userId}
+                                  style={[
+                                    styles.playerMiniChip,
+                                    {
+                                      backgroundColor: pColor.bg,
+                                      borderColor: pColor.border,
+                                    },
+                                  ]}
+                                >
+                                  <Text style={[styles.playerMiniChipText, { color: pColor.text }]}>
+                                    {initials}
+                                  </Text>
+                                </View>
+                              );
+                            })}
+                            {count > 3 && (
+                              <View style={styles.playerMiniChipMore}>
+                                <Text style={styles.playerMiniChipMoreText}>+{count - 3}</Text>
+                              </View>
+                            )}
+                          </View>
+                        )}
+
                         {/* Indicador inferior: quórum de jogadores */}
                         {!isPast && (
                           <View
@@ -472,7 +643,7 @@ export default function AvailabilityModal({
                             ]}
                           >
                             <Users
-                              size={10}
+                              size={9}
                               color={
                                 isPerfect
                                   ? '#110F0D'
@@ -548,16 +719,31 @@ export default function AvailabilityModal({
 
                     {/* Lista de Heróis Confirmados */}
                     <View style={styles.heroesSection}>
-                      <Text style={styles.heroesSectionTitle}>Heróis Confirmados:</Text>
+                      <Text style={styles.heroesSectionTitle}>
+                        Heróis Confirmados ({inspectedDayDetails.confirmedUsers.length}):
+                      </Text>
                       {inspectedDayDetails.confirmedUsers.length > 0 ? (
                         <View style={styles.heroesTagWrap}>
-                          {inspectedDayDetails.confirmedUsers.map((u) => (
-                            <View key={u.id} style={styles.heroTagConfirmed}>
-                              <CheckCircle2 color="#4CAF50" size={12} />
-                              <Text style={styles.heroTagConfirmedText}>{u.name}</Text>
-                              {u.role === 'DM' && <Text style={styles.roleMiniBadge}>MESTRE</Text>}
-                            </View>
-                          ))}
+                          {inspectedDayDetails.confirmedUsers.map((u) => {
+                            const pColor = getPlayerColor(u.name);
+                            const initials = u.name.slice(0, 2).toUpperCase();
+                            return (
+                              <View key={u.id} style={styles.heroTagConfirmed}>
+                                <View
+                                  style={[
+                                    styles.playerAvatarCircleMini,
+                                    { backgroundColor: pColor.bg, borderColor: pColor.border },
+                                  ]}
+                                >
+                                  <Text style={[styles.playerAvatarTextMini, { color: pColor.text }]}>
+                                    {initials}
+                                  </Text>
+                                </View>
+                                <Text style={styles.heroTagConfirmedText}>{u.name}</Text>
+                                {u.role === 'DM' && <Text style={styles.roleMiniBadge}>MESTRE</Text>}
+                              </View>
+                            );
+                          })}
                         </View>
                       ) : (
                         <Text style={styles.noHeroesText}>
@@ -605,14 +791,310 @@ export default function AvailabilityModal({
                   <View style={styles.selectDayNotice}>
                     <Info color="#80776C" size={16} />
                     <Text style={styles.selectDayNoticeText}>
-                      Toque em um dia no calendário para marcar sua presença ou ver quem está livre.
+                      Toque em um dia no calendário para inspecionar quem está livre e marcar sua presença.
                     </Text>
                   </View>
                 )}
 
+                {/* ATALHOS RÁPIDOS & UTILITÁRIOS */}
+                {user ? (
+                  <View style={styles.shortcutsBox}>
+                    <Text style={styles.shortcutsTitle}>Atalhos da Taverna:</Text>
+                    <View style={styles.shortcutsRow}>
+                      <TouchableOpacity
+                        style={styles.shortcutButton}
+                        activeOpacity={0.75}
+                        onPress={handleSelectAllWeekends}
+                      >
+                        <Sparkles color="#E6C280" size={14} />
+                        <Text style={styles.shortcutButtonText}>Marcar Finais de Semana</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.shortcutButtonSecondary}
+                        activeOpacity={0.75}
+                        onPress={handleClearMyMonth}
+                      >
+                        <X color="#A89F91" size={14} />
+                        <Text style={styles.shortcutButtonSecondaryText}>Limpar Meu Mês</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.notLoggedNotice}>
+                    <HelpCircle color="#C5A059" size={18} />
+                    <Text style={styles.notLoggedNoticeText}>
+                      Você está visualizando o calendário em modo visitante. Entre com seu usuário no Portal para registrar seus dias livres!
+                    </Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <>
                 {/* ============================================================ */}
-                {/* ATALHOS RÁPIDOS & UTILITÁRIOS                                 */}
+                {/* MODO LISTA: VISÃO POR DATAS COM TODOS OS PLAYERS EXIBIDOS   */}
                 {/* ============================================================ */}
+                <View style={styles.dateListFiltersRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.dateListFilterBtn,
+                      listFilter === 'ALL' && styles.dateListFilterBtnActive,
+                    ]}
+                    onPress={() => setListFilter('ALL')}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.dateListFilterText,
+                        listFilter === 'ALL' && styles.dateListFilterTextActive,
+                      ]}
+                    >
+                      Todas as Datas ({datesWithAvailability.length})
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.dateListFilterBtn,
+                      listFilter === 'PERFECT' && styles.dateListFilterBtnActive,
+                    ]}
+                    onPress={() => setListFilter('PERFECT')}
+                    activeOpacity={0.8}
+                  >
+                    <Crown size={12} color={listFilter === 'PERFECT' ? '#110F0D' : '#E6C280'} />
+                    <Text
+                      style={[
+                        styles.dateListFilterText,
+                        listFilter === 'PERFECT' && styles.dateListFilterTextActive,
+                      ]}
+                    >
+                      Quórum Total ({datesWithAvailability.filter((d) => d.isPerfect).length})
+                    </Text>
+                  </TouchableOpacity>
+
+                  {user && (
+                    <TouchableOpacity
+                      style={[
+                        styles.dateListFilterBtn,
+                        listFilter === 'MY' && styles.dateListFilterBtnActive,
+                      ]}
+                      onPress={() => setListFilter('MY')}
+                      activeOpacity={0.8}
+                    >
+                      <Check size={12} color={listFilter === 'MY' ? '#110F0D' : '#4CAF50'} />
+                      <Text
+                        style={[
+                          styles.dateListFilterText,
+                          listFilter === 'MY' && styles.dateListFilterTextActive,
+                        ]}
+                      >
+                        Minhas Datas ({datesWithAvailability.filter((d) => d.isMyAvailable).length})
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {filteredDatesForList.length === 0 ? (
+                  <View style={styles.dateListEmptyState}>
+                    <Info color="#80776C" size={24} />
+                    <Text style={styles.dateListEmptyStateTitle}>Nenhuma data encontrada</Text>
+                    <Text style={styles.dateListEmptyStateDesc}>
+                      Nenhum dia corresponde aos filtros selecionados neste mês.
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.dateListContainer}>
+                    {filteredDatesForList.map((item) => {
+                      return (
+                        <View
+                          key={item.dateStr}
+                          style={[
+                            styles.dateListItemCard,
+                            item.isPerfect && styles.dateListItemCardPerfect,
+                            item.isPast && styles.dateListItemCardPast,
+                          ]}
+                        >
+                          {/* Cabeçalho do Card da Data */}
+                          <View style={styles.dateListItemHeader}>
+                            <View style={{ flex: 1 }}>
+                              <View style={styles.dateListItemTitleRow}>
+                                <Text style={styles.dateListItemTitle}>
+                                  {item.formattedDate}
+                                </Text>
+                                {item.isToday && (
+                                  <View style={styles.todayBadge}>
+                                    <Text style={styles.todayBadgeText}>HOJE</Text>
+                                  </View>
+                                )}
+                                {item.isPerfect && (
+                                  <View style={styles.perfectBadge}>
+                                    <Crown size={12} color="#110F0D" />
+                                    <Text style={styles.perfectBadgeText}>Quórum Total 👑</Text>
+                                  </View>
+                                )}
+                              </View>
+
+                              <Text style={styles.dateListItemSub}>
+                                {item.count} de {totalPlayers} heróis disponíveis ({item.quorumPercent}%)
+                              </Text>
+                            </View>
+
+                            {/* Ação rápida de 1-toque para o usuário marcar / desmarcar presença */}
+                            {!item.isPast && user && (
+                              <TouchableOpacity
+                                style={[
+                                  styles.dateListQuickRsvpBtn,
+                                  item.isMyAvailable
+                                    ? styles.dateListQuickRsvpBtnActive
+                                    : styles.dateListQuickRsvpBtnInactive,
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => handleToggleDay(item.dateStr)}
+                              >
+                                {item.isMyAvailable ? (
+                                  <>
+                                    <Check color="#110F0D" size={13} strokeWidth={3} />
+                                    <Text style={styles.dateListQuickRsvpTextActive}>Confirmado</Text>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CalendarCheck color="#C5A059" size={13} />
+                                    <Text style={styles.dateListQuickRsvpTextInactive}>Posso Jogar</Text>
+                                  </>
+                                )}
+                              </TouchableOpacity>
+                            )}
+                          </View>
+
+                          {/* Barra visual de Quórum */}
+                          <View style={styles.dateListProgressBarTrack}>
+                            <View
+                              style={[
+                                styles.dateListProgressBarFill,
+                                {
+                                  width: `${Math.min(100, item.quorumPercent)}%`,
+                                  backgroundColor: item.isPerfect
+                                    ? '#E6C280'
+                                    : item.isMajor
+                                    ? '#4E9C8E'
+                                    : item.count > 0
+                                    ? '#C5A059'
+                                    : '#3D342C',
+                                },
+                              ]}
+                            />
+                          </View>
+
+                          {/* SEÇÃO PRINCIPAL: TODOS OS PLAYERS QUE PODEM JOGAR NESTE DIA */}
+                          <View style={styles.dateListMembersSection}>
+                            <View style={styles.dateListSectionHeader}>
+                              <Users size={13} color="#C5A059" />
+                              <Text style={styles.dateListSectionLabel}>
+                                HERÓIS DISPONÍVEIS ({item.confirmedUsers.length}):
+                              </Text>
+                            </View>
+
+                            {item.confirmedUsers.length > 0 ? (
+                              <View style={styles.dateListChipsWrap}>
+                                {item.confirmedUsers.map((u) => {
+                                  const pColor = getPlayerColor(u.name);
+                                  const initials = u.name.slice(0, 2).toUpperCase();
+                                  const isMe = user?.id === u.id;
+
+                                  return (
+                                    <View
+                                      key={u.id}
+                                      style={[
+                                        styles.dateListPlayerChip,
+                                        isMe && styles.dateListPlayerChipMe,
+                                      ]}
+                                    >
+                                      {/* Avatar circular estilizado com iniciais */}
+                                      <View
+                                        style={[
+                                          styles.playerAvatarCircle,
+                                          {
+                                            backgroundColor: pColor.bg,
+                                            borderColor: pColor.border,
+                                          },
+                                        ]}
+                                      >
+                                        <Text
+                                          style={[
+                                            styles.playerAvatarText,
+                                            { color: pColor.text },
+                                          ]}
+                                        >
+                                          {initials}
+                                        </Text>
+                                      </View>
+
+                                      {/* Nome do jogador em destaque */}
+                                      <Text
+                                        style={[
+                                          styles.dateListPlayerName,
+                                          isMe && styles.dateListPlayerNameMe,
+                                        ]}
+                                      >
+                                        {u.name}
+                                        {isMe && ' (Você)'}
+                                      </Text>
+
+                                      {/* Badge de Mestre se for DM */}
+                                      {u.role === 'DM' && (
+                                        <View style={styles.dmRoleBadge}>
+                                          <Crown size={9} color="#110F0D" />
+                                          <Text style={styles.dmRoleBadgeText}>MESTRE</Text>
+                                        </View>
+                                      )}
+                                    </View>
+                                  );
+                                })}
+                              </View>
+                            ) : (
+                              <Text style={styles.dateListEmptyNotice}>
+                                Nenhum herói registrou disponibilidade para este dia ainda.
+                              </Text>
+                            )}
+                          </View>
+
+                          {/* Jogadores Pendentes */}
+                          {item.pendingUsers.length > 0 && (
+                            <View style={styles.dateListPendingSection}>
+                              <Clock size={11} color="#80776C" />
+                              <Text style={styles.dateListPendingLabel}>Ainda não marcaram:</Text>
+                              <Text style={styles.dateListPendingNames}>
+                                {item.pendingUsers.map((p) => p.name).join(', ')}
+                              </Text>
+                            </View>
+                          )}
+
+                          {/* Ação do Mestre para Agendar Sessão Diretamente nesta Data */}
+                          {(user?.role === 'DM' || user?.role === 'MECHANIC') &&
+                            onSelectDateForSession &&
+                            !item.isPast && (
+                              <TouchableOpacity
+                                style={styles.scheduleFromDateBtnCompact}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                  onClose();
+                                  onSelectDateForSession(item.dateStr);
+                                }}
+                              >
+                                <Flame color="#110F0D" size={13} />
+                                <Text style={styles.scheduleFromDateBtnCompactText}>
+                                  Agendar Sessão Nesta Data
+                                </Text>
+                                <ArrowRight color="#110F0D" size={13} />
+                              </TouchableOpacity>
+                            )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* ATALHOS RÁPIDOS & UTILITÁRIOS */}
                 {user ? (
                   <View style={styles.shortcutsBox}>
                     <Text style={styles.shortcutsTitle}>Atalhos da Taverna:</Text>
@@ -736,6 +1218,42 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  viewModeSwitcher: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 6,
+    gap: 8,
+    backgroundColor: '#141210',
+    borderBottomWidth: 1,
+    borderBottomColor: '#26221E',
+  },
+  viewModeTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: '#1A1714',
+    borderWidth: 1,
+    borderColor: '#2D2620',
+  },
+  viewModeTabActive: {
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+    borderColor: '#C5A059',
+  },
+  viewModeTabText: {
+    color: '#80776C',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  viewModeTabTextActive: {
+    color: '#F0E6D2',
+    fontWeight: 'bold',
   },
   monthBar: {
     flexDirection: 'row',
@@ -863,12 +1381,12 @@ const styles = StyleSheet.create({
   dayCell: {
     width: '13.3%',
     aspectRatio: 1,
-    minHeight: 52,
+    minHeight: 58,
     backgroundColor: '#1A1714',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#2D2620',
-    padding: 4,
+    padding: 3,
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -928,6 +1446,45 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(76, 175, 80, 0.3)',
     borderRadius: 4,
     padding: 1,
+  },
+  dayPlayersMiniRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    marginVertical: 1,
+    flexWrap: 'nowrap',
+    maxWidth: '100%',
+  },
+  playerMiniChip: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerMiniChipText: {
+    fontSize: 7.5,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 8,
+  },
+  playerMiniChipMore: {
+    backgroundColor: '#26221E',
+    borderRadius: 7,
+    paddingHorizontal: 2,
+    height: 14,
+    minWidth: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0.5,
+    borderColor: '#3D342C',
+  },
+  playerMiniChipMoreText: {
+    fontSize: 7,
+    color: '#D4C8B8',
+    fontWeight: 'bold',
   },
   quorumBadge: {
     flexDirection: 'row',
@@ -1062,6 +1619,18 @@ const styles = StyleSheet.create({
     color: '#C8E6C9',
     fontSize: 11,
     fontWeight: '600',
+  },
+  playerAvatarCircleMini: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerAvatarTextMini: {
+    fontSize: 8,
+    fontWeight: 'bold',
   },
   roleMiniBadge: {
     backgroundColor: '#C5A059',
@@ -1206,5 +1775,278 @@ const styles = StyleSheet.create({
     color: '#F0E6D2',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  // ============================================================
+  // ESTILOS DA VISÃO EM LISTA (TODOS OS PLAYERS VISÍVEIS)
+  // ============================================================
+  dateListFiltersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginBottom: 4,
+  },
+  dateListFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#1A1714',
+    borderWidth: 1,
+    borderColor: '#2D2620',
+  },
+  dateListFilterBtnActive: {
+    backgroundColor: '#C5A059',
+    borderColor: '#E6C280',
+  },
+  dateListFilterText: {
+    color: '#A89F91',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  dateListFilterTextActive: {
+    color: '#110F0D',
+    fontWeight: 'bold',
+  },
+  dateListContainer: {
+    gap: 12,
+  },
+  dateListItemCard: {
+    backgroundColor: '#1A1714',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#2D2620',
+    padding: 14,
+    gap: 10,
+  },
+  dateListItemCardPerfect: {
+    backgroundColor: 'rgba(197, 160, 89, 0.08)',
+    borderColor: '#C5A059',
+    borderWidth: 1.5,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 0 12px rgba(197, 160, 89, 0.18)',
+      } as any,
+    }),
+  },
+  dateListItemCardPast: {
+    opacity: 0.45,
+    backgroundColor: '#12100E',
+  },
+  dateListItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  dateListItemTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  dateListItemTitle: {
+    color: '#F0E6D2',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textTransform: 'capitalize',
+  },
+  todayBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: '#80776C',
+  },
+  todayBadgeText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  perfectBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#C5A059',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  perfectBadgeText: {
+    color: '#110F0D',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  dateListItemSub: {
+    color: '#A89F91',
+    fontSize: 11,
+    marginTop: 3,
+  },
+  dateListQuickRsvpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  dateListQuickRsvpBtnActive: {
+    backgroundColor: '#4CAF50',
+  },
+  dateListQuickRsvpBtnInactive: {
+    backgroundColor: 'rgba(197, 160, 89, 0.12)',
+    borderWidth: 1,
+    borderColor: '#C5A059',
+  },
+  dateListQuickRsvpTextActive: {
+    color: '#110F0D',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  dateListQuickRsvpTextInactive: {
+    color: '#E6C280',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  dateListProgressBarTrack: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#26221E',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  dateListProgressBarFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  dateListMembersSection: {
+    gap: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#24201C',
+  },
+  dateListSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dateListSectionLabel: {
+    color: '#C5A059',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  dateListChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  dateListPlayerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#1E1B18',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+  },
+  dateListPlayerChipMe: {
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+  },
+  playerAvatarCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerAvatarText: {
+    fontSize: 9.5,
+    fontWeight: 'bold',
+  },
+  dateListPlayerName: {
+    color: '#F0E6D2',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  dateListPlayerNameMe: {
+    color: '#C8E6C9',
+    fontWeight: 'bold',
+  },
+  dmRoleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#C5A059',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  dmRoleBadgeText: {
+    color: '#110F0D',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  dateListEmptyNotice: {
+    color: '#80776C',
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  dateListPendingSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+    paddingTop: 2,
+  },
+  dateListPendingLabel: {
+    color: '#80776C',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  dateListPendingNames: {
+    color: '#A89F91',
+    fontSize: 10,
+  },
+  scheduleFromDateBtnCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#C5A059',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  scheduleFromDateBtnCompactText: {
+    color: '#110F0D',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  dateListEmptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 8,
+  },
+  dateListEmptyStateTitle: {
+    color: '#D4C8B8',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  dateListEmptyStateDesc: {
+    color: '#80776C',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
