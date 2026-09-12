@@ -43,9 +43,7 @@ const globalStore = (typeof globalThis !== 'undefined'
 export const eventBus: UniversalEventBus =
   globalStore.__hg_event_bus__ || new UniversalEventBus();
 
-if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
-  globalStore.__hg_event_bus__ = eventBus;
-}
+globalStore.__hg_event_bus__ = eventBus;
 
 export function broadcastEvent(event: { type: string; id?: string; [key: string]: any }) {
   try {

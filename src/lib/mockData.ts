@@ -48,6 +48,7 @@ export interface ItemData {
 
 export interface CharacterData {
   id: string;
+  userId?: string;
   name: string;
   playerName: string;
   username?: string;

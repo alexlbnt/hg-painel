@@ -27,6 +27,25 @@ export async function PUT(request: Request, context: any) {
       return Response.json({ error: 'Personagem não encontrado' }, { status: 404 });
     }
 
+    const requesterId = request.headers.get('x-user-id');
+    if (requesterId) {
+      const requester = await prisma.user.findUnique({ where: { id: requesterId } });
+      if (requester) {
+        const isOwner =
+          (existing.userId && existing.userId === requester.id) ||
+          (existing.username && requester.username && existing.username.toLowerCase() === requester.username.toLowerCase()) ||
+          !existing.username;
+        const isAuthorized = requester.role === 'DM' || requester.role === 'MECHANIC' || isOwner;
+
+        if (!isAuthorized) {
+          return Response.json(
+            { error: 'Você não tem permissão para editar a ficha de outro jogador' },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     const body = await request.json();
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -305,6 +324,7 @@ export async function PUT(request: Request, context: any) {
       return await tx.character.update({
         where: { id },
         data: {
+          userId: body.userId !== undefined ? (body.userId || null) : undefined,
           currentHp: toOptionalNumber(body.currentHp),
           maxHp: toOptionalNumber(body.maxHp),
           tempHp: toOptionalNumber(body.tempHp),
@@ -369,9 +389,34 @@ export async function PUT(request: Request, context: any) {
 export async function DELETE(request: Request, context: any) {
   const id = extractId(context);
   try {
+    const requesterId = request.headers.get('x-user-id');
+    if (!requesterId) {
+      return Response.json(
+        { error: 'Identificação necessária para excluir um personagem' },
+        { status: 401 }
+      );
+    }
+
+    const requester = await prisma.user.findUnique({ where: { id: requesterId } });
+    if (!requester) {
+      return Response.json({ error: 'Usuário não encontrado' }, { status: 401 });
+    }
+
     const existing = await prisma.character.findUnique({ where: { id } });
     if (!existing) {
       return Response.json({ error: 'Personagem não encontrado' }, { status: 404 });
+    }
+
+    const isOwner =
+      (existing.userId && existing.userId === requester.id) ||
+      (existing.username && requester.username && existing.username.toLowerCase() === requester.username.toLowerCase());
+    const isDm = requester.role === 'DM';
+
+    if (!isOwner && !isDm) {
+      return Response.json(
+        { error: 'Apenas o dono da ficha ou o Mestre podem excluir este personagem' },
+        { status: 403 }
+      );
     }
 
     await prisma.character.delete({ where: { id } });

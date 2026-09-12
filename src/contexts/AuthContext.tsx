@@ -17,6 +17,50 @@ interface AuthContextData {
   isLoading: boolean;
 }
 
+export const getApiBaseUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+  }
+  if (Platform.OS === 'web') {
+    return '';
+  }
+  return 'http://localhost:8081';
+};
+
+let inMemoryUser: User | null = null;
+
+export const authStorage = {
+  get(): User | null {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const stored = window.localStorage.getItem('@hg_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.id) return parsed;
+          window.localStorage.removeItem('@hg_user');
+        }
+      } catch (e) {
+        console.error('Erro ao ler @hg_user do storage:', e);
+      }
+    }
+    return inMemoryUser;
+  },
+  set(u: User | null) {
+    inMemoryUser = u;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        if (u) {
+          window.localStorage.setItem('@hg_user', JSON.stringify(u));
+        } else {
+          window.localStorage.removeItem('@hg_user');
+        }
+      } catch (e) {
+        console.error('Erro ao salvar @hg_user no storage:', e);
+      }
+    }
+  },
+};
+
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -24,55 +68,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load from local storage
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const storedUser = localStorage.getItem('@hg_user');
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          if (parsed && parsed.id) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setUser(parsed);
-          } else {
-            localStorage.removeItem('@hg_user');
-          }
-        }
-      } catch (e) {
-        console.error(e);
+    try {
+      const stored = authStorage.get();
+      if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUser(stored);
       }
+    } catch (e) {
+      console.error(e);
     }
     setIsLoading(false);
   }, []);
 
   const login = async (username: string, pass: string) => {
-    if (Platform.OS === 'web') {
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password: pass }),
-        });
-        
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('@hg_user', JSON.stringify(userData));
-          }
-          return true;
-        }
-      } catch (e) {
-        console.error('Login error:', e);
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: pass }),
+      });
+
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+        authStorage.set(userData);
+        return true;
       }
+    } catch (e) {
+      console.error('Login error:', e);
     }
     return false;
   };
 
   const logout = () => {
     setUser(null);
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      localStorage.removeItem('@hg_user');
-    }
+    authStorage.set(null);
   };
 
   return (

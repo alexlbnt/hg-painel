@@ -30,6 +30,7 @@ model User {
   journalNotes JournalNote[]
   rsvps        SessionRsvp[]
   availabilities PlayerAvailability[]
+  characters   Character[]
 }
 
 model Room {
@@ -105,6 +106,8 @@ model Character {
   // Relations
   roomId             String?
   room               Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  userId             String?
+  user               User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   spellSlots         SpellSlot[]
   abilities          Ability[]
   conditions         Condition[]
@@ -215,7 +218,7 @@ model JournalNote {
   id        String          @id @default(uuid())
   content   String
   authorId  String
-  author    User            @relation(fields: [authorId], references: [id])
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
   sessionId String
   session   CampaignSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   createdAt DateTime        @default(now())

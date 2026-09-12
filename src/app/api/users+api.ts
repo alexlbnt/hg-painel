@@ -39,7 +39,32 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Nome de usuário já existe' }, { status: 409 });
     }
 
-    const validRole = role === 'DM' ? 'DM' : role === 'MECHANIC' ? 'MECHANIC' : 'PLAYER';
+    const requesterId = req.headers.get('x-user-id');
+    let validRole: 'PLAYER' | 'MECHANIC' | 'DM' = 'PLAYER';
+
+    if (role === 'DM' || role === 'MECHANIC') {
+      const userCount = await prisma.user.count();
+      if (userCount === 0) {
+        // Permite primeiro usuário do sistema ser configurado como DM
+        validRole = role;
+      } else {
+        if (!requesterId) {
+          return Response.json(
+            { error: 'Apenas o Mestre da Campanha pode criar usuários com cargo especial' },
+            { status: 403 }
+          );
+        }
+        const requester = await prisma.user.findUnique({ where: { id: requesterId } });
+        if (!requester || requester.role !== 'DM') {
+          return Response.json(
+            { error: 'Apenas o Mestre da Campanha pode criar usuários com cargo especial' },
+            { status: 403 }
+          );
+        }
+        validRole = role;
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await prisma.user.create({

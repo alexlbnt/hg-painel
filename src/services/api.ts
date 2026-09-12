@@ -1,6 +1,6 @@
 import { CharacterData, ConditionData, INITIAL_CHARACTERS, TaskData, INITIAL_TASKS } from '@/lib/mockData';
 import { Platform } from 'react-native';
-import { Role } from '@/contexts/AuthContext';
+import { Role, authStorage, getApiBaseUrl } from '@/contexts/AuthContext';
 
 export interface UserData {
   id: string;
@@ -157,6 +157,15 @@ if (inMemoryTasks.length === 0) {
   saveTasksToStorage(inMemoryTasks);
 }
 
+function getAuthHeaders(extraHeaders: Record<string, string> = {}, requesterId?: string): Record<string, string> {
+  const headers: Record<string, string> = { ...extraHeaders };
+  const currentUserId = requesterId || authStorage.get()?.id;
+  if (currentUserId) {
+    headers['x-user-id'] = currentUserId;
+  }
+  return headers;
+}
+
 /**
  * Serviço de API Híbrido:
  * Tenta comunicar com as rotas serverless do Vercel/Expo (/api/...).
@@ -166,12 +175,13 @@ export const ApiService = {
   // TASKS
   async getTasks(): Promise<TaskData[]> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/tasks?t=${Date.now()}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) return data;
-        }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/tasks?t=${Date.now()}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
       }
     } catch {
       // Usar fallback
@@ -191,16 +201,15 @@ export const ApiService = {
       createdAt: new Date().toISOString(),
     };
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch('/api/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newTask),
-        });
-        if (res.ok) return await res.json();
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Falha ao criar task (status ${res.status})`);
-      }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(newTask),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Falha ao criar task (status ${res.status})`);
     } catch (e) {
       if (Platform.OS === 'web') throw e;
     }
@@ -212,16 +221,15 @@ export const ApiService = {
 
   async updateTask(id: string, updates: Partial<TaskData>): Promise<TaskData> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/tasks/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
-        });
-        if (res.ok) return await res.json();
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Falha ao atualizar task (status ${res.status})`);
-      }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/tasks/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Falha ao atualizar task (status ${res.status})`);
     } catch (e) {
       if (Platform.OS === 'web') throw e;
     }
@@ -237,12 +245,14 @@ export const ApiService = {
 
   async deleteTask(id: string): Promise<boolean> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-        if (res.ok) return true;
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Falha ao deletar task (status ${res.status})`);
-      }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/tasks/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) return true;
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Falha ao deletar task (status ${res.status})`);
     } catch (e) {
       if (Platform.OS === 'web') throw e;
     }
@@ -255,29 +265,28 @@ export const ApiService = {
   // CHARACTERS
   async getCharacters(filter?: { username?: string; role?: Role }): Promise<CharacterData[]> {
     try {
-      if (Platform.OS === 'web') {
-        const query = new URLSearchParams();
-        query.set('t', Date.now().toString());
-        if (filter?.role === 'PLAYER' && filter.username) {
-          query.set('role', 'PLAYER');
-          query.set('username', filter.username);
-        }
+      const query = new URLSearchParams();
+      query.set('t', Date.now().toString());
+      if (filter?.role === 'PLAYER' && filter.username) {
+        query.set('role', 'PLAYER');
+        query.set('username', filter.username);
+      }
 
-        const res = await fetch(`/api/characters?${query.toString()}`, {
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/characters?${query.toString()}`, {
+        headers: getAuthHeaders({
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          if (!filter || filter.role !== 'PLAYER') {
+            saveToStorage(data);
           }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            if (!filter || filter.role !== 'PLAYER') {
-              saveToStorage(data);
-            }
-            return data;
-          }
+          return data;
         }
       }
     } catch (e) {
@@ -292,8 +301,10 @@ export const ApiService = {
   },
 
   async createCharacter(data: Partial<CharacterData>): Promise<CharacterData> {
+    const currentAuth = authStorage.get();
     const newChar: CharacterData = {
       id: `char-${Date.now()}`,
+      userId: data.userId || currentAuth?.id,
       name: data.name || 'Novo Herói',
       playerName: data.playerName || 'Jogador',
       race: data.race || 'Humano',
@@ -310,7 +321,7 @@ export const ApiService = {
       hitDiceType: data.hitDiceType || '1d10',
       hitDiceTotal: data.level || 1,
       hitDiceSpent: 0,
-      username: data.username || '',
+      username: data.username || currentAuth?.username || '',
       deathSaveSuccesses: 0,
       deathSaveFailures: 0,
       str: data.str || 10,
@@ -345,22 +356,21 @@ export const ApiService = {
     };
 
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch('/api/characters', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newChar),
-        });
-        if (res.ok) {
-          const created = await res.json();
-          const chars = loadFromStorage();
-          chars.push(created);
-          saveToStorage(chars);
-          return created;
-        }
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Falha ao criar personagem (status ${res.status})`);
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/characters`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(newChar),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const chars = loadFromStorage();
+        chars.push(created);
+        saveToStorage(chars);
+        return created;
       }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Falha ao criar personagem (status ${res.status})`);
     } catch (e) {
       if (Platform.OS === 'web') throw e;
     }
@@ -371,29 +381,28 @@ export const ApiService = {
     return newChar;
   },
 
-  async updateCharacter(id: string, updates: Partial<CharacterData>): Promise<CharacterData> {
+  async updateCharacter(id: string, updates: Partial<CharacterData>, requesterId?: string): Promise<CharacterData> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/characters/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
-        });
-        if (res.ok) {
-          const updated = await res.json();
-          const chars = loadFromStorage();
-          const idx = chars.findIndex(c => c.id === id);
-          if (idx !== -1) {
-            chars[idx] = updated;
-          } else {
-            chars.push(updated);
-          }
-          saveToStorage(chars);
-          return updated;
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/characters/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }, requesterId),
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        const chars = loadFromStorage();
+        const idx = chars.findIndex(c => c.id === id);
+        if (idx !== -1) {
+          chars[idx] = updated;
+        } else {
+          chars.push(updated);
         }
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Falha ao atualizar personagem (status ${res.status})`);
+        saveToStorage(chars);
+        return updated;
       }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Falha ao atualizar personagem (status ${res.status})`);
     } catch (err) {
       if (Platform.OS === 'web') throw err;
     }
@@ -408,14 +417,16 @@ export const ApiService = {
     throw new Error('Personagem não encontrado');
   },
 
-  async deleteCharacter(id: string): Promise<boolean> {
+  async deleteCharacter(id: string, requesterId?: string): Promise<boolean> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/characters/${id}`, { method: 'DELETE' });
-        if (res.ok) return true;
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Falha ao deletar personagem (status ${res.status})`);
-      }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/characters/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders({}, requesterId),
+      });
+      if (res.ok) return true;
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Falha ao deletar personagem (status ${res.status})`);
     } catch (e) {
       if (Platform.OS === 'web') throw e;
     }
@@ -564,12 +575,13 @@ export const ApiService = {
   // USERS & PERMISSIONS
   async getUsers(): Promise<UserData[]> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/users?t=${Date.now()}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) return data;
-        }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/users?t=${Date.now()}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
       }
     } catch (e) {
       console.warn('Erro ao buscar usuários da API', e);
@@ -577,69 +589,60 @@ export const ApiService = {
     return [];
   },
 
-  async createUser(data: { name: string; username: string; password?: string; role: Role }): Promise<UserData> {
-    if (Platform.OS === 'web') {
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        return await res.json();
-      } else {
-        const err = await res.json();
-        throw new Error(err.error || 'Erro ao criar usuário');
-      }
+  async createUser(data: { name: string; username: string; password?: string; role: Role }, requesterId?: string): Promise<UserData> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/users`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, requesterId),
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      return await res.json();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erro ao criar usuário');
     }
-    throw new Error('Ambiente não suportado para criação de usuário');
   },
 
-  async updateUser(id: string, data: { name?: string; role?: Role; password?: string }, requesterId?: string): Promise<UserData> {
-    if (Platform.OS === 'web') {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (requesterId) headers['x-user-id'] = requesterId;
-      const res = await fetch(`/api/users/${id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        return await res.json();
-      } else {
-        const err = await res.json();
-        throw new Error(err.error || 'Erro ao atualizar usuário');
-      }
+  async updateUser(id: string, data: { name?: string; role?: Role; password?: string; currentPassword?: string }, requesterId?: string): Promise<UserData> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/users/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, requesterId),
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      return await res.json();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erro ao atualizar usuário');
     }
-    throw new Error('Ambiente não suportado para atualização de usuário');
   },
 
   async deleteUser(id: string, requesterId?: string): Promise<boolean> {
-    if (Platform.OS === 'web') {
-      const headers: Record<string, string> = {};
-      if (requesterId) headers['x-user-id'] = requesterId;
-      const res = await fetch(`/api/users/${id}`, {
-        method: 'DELETE',
-        headers,
-      });
-      if (res.ok) {
-        return true;
-      } else {
-        const err = await res.json();
-        throw new Error(err.error || 'Erro ao excluir usuário');
-      }
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/users/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders({}, requesterId),
+    });
+    if (res.ok) {
+      return true;
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erro ao excluir usuário');
     }
-    return false;
   },
 
   // SESSIONS / JOURNAL
   async getSessions(): Promise<CampaignSessionData[]> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/journal/sessions?t=${Date.now()}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) return data;
-        }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/journal/sessions?t=${Date.now()}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
       }
     } catch (e) {
       console.warn('Erro ao buscar sessões do diário:', e);
@@ -650,11 +653,12 @@ export const ApiService = {
   // SCHEDULE / NEXT SESSION & RSVP
   async getScheduledSession(): Promise<ScheduleResponseData> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/schedule?t=${Date.now()}`);
-        if (res.ok) {
-          return await res.json();
-        }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/schedule?t=${Date.now()}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
       }
     } catch (e) {
       console.warn('Erro ao buscar próxima sessão agendada:', e);
@@ -670,20 +674,18 @@ export const ApiService = {
     userId: string;
     resetRsvps?: boolean;
   }): Promise<ScheduledSessionData> {
-    if (Platform.OS === 'web') {
-      const res = await fetch('/api/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        return await res.json();
-      } else {
-        const err = await res.json();
-        throw new Error(err.error || 'Erro ao agendar sessão');
-      }
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/schedule`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, payload.userId),
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      return await res.json();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erro ao agendar sessão');
     }
-    throw new Error('Ambiente não suportado');
   },
 
   async submitRsvp(payload: {
@@ -692,30 +694,29 @@ export const ApiService = {
     status: RsvpStatus;
     note?: string;
   }): Promise<SessionRsvpData> {
-    if (Platform.OS === 'web') {
-      const res = await fetch('/api/schedule/rsvp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        return await res.json();
-      } else {
-        const err = await res.json();
-        throw new Error(err.error || 'Erro ao confirmar presença');
-      }
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/schedule/rsvp`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, payload.userId),
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      return await res.json();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erro ao confirmar presença');
     }
-    throw new Error('Ambiente não suportado');
   },
 
   // DISPONIBILIDADE DA COMITIVA (CALENDÁRIO)
   async getAvailability(month: string): Promise<AvailabilityResponseData> {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch(`/api/availability?month=${month}&t=${Date.now()}`);
-        if (res.ok) {
-          return await res.json();
-        }
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/availability?month=${month}&t=${Date.now()}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
       }
     } catch (e) {
       console.warn('Erro ao buscar disponibilidade:', e);
@@ -729,36 +730,32 @@ export const ApiService = {
   },
 
   async toggleAvailability(userId: string, date: string): Promise<{ success: boolean; status: 'ADDED' | 'REMOVED' }> {
-    if (Platform.OS === 'web') {
-      const res = await fetch('/api/availability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'TOGGLE', userId, date }),
-      });
-      if (res.ok) {
-        return await res.json();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Erro ao alternar disponibilidade');
-      }
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/availability`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
+      body: JSON.stringify({ action: 'TOGGLE', userId, date }),
+    });
+    if (res.ok) {
+      return await res.json();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erro ao alternar disponibilidade');
     }
-    throw new Error('Ambiente não suportado');
   },
 
   async batchSetAvailability(userId: string, month: string, dates: string[]): Promise<{ success: boolean; count: number }> {
-    if (Platform.OS === 'web') {
-      const res = await fetch('/api/availability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'BATCH_SET', userId, month, dates }),
-      });
-      if (res.ok) {
-        return await res.json();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Erro ao salvar disponibilidade em lote');
-      }
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/availability`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
+      body: JSON.stringify({ action: 'BATCH_SET', userId, month, dates }),
+    });
+    if (res.ok) {
+      return await res.json();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erro ao salvar disponibilidade em lote');
     }
-    throw new Error('Ambiente não suportado');
   },
 };

@@ -142,8 +142,18 @@ function toSafeNumber(val: any, fallback: number = 0): number {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const requesterId = request.headers.get('x-user-id') || body.userId;
+    let userIdToSet: string | undefined = undefined;
+    if (requesterId) {
+      const u = await prisma.user.findUnique({ where: { id: requesterId } });
+      if (u) {
+        userIdToSet = u.id;
+      }
+    }
+
     const newChar = await prisma.character.create({
       data: {
+        userId: userIdToSet,
         name: String(body.name || 'Novo Herói'),
         playerName: String(body.playerName || 'Jogador'),
         race: String(body.race || 'Humano'),

@@ -22,14 +22,49 @@ export async function PATCH(req: Request, context: any) {
     const body = await req.json();
     const requesterId = req.headers.get('x-user-id') || body.requesterId;
 
+    const requester = requesterId
+      ? await prisma.user.findUnique({ where: { id: requesterId } })
+      : null;
+
     // Apenas o Mestre pode alterar permissões (role)
     if (body.role !== undefined) {
-      if (!requesterId) {
-        return Response.json({ error: 'Identificação necessária para alterar permissões' }, { status: 401 });
-      }
-      const requester = await prisma.user.findUnique({ where: { id: requesterId } });
       if (!requester || requester.role !== 'DM') {
         return Response.json({ error: 'Apenas o Mestre pode alterar cargos de usuários' }, { status: 403 });
+      }
+    }
+
+    // Apenas o próprio usuário ou o Mestre podem alterar o nome
+    if (body.name !== undefined) {
+      if (!requester || (requester.id !== existing.id && requester.role !== 'DM')) {
+        return Response.json({ error: 'Sem permissão para alterar o nome deste usuário' }, { status: 403 });
+      }
+    }
+
+    // Alteração de Senha Segura
+    if (body.password) {
+      if (!requester) {
+        return Response.json({ error: 'Identificação necessária para alterar senha' }, { status: 401 });
+      }
+
+      const isSelf = requester.id === existing.id;
+      const isDm = requester.role === 'DM';
+
+      if (!isSelf && !isDm) {
+        return Response.json({ error: 'Sem permissão para alterar a senha deste usuário' }, { status: 403 });
+      }
+
+      // Se o usuário está alterando a própria senha, exige a senha atual
+      if (isSelf && !isDm) {
+        if (!body.currentPassword) {
+          return Response.json(
+            { error: 'Informe sua senha atual para definir uma nova senha' },
+            { status: 400 }
+          );
+        }
+        const isCurrentValid = await bcrypt.compare(body.currentPassword, existing.password);
+        if (!isCurrentValid) {
+          return Response.json({ error: 'Senha atual incorreta' }, { status: 401 });
+        }
       }
     }
 
