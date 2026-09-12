@@ -1,10 +1,3 @@
-import React, { useMemo, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import {
   calculateActionCombo,
@@ -27,17 +20,26 @@ import {
   Sword,
   Zap,
 } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface ActionCalculatorProps {
   char: CharacterData;
   themeColor?: string;
   isMobile?: boolean;
+  initialExpanded?: boolean;
 }
 
 export const ActionCalculator: React.FC<ActionCalculatorProps> = ({
   char,
   themeColor = '#C5A059',
   isMobile = false,
+  initialExpanded = false,
 }) => {
   const defaultAttacks = useMemo(() => getDefaultExtraAttacks(char), [char]);
   const attackChoices = useMemo(() => getAvailableAttackChoices(char), [char]);
@@ -75,8 +77,8 @@ export const ActionCalculator: React.FC<ActionCalculatorProps> = ({
     },
   });
 
-  // Controle de expansão do painel (inicia aberto)
-  const [isExpanded, setIsExpanded] = useState(true);
+  // Controle de expansão do painel (inicia retraído para economizar espaço)
+  const [isExpanded, setIsExpanded] = useState(initialExpanded);
 
   // Mostra/oculta roteiro narrativo detalhado
   const [showNarrative, setShowNarrative] = useState(true);
@@ -128,7 +130,7 @@ export const ActionCalculator: React.FC<ActionCalculatorProps> = ({
         >
           <Sparkles size={14} color={themeColor} />
           <Text style={[styles.headerTitle, { color: themeColor }]}>
-            CALCULADORA DE AÇÃO & COMBOS
+            CALCULADORA DE AÇÃO
           </Text>
           <View style={[styles.liveBadge, { backgroundColor: `${themeColor}18` }]}>
             <Text style={[styles.liveBadgeText, { color: themeColor }]}>D&D 5e</Text>

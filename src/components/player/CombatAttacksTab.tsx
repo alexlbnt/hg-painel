@@ -11,7 +11,6 @@ import {
 import { ActionCalculator } from './ActionCalculator';
 import {
   Sword,
-  Clock,
   Flame,
   CheckCircle,
   Package,
@@ -233,40 +232,6 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = ({
           </View>
         </View>
       )}
-
-      {/* ⏱️ 3. ECONOMIA DE AÇÕES NO TURNO (REFERÊNCIA RÁPIDA D&D 5e) */}
-      <View style={styles.actionEconomyCard}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-          <Clock size={14} color="#C5A059" />
-          <Text style={styles.actionEconomyTitle}>GUIA DE AÇÕES NO SEU TURNO</Text>
-        </View>
-
-        <View style={[styles.actionEconomyGrid, isMobile && { flexDirection: 'column', gap: 8 }]}>
-          <View style={styles.actionEconomyCol}>
-            <Text style={[styles.actionTypeBadge, { color: '#E6C280' }]}>⚡ AÇÃO</Text>
-            <Text style={styles.actionItemList}>• Atacar com arma</Text>
-            <Text style={styles.actionItemList}>• Conjurar magia (1 Ação)</Text>
-            <Text style={styles.actionItemList}>• Desengajar / Esquivar</Text>
-            <Text style={styles.actionItemList}>• Disparada / Ajudar</Text>
-          </View>
-
-          <View style={styles.actionEconomyCol}>
-            <Text style={[styles.actionTypeBadge, { color: '#4E9C8E' }]}>✨ AÇÃO BÔNUS</Text>
-            <Text style={styles.actionItemList}>• Ataque com 2ª arma</Text>
-            <Text style={styles.actionItemList}>• Magias bônus (ex: Curar)</Text>
-            <Text style={styles.actionItemList}>• Fúria / Retomar o Fôlego</Text>
-            <Text style={styles.actionItemList}>• Habilidades de classe</Text>
-          </View>
-
-          <View style={styles.actionEconomyCol}>
-            <Text style={[styles.actionTypeBadge, { color: '#B82828' }]}>🛡️ REAÇÃO</Text>
-            <Text style={styles.actionItemList}>• Ataque de oportunidade</Text>
-            <Text style={styles.actionItemList}>• Magia Escudo Arcano</Text>
-            <Text style={styles.actionItemList}>• Absorver Elementos</Text>
-            <Text style={styles.actionItemList}>• Contra-feitiço</Text>
-          </View>
-        </View>
-      </View>
     </View>
   );
 };
@@ -467,41 +432,5 @@ const styles = StyleSheet.create({
     color: '#4E9C8E',
     fontSize: 12,
     fontWeight: 'bold',
-  },
-  actionEconomyCard: {
-    backgroundColor: '#14120F',
-    borderWidth: 1,
-    borderColor: '#2D251E',
-    borderRadius: 8,
-    padding: 12,
-  },
-  actionEconomyTitle: {
-    color: '#BAAFA0',
-    fontSize: 11,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  actionEconomyGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-  },
-  actionEconomyCol: {
-    flex: 1,
-    backgroundColor: '#191613',
-    borderRadius: 6,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#25201A',
-  },
-  actionTypeBadge: {
-    fontSize: 10.5,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  actionItemList: {
-    color: '#9C9184',
-    fontSize: 10.5,
-    lineHeight: 15,
   },
 });
