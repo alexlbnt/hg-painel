@@ -766,67 +766,69 @@ export default function HomeScreen() {
       <View style={styles.sectionContainer}>
         <View style={styles.worldBannerHeader}>
           <View style={styles.worldTitleRow}>
-            <Globe color="#E6C280" size={26} />
+            <Globe color="#E6C280" size={16} />
             <Text style={styles.worldMainTitle}>O UNIVERSO DE HONRA & EGOÍSMO</Text>
           </View>
           <Text style={styles.worldMainSub}>
-            Acesse a cronologia das eras, o panteão divino, os suplementos de mecânicas e os compêndios oficiais.
+            Wiki oficial do cenário e suplementos de mecânica
           </Text>
         </View>
 
         <View style={[styles.worldCardsGrid, isWide ? styles.worldCardsGridRow : styles.worldCardsGridCol]}>
           {/* Card Wiki Oficial */}
           <TouchableOpacity
-            style={[styles.worldCard, styles.wikiCardBorder]}
-            activeOpacity={0.85}
+            style={[styles.worldCardCompact, styles.wikiCardBorder]}
+            activeOpacity={0.75}
             onPress={() => Linking.openURL('https://hg.a11y.host')}
           >
-            <View style={styles.worldCardHeader}>
-              <View style={[styles.worldIconBox, { backgroundColor: 'rgba(78, 156, 142, 0.15)', borderColor: '#4E9C8E' }]}>
-                <BookOpen color="#4E9C8E" size={26} />
-              </View>
-              <View style={styles.badgePillWiki}>
-                <Sparkles color="#4E9C8E" size={12} />
-                <Text style={styles.badgePillWikiText}>WIKI OFICIAL & LORE</Text>
-              </View>
+            <View style={[styles.worldIconBoxCompact, { backgroundColor: 'rgba(78, 156, 142, 0.12)', borderColor: 'rgba(78, 156, 142, 0.3)' }]}>
+              <BookOpen color="#4E9C8E" size={18} />
             </View>
 
-            <Text style={styles.worldCardTitle}>Compêndio & Lore do Mundo</Text>
-            <Text style={styles.worldCardDesc}>
-              Portal interativo com a história dos reinos, divindades, facções, bestiário e regras de magia exclusivas do cenário de Honra & Egoísmo.
-            </Text>
+            <View style={styles.worldCardContent}>
+              <View style={styles.worldCardTitleRow}>
+                <Text style={styles.worldCardTitle}>Compêndio & Lore</Text>
+                <View style={styles.badgePillWiki}>
+                  <Sparkles color="#4E9C8E" size={10} />
+                  <Text style={styles.badgePillWikiText}>WIKI</Text>
+                </View>
+              </View>
+              <Text style={styles.worldCardDesc} numberOfLines={1}>
+                Reinos, divindades, facções e regras de magia
+              </Text>
+            </View>
 
-            <View style={[styles.worldBtn, { backgroundColor: '#4E9C8E' }]}>
-              <Text style={styles.worldBtnText}>Acessar Portal da Wiki 🌐</Text>
-              <ExternalLink color="#110F0D" size={16} />
+            <View style={[styles.worldCardActionIcon, { borderColor: 'rgba(78, 156, 142, 0.3)' }]}>
+              <ExternalLink color="#4E9C8E" size={14} />
             </View>
           </TouchableOpacity>
 
           {/* Card Drive de Arquivos */}
-          <View style={[styles.worldCard, styles.driveCardBorder]}>
-            <View style={styles.worldCardHeader}>
-              <View style={[styles.worldIconBox, { backgroundColor: 'rgba(197, 160, 89, 0.15)', borderColor: '#C5A059' }]}>
-                <Folder color="#E6C280" size={26} />
-              </View>
-              <View style={styles.badgePillDrive}>
-                <Text style={styles.badgePillDriveText}>SUPLEMENTOS & REGRAS</Text>
-              </View>
+          <TouchableOpacity
+            style={[styles.worldCardCompact, styles.driveCardBorder]}
+            activeOpacity={0.75}
+            onPress={() => Linking.openURL(driveUrl)}
+          >
+            <View style={[styles.worldIconBoxCompact, { backgroundColor: 'rgba(197, 160, 89, 0.12)', borderColor: 'rgba(197, 160, 89, 0.3)' }]}>
+              <Folder color="#E6C280" size={18} />
             </View>
 
-            <Text style={styles.worldCardTitle}>Arquivos de Mecânicas (Drive)</Text>
-            <Text style={styles.worldCardDesc}>
-              Repositório na nuvem com os livros de regras, PDFs de classes homebrew, tabelas de itens mágicos, fichas em branco e guias da nossa mesa.
-            </Text>
+            <View style={styles.worldCardContent}>
+              <View style={styles.worldCardTitleRow}>
+                <Text style={styles.worldCardTitle}>Arquivos & Suplementos</Text>
+                <View style={styles.badgePillDrive}>
+                  <Text style={styles.badgePillDriveText}>DRIVE</Text>
+                </View>
+              </View>
+              <Text style={styles.worldCardDesc} numberOfLines={1}>
+                Livros de regras, fichas em branco e homebrews
+              </Text>
+            </View>
 
-            <TouchableOpacity
-              style={[styles.worldBtn, { backgroundColor: '#C5A059' }]}
-              activeOpacity={0.85}
-              onPress={() => Linking.openURL(driveUrl)}
-            >
-              <Text style={[styles.worldBtnText, { color: '#110F0D' }]}>Abrir Google Drive </Text>
-              <ExternalLink color="#110F0D" size={16} />
-            </TouchableOpacity>
-          </View>
+            <View style={[styles.worldCardActionIcon, { borderColor: 'rgba(197, 160, 89, 0.3)' }]}>
+              <ExternalLink color="#E6C280" size={14} />
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -1728,28 +1730,31 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   worldBannerHeader: {
-    marginBottom: 20,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: 6,
   },
   worldTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   worldMainTitle: {
     color: '#E6C280',
-    fontSize: 20,
+    fontSize: 13,
     fontWeight: '700',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", serif' : undefined,
   },
   worldMainSub: {
     color: '#80776C',
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 11,
   },
   worldCardsGrid: {
-    gap: 20,
+    gap: 10,
   },
   worldCardsGridRow: {
     flexDirection: 'row',
@@ -1757,90 +1762,94 @@ const styles = StyleSheet.create({
   worldCardsGridCol: {
     flexDirection: 'column',
   },
-  worldCard: {
+  worldCardCompact: {
     flex: 1,
-    backgroundColor: '#1A1714',
+    backgroundColor: '#171411',
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 24,
-    gap: 14,
-    justifyContent: 'space-between',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   wikiCardBorder: {
-    borderColor: '#4E9C8E',
+    borderColor: 'rgba(78, 156, 142, 0.3)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#4E9C8E',
   },
   driveCardBorder: {
-    borderColor: '#C5A059',
+    borderColor: 'rgba(197, 160, 89, 0.3)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#C5A059',
   },
-  worldCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  worldIconBox: {
-    width: 48,
-    height: 48,
+  worldIconBoxCompact: {
+    width: 38,
+    height: 38,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  worldCardContent: {
+    flex: 1,
+    gap: 3,
+  },
+  worldCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  worldCardTitle: {
+    color: '#E2D8C3',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  worldCardDesc: {
+    color: '#80776C',
+    fontSize: 11,
+    lineHeight: 15,
   },
   badgePillWiki: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: 'rgba(78, 156, 142, 0.15)',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 20,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#4E9C8E',
+    borderColor: 'rgba(78, 156, 142, 0.4)',
   },
   badgePillWikiText: {
     color: '#4E9C8E',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   badgePillDrive: {
     backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 20,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#C5A059',
+    borderColor: 'rgba(197, 160, 89, 0.4)',
   },
   badgePillDriveText: {
     color: '#C5A059',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
-  worldCardTitle: {
-    color: '#E2D8C3',
-    fontSize: 18,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", serif' : undefined,
-  },
-  worldCardDesc: {
-    color: '#BAAFA0',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  worldBtn: {
-    flexDirection: 'row',
+  worldCardActionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    marginTop: 6,
-  },
-  worldBtnText: {
-    color: '#110F0D',
-    fontSize: 13,
-    fontWeight: 'bold',
   },
   // ============================================================
   // ESTILOS DA PRÓXIMA SESSÃO, QUÓRUM & RSVP
