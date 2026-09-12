@@ -29,6 +29,7 @@ model User {
   updatedAt DateTime @updatedAt
   journalNotes JournalNote[]
   rsvps        SessionRsvp[]
+  availabilities PlayerAvailability[]
 }
 
 model Room {
@@ -251,3 +252,16 @@ model SessionRsvp {
 
   @@unique([scheduledSessionId, userId])
 }
+
+model PlayerAvailability {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // ISO YYYY-MM-DD
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([date])
+}
+

@@ -39,6 +39,7 @@ import {
   X,
   Sun,
 } from 'lucide-react-native';
+import AvailabilityModal from '@/components/portal/AvailabilityModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import {
@@ -169,6 +170,7 @@ export default function HomeScreen() {
 
   const [isSubmittingRsvp, setIsSubmittingRsvp] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
   const [scheduleForm, setScheduleForm] = useState({
     title: '',
@@ -178,6 +180,16 @@ export default function HomeScreen() {
     description: '',
     resetRsvps: false,
   });
+
+  const handleScheduleFromAvailability = (dateStr: string) => {
+    setScheduleForm((p) => ({
+      ...p,
+      dateStr,
+      title: p.title || 'Próxima Sessão de Campanha',
+      location: p.location || 'Discord - Taverna Principal',
+    }));
+    setIsScheduleModalOpen(true);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -848,19 +860,32 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* Botão de Agendamento para Mestre / Mecânico */}
-            {(user?.role === 'DM' || user?.role === 'MECHANIC') && (
+            {/* Ações do Cabeçalho */}
+            <View style={styles.scheduleHeaderActions}>
+              {/* Botão de Disponibilidade da Comitiva - Acessível para todos os jogadores */}
               <TouchableOpacity
-                style={styles.scheduleEditBtn}
+                style={styles.availabilityTriggerBtn}
                 activeOpacity={0.8}
-                onPress={handleOpenScheduleModal}
+                onPress={() => setIsAvailabilityModalOpen(true)}
               >
-                <Edit3 color="#110F0D" size={14} />
-                <Text style={styles.scheduleEditBtnText}>
-                  {scheduleData.session?.scheduledAt ? 'Alterar Data / Pauta' : 'Definir Data'}
-                </Text>
+                <Calendar color="#E6C280" size={15} />
+                <Text style={styles.availabilityTriggerBtnText}>Disponibilidade da Comitiva</Text>
               </TouchableOpacity>
-            )}
+
+              {/* Botão de Agendamento para Mestre / Mecânico */}
+              {(user?.role === 'DM' || user?.role === 'MECHANIC') && (
+                <TouchableOpacity
+                  style={styles.scheduleEditBtn}
+                  activeOpacity={0.8}
+                  onPress={handleOpenScheduleModal}
+                >
+                  <Edit3 color="#110F0D" size={14} />
+                  <Text style={styles.scheduleEditBtnText}>
+                    {scheduleData.session?.scheduledAt ? 'Alterar Data / Pauta' : 'Definir Data'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Grid Principal: Relógio & Quórum */}
@@ -914,16 +939,27 @@ export default function HomeScreen() {
                   <Text style={styles.noScheduleDesc}>
                     O Mestre ainda não definiu a data do próximo encontro. Mantenha suas armas afiadas e confira os avisos da taverna!
                   </Text>
-                  {(user?.role === 'DM' || user?.role === 'MECHANIC') && (
+                  <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
                     <TouchableOpacity
-                      style={styles.primaryActionButton}
+                      style={styles.availabilityTriggerBtnHighlight}
                       activeOpacity={0.85}
-                      onPress={handleOpenScheduleModal}
+                      onPress={() => setIsAvailabilityModalOpen(true)}
                     >
                       <Calendar color="#110F0D" size={16} />
-                      <Text style={styles.primaryActionButtonText}>Agendar Próxima Sessão Agora</Text>
+                      <Text style={styles.availabilityTriggerBtnHighlightText}>Ver / Marcar Dias Livres</Text>
                     </TouchableOpacity>
-                  )}
+
+                    {(user?.role === 'DM' || user?.role === 'MECHANIC') && (
+                      <TouchableOpacity
+                        style={styles.primaryActionButton}
+                        activeOpacity={0.85}
+                        onPress={handleOpenScheduleModal}
+                      >
+                        <Calendar color="#110F0D" size={16} />
+                        <Text style={styles.primaryActionButtonText}>Agendar Próxima Sessão</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               )}
             </View>
@@ -1237,6 +1273,15 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ============================================================ */}
+      {/* MODAL: CALENDÁRIO DE DISPONIBILIDADE DA COMITIVA             */}
+      {/* ============================================================ */}
+      <AvailabilityModal
+        visible={isAvailabilityModalOpen}
+        onClose={() => setIsAvailabilityModalOpen(false)}
+        onSelectDateForSession={handleScheduleFromAvailability}
+      />
 
       {/* ============================================================ */}
       {/* 6. FOOTER IMERSIVO                                           */}
@@ -1865,6 +1910,42 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     fontFamily: Platform.OS === 'web' ? '"Cinzel", serif' : undefined,
+  },
+  scheduleHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  availabilityTriggerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(197, 160, 89, 0.12)',
+    borderWidth: 1,
+    borderColor: '#C5A059',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+  },
+  availabilityTriggerBtnText: {
+    color: '#E6C280',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  availabilityTriggerBtnHighlight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#C5A059',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+  },
+  availabilityTriggerBtnHighlightText: {
+    color: '#110F0D',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
   scheduleEditBtn: {
     flexDirection: 'row',

@@ -68,6 +68,26 @@ export interface ScheduleResponseData {
   totalUsers?: number;
 }
 
+export interface AvailabilityRecord {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    role: Role;
+  };
+  createdAt?: string;
+}
+
+export interface AvailabilityResponseData {
+  month: string;
+  users: UserData[];
+  totalPlayers: number;
+  records: AvailabilityRecord[];
+}
+
 const STORAGE_KEY = 'honra_egoismo_characters_v1';
 
 // Gerenciador de armazenamento local com fallback em memória (para funcionar em SSR/Native e Browser)
@@ -683,6 +703,60 @@ export const ApiService = {
       } else {
         const err = await res.json();
         throw new Error(err.error || 'Erro ao confirmar presença');
+      }
+    }
+    throw new Error('Ambiente não suportado');
+  },
+
+  // DISPONIBILIDADE DA COMITIVA (CALENDÁRIO)
+  async getAvailability(month: string): Promise<AvailabilityResponseData> {
+    try {
+      if (Platform.OS === 'web') {
+        const res = await fetch(`/api/availability?month=${month}&t=${Date.now()}`);
+        if (res.ok) {
+          return await res.json();
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao buscar disponibilidade:', e);
+    }
+    return {
+      month,
+      users: [],
+      totalPlayers: 0,
+      records: [],
+    };
+  },
+
+  async toggleAvailability(userId: string, date: string): Promise<{ success: boolean; status: 'ADDED' | 'REMOVED' }> {
+    if (Platform.OS === 'web') {
+      const res = await fetch('/api/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'TOGGLE', userId, date }),
+      });
+      if (res.ok) {
+        return await res.json();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Erro ao alternar disponibilidade');
+      }
+    }
+    throw new Error('Ambiente não suportado');
+  },
+
+  async batchSetAvailability(userId: string, month: string, dates: string[]): Promise<{ success: boolean; count: number }> {
+    if (Platform.OS === 'web') {
+      const res = await fetch('/api/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'BATCH_SET', userId, month, dates }),
+      });
+      if (res.ok) {
+        return await res.json();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Erro ao salvar disponibilidade em lote');
       }
     }
     throw new Error('Ambiente não suportado');
