@@ -349,15 +349,61 @@ export default function HomeScreen() {
     ? characters.find((c) => c.username && c.username.toLowerCase() === user.username.toLowerCase())
     : null;
 
+  // Saudação contextual por horário
+  const timeGreeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Bom dia';
+    if (hour >= 12 && hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }, []);
+
+  // Filtro de categorias do Mural de Missões
+  const [taskCategoryFilter, setTaskCategoryFilter] = useState<'ALL' | 'LORE' | 'MECANICA' | 'ARTE' | 'DEV'>('ALL');
+
+  const taskCounts = useMemo(() => {
+    return {
+      ALL: tasks.length,
+      LORE: tasks.filter((t) => t.category === 'LORE').length,
+      MECANICA: tasks.filter((t) => t.category === 'MECANICA').length,
+      ARTE: tasks.filter((t) => t.category === 'ARTE').length,
+      DEV: tasks.filter((t) => t.category === 'DEV').length,
+    };
+  }, [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    const active = tasks.filter((t) => t.status === 'ANDAMENTO' || t.status === 'SUGERIDO');
+    if (taskCategoryFilter === 'ALL') return active.slice(0, 3);
+    return active.filter((t) => t.category === taskCategoryFilter).slice(0, 3);
+  }, [tasks, taskCategoryFilter]);
+
+  // Dados de Quórum e Proximidade da Sessão
+  const scheduledAt = scheduleData.session?.scheduledAt;
+  const sessionScheduledDate = useMemo(() => {
+    if (!scheduledAt) return null;
+    const d = new Date(scheduledAt);
+    return isNaN(d.getTime()) ? null : d;
+  }, [scheduledAt]);
+
+  const sessionIsToday = useMemo(() => {
+    if (!sessionScheduledDate) return false;
+    return sessionScheduledDate.toDateString() === new Date().toDateString();
+  }, [sessionScheduledDate]);
+
+  const sessionIsTomorrow = useMemo(() => {
+    if (!sessionScheduledDate) return false;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return sessionScheduledDate.toDateString() === tomorrow.toDateString();
+  }, [sessionScheduledDate]);
+
+  const totalRegisteredParty = Math.max(characters.length || 0, 4);
+  const quorumPercent = Math.min(100, Math.round((confirmedList.length / totalRegisteredParty) * 100));
+  const isQuorumReached = confirmedList.length >= Math.min(characters.length || 4, 3);
+
   // Estatísticas para Mestre e Mecânico
   const totalPartyHp = characters.reduce((acc, c) => acc + (c.currentHp || 0), 0);
   const maxPartyHp = characters.reduce((acc, c) => acc + (c.maxHp || 10), 0);
   const woundedCount = characters.filter((c) => (c.currentHp || 0) < (c.maxHp || 10)).length;
-
-  // Missões ativas do Mural (em andamento ou sugeridas)
-  const activeTasks = tasks
-    .filter((t) => t.status === 'ANDAMENTO' || t.status === 'SUGERIDO')
-    .slice(0, 3);
 
   // Última sessão do diário
   const latestSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
@@ -388,47 +434,165 @@ export default function HomeScreen() {
       <View style={styles.hero}>
         <View style={styles.heroGlowEffect} />
 
-        {/* Badge de Identidade de Campanha / Função */}
-        <View style={styles.badge}>
-          {user?.role === 'DM' ? (
-            <>
-              <Crown color="#C5A059" size={14} />
-              <Text style={styles.badgeText}>MESTRE DA CAMPANHA • ESCUDO ATIVO</Text>
-            </>
-          ) : user?.role === 'MECHANIC' ? (
-            <>
-              <Sparkles color="#4E9C8E" size={14} />
-              <Text style={[styles.badgeText, { color: '#4E9C8E' }]}>ARTÍFICE MECÂNICO • TODAS AS FICHAS</Text>
-            </>
-          ) : user ? (
-            <>
-              <Shield color="#C5A059" size={14} />
-              <Text style={styles.badgeText}>AVENTUREIRO DE HONRA & EGOÍSMO</Text>
-            </>
-          ) : (
-            <>
-              <Scroll color="#C5A059" size={14} />
-              <Text style={styles.badgeText}>D&D 5E • TAVERNA DE HONRA & EGOÍSMO</Text>
-            </>
+        <View style={styles.heroTopRow}>
+          {/* Badge de Identidade de Campanha / Função */}
+          <View style={styles.badge}>
+            {user?.role === 'DM' ? (
+              <>
+                <Crown color="#C5A059" size={13} />
+                <Text style={styles.badgeText}>MESTRE DA CAMPANHA</Text>
+              </>
+            ) : user?.role === 'MECHANIC' ? (
+              <>
+                <Sparkles color="#4E9C8E" size={13} />
+                <Text style={[styles.badgeText, { color: '#4E9C8E' }]}>ARTÍFICE MECÂNICO</Text>
+              </>
+            ) : user ? (
+              <>
+                <Shield color="#C5A059" size={13} />
+                <Text style={styles.badgeText}>AVENTUREIRO</Text>
+              </>
+            ) : (
+              <>
+                <Scroll color="#C5A059" size={13} />
+                <Text style={styles.badgeText}>TAVERNA D&D 5E</Text>
+              </>
+            )}
+          </View>
+
+          {/* Micro-cápsula do Herói Ativo (se houver) */}
+          {myCharacter && (
+            <TouchableOpacity
+              style={styles.heroHeroCapsule}
+              activeOpacity={0.8}
+              onPress={() => router.push('/player')}
+            >
+              <Shield color={myCharacter.themeColor || '#C5A059'} size={13} />
+              <Text style={styles.heroHeroCapsuleText}>
+                {myCharacter.name} • {myCharacter.class} Nv.{myCharacter.level} ({myCharacter.currentHp}/{myCharacter.maxHp} HP)
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
 
-        {/* Título Principal */}
-        <Text style={[styles.heroTitle, isMobile && { fontSize: 32, letterSpacing: 1.5 }]}>
-          {user ? `BEM-VINDO, ${user.name.toUpperCase()}` : 'HONRA & EGOÍSMO'}
+        {/* Título Principal com Saudação Dinâmica */}
+        <Text style={[styles.heroTitle, isMobile && { fontSize: 24, letterSpacing: 1 }]}>
+          {user ? `${timeGreeting.toUpperCase()}, ${user.name.toUpperCase()}` : 'HONRA & EGOÍSMO'}
         </Text>
 
-        {/* Subtítulo Narrativo */}
-        <Text style={[styles.heroSubtitle, isMobile && { fontSize: 14, lineHeight: 22 }]}>
+        {/* Subtítulo Dinâmico e Conciso */}
+        <Text style={[styles.heroSubtitle, isMobile && { fontSize: 13, lineHeight: 18 }]}>
           {user?.role === 'DM'
-            ? 'A taverna repousa sob seu comando. O Escudo do Mestre, rituais divinos e o controle de aventureiros estão à sua inteira disposição.'
+            ? 'O Escudo do Mestre e o destino da comitiva repousam sob seu comando.'
             : user?.role === 'MECHANIC'
-            ? 'A bancada de artífice está aberta. Inspecione atributos, balanceie espaços de magia e auxilie qualquer companheiro da campanha.'
+            ? 'A bancada de artífice está aberta para forjar e auditar fichas.'
             : user
-            ? 'O fogo da lareira crepita enquanto os bardos cantam glórias passadas. Seu grimório, armas e feitiços estão a postos para o chamado.'
-            : 'O portal interativo e moderno para D&D 5e. Esqueça contas manuais: fichas, combates em tempo real e diários de campanha na ponta dos dedos.'}
+            ? 'A comitiva se reúne ao redor da fogueira. Prepare suas armas e magias para a jornada.'
+            : 'Portal moderno para D&D 5e: fichas em tempo real, diário de bordo e convocação de sessões.'}
         </Text>
       </View>
+
+      {/* ============================================================ */}
+      {/* 1.1 BARRA RÁPIDA DE SESSÃO & QUÓRUM (MODO DIA DE SESSÃO)     */}
+      {/* ============================================================ */}
+      {scheduleData.session?.scheduledAt && (
+        <View style={[styles.quickSessionBar, sessionIsToday && styles.quickSessionBarToday]}>
+          <View style={[styles.quickSessionMainRow, !isWide && styles.quickSessionMainCol]}>
+            {/* Lado Esquerdo: Tag, Título e Data */}
+            <View style={styles.quickSessionInfoCol}>
+              <View style={styles.quickSessionTagRow}>
+                {sessionIsToday ? (
+                  <View style={styles.pillToday}>
+                    <Sparkles color="#110F0D" size={11} />
+                    <Text style={styles.pillTodayText}>SESSÃO HOJE!</Text>
+                  </View>
+                ) : sessionIsTomorrow ? (
+                  <View style={styles.pillTomorrow}>
+                    <Clock color="#E6C280" size={11} />
+                    <Text style={styles.pillTomorrowText}>SESSÃO AMANHÃ</Text>
+                  </View>
+                ) : (
+                  <View style={styles.pillScheduled}>
+                    <Calendar color="#C5A059" size={11} />
+                    <Text style={styles.pillScheduledText}>PRÓXIMA SESSÃO</Text>
+                  </View>
+                )}
+                <Text style={styles.quickSessionTitle} numberOfLines={1}>
+                  {scheduleData.session.title || 'Sessão de Campanha'}
+                </Text>
+              </View>
+
+              <View style={styles.quickSessionMetaRow}>
+                <Text style={styles.quickSessionDateTime}>
+                  📅 {sessionScheduledDate?.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })} às {sessionScheduledDate?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+                <Text style={styles.quickSessionLocation} numberOfLines={1}>
+                  📍 {scheduleData.session.location || 'Discord - Taverna Principal'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Centro: Medidor Visual de Quórum */}
+            <View style={styles.quickSessionQuorumCol}>
+              <View style={styles.quorumHeaderMini}>
+                <Text style={styles.quorumPercentLabel}>
+                  Quórum: {confirmedList.length}/{totalRegisteredParty} ({quorumPercent}%)
+                </Text>
+                <Text style={[styles.quorumStatusMini, { color: isQuorumReached ? '#4E9C8E' : '#C5A059' }]}>
+                  {isQuorumReached ? '⚔️ Quórum Atingido' : '⏳ Aguardando'}
+                </Text>
+              </View>
+              <View style={styles.quorumProgressBarTrack}>
+                <View
+                  style={[
+                    styles.quorumProgressBarFill,
+                    {
+                      width: `${quorumPercent}%`,
+                      backgroundColor: isQuorumReached ? '#4E9C8E' : '#C5A059',
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Lado Direito: Quick RSVP em 1 toque */}
+            <View style={styles.quickSessionActionCol}>
+              {user ? (
+                myRsvpStatus === 'CONFIRMED' ? (
+                  <View style={styles.quickRsvpConfirmedBadge}>
+                    <CheckCircle2 color="#4E9C8E" size={14} />
+                    <Text style={styles.quickRsvpConfirmedText}>Presença Confirmada</Text>
+                  </View>
+                ) : (
+                  <View style={styles.quickRsvpButtonsRow}>
+                    <TouchableOpacity
+                      style={[styles.quickRsvpBtn, styles.quickRsvpBtnConfirm]}
+                      activeOpacity={0.8}
+                      disabled={isSubmittingRsvp}
+                      onPress={() => handleRsvp('CONFIRMED')}
+                    >
+                      <CheckCircle2 color="#110F0D" size={13} />
+                      <Text style={styles.quickRsvpBtnConfirmText}>Confirmar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.quickRsvpBtn, styles.quickRsvpBtnMaybe]}
+                      activeOpacity={0.8}
+                      disabled={isSubmittingRsvp}
+                      onPress={() => handleRsvp('MAYBE')}
+                    >
+                      <AlertCircle color="#E6C280" size={13} />
+                      <Text style={styles.quickRsvpBtnMaybeText}>Dúvida</Text>
+                    </TouchableOpacity>
+                  </View>
+                )
+              ) : (
+                <Text style={styles.quickSessionGuestText}>Faça login para confirmar</Text>
+              )}
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* ============================================================ */}
       {/* 2. HUB CENTRAL: COMANDO DO HERÓI & MURAL DE MISSÕES         */}
@@ -662,15 +826,40 @@ export default function HomeScreen() {
               </View>
             </View>
 
+            {/* Abas de Filtro por Categoria */}
+            <View style={styles.taskFilterTabsRow}>
+              {(['ALL', 'LORE', 'MECANICA', 'ARTE', 'DEV'] as const).map((cat) => {
+                const isActive = taskCategoryFilter === cat;
+                const label = cat === 'ALL' ? 'Todas' : cat === 'MECANICA' ? 'Mecânica' : cat === 'LORE' ? 'Lore' : cat === 'ARTE' ? 'Arte' : 'Dev';
+                const count = taskCounts[cat];
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.taskFilterTab, isActive && styles.taskFilterTabActive]}
+                    activeOpacity={0.75}
+                    onPress={() => setTaskCategoryFilter(cat)}
+                  >
+                    <Text style={[styles.taskFilterTabText, isActive && styles.taskFilterTabTextActive]}>
+                      {label} {count > 0 ? `(${count})` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             {loadingData ? (
               <ActivityIndicator color="#C5A059" style={{ marginVertical: 20 }} />
-            ) : activeTasks.length === 0 ? (
+            ) : filteredTasks.length === 0 ? (
               <View style={styles.emptyTaskNotice}>
-                <Text style={styles.emptyTaskNoticeText}>O mural está vazio no momento. Nenhuma missão ativa.</Text>
+                <Text style={styles.emptyTaskNoticeText}>
+                  {taskCategoryFilter === 'ALL'
+                    ? 'O mural está vazio no momento. Nenhuma missão ativa.'
+                    : `Nenhuma missão ativa na categoria ${taskCategoryFilter}.`}
+                </Text>
               </View>
             ) : (
               <View style={styles.tasksPreviewList}>
-                {activeTasks.map((t) => {
+                {filteredTasks.map((t) => {
                   const catStyle = TASK_CATEGORY_COLORS[t.category] || TASK_CATEGORY_COLORS.LORE;
                   return (
                     <TouchableOpacity
@@ -1084,7 +1273,35 @@ export default function HomeScreen() {
 
               {/* Estatísticas de Quórum da Mesa */}
               <View style={styles.quorumCard}>
-                <Text style={styles.quorumHeaderTitle}>QUÓRUM DA COMITIVA</Text>
+                <View style={styles.quorumCardHeaderRow}>
+                  <Text style={styles.quorumHeaderTitle}>QUÓRUM DA COMITIVA</Text>
+                  <View style={[styles.quorumBadgeCapsule, { backgroundColor: isQuorumReached ? 'rgba(78, 156, 142, 0.15)' : 'rgba(197, 160, 89, 0.15)', borderColor: isQuorumReached ? '#4E9C8E' : '#C5A059' }]}>
+                    <Text style={[styles.quorumBadgeCapsuleText, { color: isQuorumReached ? '#4E9C8E' : '#C5A059' }]}>
+                      {isQuorumReached ? '⚔️ QUÓRUM ATINGIDO' : '⏳ AGUARDANDO COMITIVA'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Barra de Progresso Visual de Quórum */}
+                <View style={styles.quorumSectionProgress}>
+                  <View style={styles.quorumSectionProgressHeader}>
+                    <Text style={styles.quorumProgressLabel}>Confirmações dos Jogadores</Text>
+                    <Text style={[styles.quorumProgressValue, { color: isQuorumReached ? '#4E9C8E' : '#C5A059' }]}>
+                      {confirmedList.length} de {totalRegisteredParty} ({quorumPercent}%)
+                    </Text>
+                  </View>
+                  <View style={styles.quorumProgressBarTrack}>
+                    <View
+                      style={[
+                        styles.quorumProgressBarFill,
+                        {
+                          width: `${quorumPercent}%`,
+                          backgroundColor: isQuorumReached ? '#4E9C8E' : '#C5A059',
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
 
                 <View style={styles.quorumStatsRow}>
                   <View style={[styles.quorumStatBadge, { borderColor: '#4E9C8E' }]}>
@@ -1286,9 +1503,13 @@ export default function HomeScreen() {
       />
 
       {/* ============================================================ */}
-      {/* 6. FOOTER IMERSIVO                                           */}
+      {/* 6. FOOTER IMERSIVO & STATUS DE SINCRONIZAÇÃO                */}
       {/* ============================================================ */}
       <View style={styles.footer}>
+        <View style={styles.syncPulseContainer}>
+          <View style={styles.syncPulseDot} />
+          <Text style={styles.syncPulseText}>Mesa Sincronizada em Tempo Real (PostgreSQL Neon)</Text>
+        </View>
         <Text style={styles.footerNote}>
           Honra & Egoísmo • Sistema D&D 5e • Forjado em React Native (Expo) & Neon PostgreSQL
         </Text>
@@ -1314,7 +1535,7 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: 'center',
     textAlign: 'center' as any,
-    marginBottom: 8,
+    marginBottom: 4,
     position: 'relative',
   },
   heroGlowEffect: {
@@ -1322,46 +1543,270 @@ const styles = StyleSheet.create({
     top: -40,
     width: '100%',
     maxWidth: 600,
-    height: 200,
+    height: 160,
     borderRadius: 300,
-    backgroundColor: 'rgba(197, 160, 89, 0.06)',
+    backgroundColor: 'rgba(197, 160, 89, 0.05)',
     zIndex: -1,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: '#1A1714',
     borderWidth: 1,
     borderColor: '#3D342C',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
     borderRadius: 6,
-    marginBottom: 16,
   },
   badgeText: {
     color: '#C5A059',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
+  },
+  heroHeroCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#161411',
+    borderWidth: 1,
+    borderColor: 'rgba(197, 160, 89, 0.35)',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
+  },
+  heroHeroCapsuleText: {
+    color: '#E2D8C3',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   heroTitle: {
     color: '#E2D8C3',
-    fontSize: Platform.OS === 'web' ? 46 : 32,
+    fontSize: Platform.OS === 'web' ? 34 : 24,
     fontWeight: '700',
-    letterSpacing: 3,
-    marginBottom: 12,
+    letterSpacing: 2,
+    marginBottom: 6,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", "Garamond", serif' : undefined,
     textAlign: 'center',
   },
   heroSubtitle: {
     color: '#BAAFA0',
-    fontSize: 15,
-    lineHeight: 25,
-    maxWidth: 760,
+    fontSize: 13,
+    lineHeight: 20,
+    maxWidth: 680,
     textAlign: 'center',
     fontFamily: Platform.OS === 'web' ? '"Georgia", "Garamond", serif' : undefined,
+  },
+  // ============================================================
+  // ESTILOS DA BARRA RÁPIDA DE SESSÃO (MODO DIA DE SESSÃO)
+  // ============================================================
+  quickSessionBar: {
+    backgroundColor: '#191613',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 10,
+    padding: 14,
+    marginTop: -8,
+    marginBottom: 4,
+  },
+  quickSessionBarToday: {
+    borderColor: '#C5A059',
+    backgroundColor: '#1E1914',
+  },
+  quickSessionMainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    flexWrap: 'wrap',
+  },
+  quickSessionMainCol: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 12,
+  },
+  quickSessionInfoCol: {
+    flex: 1,
+    minWidth: 240,
+    gap: 4,
+  },
+  quickSessionTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pillToday: {
+    backgroundColor: '#C5A059',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pillTodayText: {
+    color: '#110F0D',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  pillTomorrow: {
+    backgroundColor: 'rgba(230, 194, 128, 0.15)',
+    borderColor: '#E6C280',
+    borderWidth: 1,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pillTomorrowText: {
+    color: '#E6C280',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  pillScheduled: {
+    backgroundColor: 'rgba(197, 160, 89, 0.12)',
+    borderColor: 'rgba(197, 160, 89, 0.35)',
+    borderWidth: 1,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pillScheduledText: {
+    color: '#C5A059',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  quickSessionTitle: {
+    color: '#E2D8C3',
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
+  },
+  quickSessionMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flexWrap: 'wrap',
+  },
+  quickSessionDateTime: {
+    color: '#BAAFA0',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  quickSessionLocation: {
+    color: '#80776C',
+    fontSize: 11,
+  },
+  quickSessionQuorumCol: {
+    minWidth: 200,
+    gap: 5,
+    justifyContent: 'center',
+  },
+  quorumHeaderMini: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quorumPercentLabel: {
+    color: '#BAAFA0',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  quorumStatusMini: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  quorumProgressBarTrack: {
+    height: 6,
+    backgroundColor: '#110F0D',
+    borderRadius: 3,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+  },
+  quorumProgressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  quickSessionActionCol: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickRsvpConfirmedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(78, 156, 142, 0.15)',
+    borderColor: '#4E9C8E',
+    borderWidth: 1,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  quickRsvpConfirmedText: {
+    color: '#4E9C8E',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  quickRsvpButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickRsvpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
+  },
+  quickRsvpBtnConfirm: {
+    backgroundColor: '#4E9C8E',
+    borderColor: '#4E9C8E',
+  },
+  quickRsvpBtnConfirmText: {
+    color: '#110F0D',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  quickRsvpBtnMaybe: {
+    backgroundColor: 'rgba(230, 194, 128, 0.12)',
+    borderColor: '#E6C280',
+  },
+  quickRsvpBtnMaybeText: {
+    color: '#E6C280',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  quickSessionGuestText: {
+    color: '#80776C',
+    fontSize: 11,
+    fontStyle: 'italic',
   },
   hubGrid: {
     gap: 20,
@@ -1566,6 +2011,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   primaryActionButtonText: {
     color: '#110F0D',
@@ -1583,6 +2029,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   secondaryActionButtonText: {
     color: '#C5A059',
@@ -1593,6 +2040,35 @@ const styles = StyleSheet.create({
     color: '#80776C',
     fontSize: 11,
     fontWeight: '600',
+  },
+  taskFilterTabsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  taskFilterTab: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    backgroundColor: '#110F0D',
+    borderWidth: 1,
+    borderColor: '#26221E',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
+  },
+  taskFilterTabActive: {
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+    borderColor: '#C5A059',
+  },
+  taskFilterTabText: {
+    color: '#80776C',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  taskFilterTabTextActive: {
+    color: '#C5A059',
+    fontWeight: 'bold',
   },
   tasksPreviewList: {
     gap: 8,
@@ -1607,6 +2083,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     gap: 10,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   categoryPill: {
     borderWidth: 1,
@@ -1698,6 +2175,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#3D342C',
     backgroundColor: '#110F0D',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   chronicleActionBtnText: {
     color: '#C5A059',
@@ -1772,6 +2250,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   wikiCardBorder: {
     borderColor: 'rgba(78, 156, 142, 0.3)',
@@ -1936,6 +2415,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 6,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   availabilityTriggerBtnText: {
     color: '#E6C280',
@@ -1950,6 +2430,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 8,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   availabilityTriggerBtnHighlightText: {
     color: '#110F0D',
@@ -1964,6 +2445,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 6,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   scheduleEditBtnText: {
     color: '#110F0D',
@@ -2171,6 +2653,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   rsvpBtnConfirm: {
     backgroundColor: 'rgba(78, 156, 142, 0.1)',
@@ -2224,11 +2707,47 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
+  quorumCardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+    flexWrap: 'wrap',
+    gap: 6,
+  },
   quorumHeaderTitle: {
     color: '#80776C',
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.5,
+  },
+  quorumBadgeCapsule: {
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  quorumBadgeCapsuleText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  quorumSectionProgress: {
+    marginBottom: 6,
+    gap: 4,
+  },
+  quorumSectionProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  quorumProgressLabel: {
+    color: '#80776C',
+    fontSize: 11,
+  },
+  quorumProgressValue: {
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   quorumStatsRow: {
     flexDirection: 'row',
@@ -2385,6 +2904,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#3D342C',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   modalCancelBtnText: {
     color: '#80776C',
@@ -2399,6 +2919,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 6,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   modalSubmitBtnText: {
     color: '#110F0D',
@@ -2407,13 +2928,31 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 24,
     borderTopWidth: 1,
     borderTopColor: '#26221E',
+    gap: 4,
+  },
+  syncPulseContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  syncPulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#4E9C8E',
+  },
+  syncPulseText: {
+    color: '#80776C',
+    fontSize: 11,
+    letterSpacing: 0.3,
   },
   footerNote: {
-    color: '#666',
-    fontSize: 12,
+    color: '#555',
+    fontSize: 11,
     textAlign: 'center',
   },
 });
