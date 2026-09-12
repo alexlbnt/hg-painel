@@ -64,6 +64,7 @@ interface CountdownProps {
 }
 
 const CountdownTimer = React.memo(function CountdownTimer({ targetIso }: CountdownProps) {
+  const { isMobile } = useResponsive();
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number;
     hours: number;
@@ -107,8 +108,10 @@ const CountdownTimer = React.memo(function CountdownTimer({ targetIso }: Countdo
   }, [targetIso]);
 
   return (
-    <View style={styles.timerContainer}>
-      <Text style={styles.timerLabel}>CONTAGEM REGRESSIVA PARA O CHAMADO</Text>
+    <View style={[styles.timerContainer, isMobile && { padding: 12, gap: 8 }]}>
+      <Text style={[styles.timerLabel, isMobile && { fontSize: 9, letterSpacing: 1 }]}>
+        CONTAGEM REGRESSIVA PARA O CHAMADO
+      </Text>
       {timeRemaining?.isPassed ? (
         <View style={styles.sessionOngoingNotice}>
           <Sparkles color="#4E9C8E" size={20} />
@@ -117,27 +120,27 @@ const CountdownTimer = React.memo(function CountdownTimer({ targetIso }: Countdo
           </Text>
         </View>
       ) : (
-        <View style={styles.timerDigitsRow}>
-          <View style={styles.timerBox}>
-            <Text style={styles.timerNumber}>{String(timeRemaining?.days || 0).padStart(2, '0')}</Text>
-            <Text style={styles.timerUnit}>DIAS</Text>
+        <View style={[styles.timerDigitsRow, isMobile && { gap: 4 }]}>
+          <View style={[styles.timerBox, isMobile && { minWidth: 50, paddingHorizontal: 6, paddingVertical: 8 }]}>
+            <Text style={[styles.timerNumber, isMobile && { fontSize: 20 }]}>{String(timeRemaining?.days || 0).padStart(2, '0')}</Text>
+            <Text style={[styles.timerUnit, isMobile && { fontSize: 8 }]}>DIAS</Text>
           </View>
-          <Text style={styles.timerColon}>:</Text>
-          <View style={styles.timerBox}>
-            <Text style={styles.timerNumber}>{String(timeRemaining?.hours || 0).padStart(2, '0')}</Text>
-            <Text style={styles.timerUnit}>HORAS</Text>
+          <Text style={[styles.timerColon, isMobile && { fontSize: 18 }]}>:</Text>
+          <View style={[styles.timerBox, isMobile && { minWidth: 50, paddingHorizontal: 6, paddingVertical: 8 }]}>
+            <Text style={[styles.timerNumber, isMobile && { fontSize: 20 }]}>{String(timeRemaining?.hours || 0).padStart(2, '0')}</Text>
+            <Text style={[styles.timerUnit, isMobile && { fontSize: 8 }]}>HORAS</Text>
           </View>
-          <Text style={styles.timerColon}>:</Text>
-          <View style={styles.timerBox}>
-            <Text style={styles.timerNumber}>{String(timeRemaining?.minutes || 0).padStart(2, '0')}</Text>
-            <Text style={styles.timerUnit}>MIN</Text>
+          <Text style={[styles.timerColon, isMobile && { fontSize: 18 }]}>:</Text>
+          <View style={[styles.timerBox, isMobile && { minWidth: 50, paddingHorizontal: 6, paddingVertical: 8 }]}>
+            <Text style={[styles.timerNumber, isMobile && { fontSize: 20 }]}>{String(timeRemaining?.minutes || 0).padStart(2, '0')}</Text>
+            <Text style={[styles.timerUnit, isMobile && { fontSize: 8 }]}>MIN</Text>
           </View>
-          <Text style={styles.timerColon}>:</Text>
-          <View style={styles.timerBox}>
-            <Text style={[styles.timerNumber, { color: '#C5A059' }]}>
+          <Text style={[styles.timerColon, isMobile && { fontSize: 18 }]}>:</Text>
+          <View style={[styles.timerBox, isMobile && { minWidth: 50, paddingHorizontal: 6, paddingVertical: 8 }]}>
+            <Text style={[styles.timerNumber, { color: '#C5A059' }, isMobile && { fontSize: 20 }]}>
               {String(timeRemaining?.seconds || 0).padStart(2, '0')}
             </Text>
-            <Text style={styles.timerUnit}>SEG</Text>
+            <Text style={[styles.timerUnit, isMobile && { fontSize: 8 }]}>SEG</Text>
           </View>
         </View>
       )}
@@ -425,7 +428,7 @@ export default function HomeScreen() {
   return (
     <ScrollView
       style={styles.scrollWrapper}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, isMobile && styles.containerMobile]}
       showsVerticalScrollIndicator={false}
     >
       {/* ============================================================ */}
@@ -463,12 +466,12 @@ export default function HomeScreen() {
           {/* Micro-cápsula do Herói Ativo (se houver) */}
           {myCharacter && (
             <TouchableOpacity
-              style={styles.heroHeroCapsule}
+              style={[styles.heroHeroCapsule, isMobile && { maxWidth: '100%' }]}
               activeOpacity={0.8}
               onPress={() => router.push('/player')}
             >
               <Shield color={myCharacter.themeColor || '#C5A059'} size={13} />
-              <Text style={styles.heroHeroCapsuleText}>
+              <Text style={styles.heroHeroCapsuleText} numberOfLines={1}>
                 {myCharacter.name} • {myCharacter.class} Nv.{myCharacter.level} ({myCharacter.currentHp}/{myCharacter.maxHp} HP)
               </Text>
             </TouchableOpacity>
@@ -499,7 +502,7 @@ export default function HomeScreen() {
         <View style={[styles.quickSessionBar, sessionIsToday && styles.quickSessionBarToday]}>
           <View style={[styles.quickSessionMainRow, !isWide && styles.quickSessionMainCol]}>
             {/* Lado Esquerdo: Tag, Título e Data */}
-            <View style={styles.quickSessionInfoCol}>
+            <View style={[styles.quickSessionInfoCol, isMobile && { width: '100%', minWidth: 0 }]}>
               <View style={styles.quickSessionTagRow}>
                 {sessionIsToday ? (
                   <View style={styles.pillToday}>
@@ -533,7 +536,7 @@ export default function HomeScreen() {
             </View>
 
             {/* Centro: Medidor Visual de Quórum */}
-            <View style={styles.quickSessionQuorumCol}>
+            <View style={[styles.quickSessionQuorumCol, isMobile && { width: '100%', minWidth: 0 }]}>
               <View style={styles.quorumHeaderMini}>
                 <Text style={styles.quorumPercentLabel}>
                   Quórum: {confirmedList.length}/{totalRegisteredParty} ({quorumPercent}%)
@@ -556,17 +559,17 @@ export default function HomeScreen() {
             </View>
 
             {/* Lado Direito: Quick RSVP em 1 toque */}
-            <View style={styles.quickSessionActionCol}>
+            <View style={[styles.quickSessionActionCol, isMobile && { width: '100%', alignItems: 'stretch' }]}>
               {user ? (
                 myRsvpStatus === 'CONFIRMED' ? (
-                  <View style={styles.quickRsvpConfirmedBadge}>
+                  <View style={[styles.quickRsvpConfirmedBadge, isMobile && { width: '100%', justifyContent: 'center' }]}>
                     <CheckCircle2 color="#4E9C8E" size={14} />
                     <Text style={styles.quickRsvpConfirmedText}>Presença Confirmada</Text>
                   </View>
                 ) : (
-                  <View style={styles.quickRsvpButtonsRow}>
+                  <View style={[styles.quickRsvpButtonsRow, isMobile && { width: '100%' }]}>
                     <TouchableOpacity
-                      style={[styles.quickRsvpBtn, styles.quickRsvpBtnConfirm]}
+                      style={[styles.quickRsvpBtn, styles.quickRsvpBtnConfirm, isMobile && { flex: 1, justifyContent: 'center' }]}
                       activeOpacity={0.8}
                       disabled={isSubmittingRsvp}
                       onPress={() => handleRsvp('CONFIRMED')}
@@ -576,7 +579,7 @@ export default function HomeScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.quickRsvpBtn, styles.quickRsvpBtnMaybe]}
+                      style={[styles.quickRsvpBtn, styles.quickRsvpBtnMaybe, isMobile && { flex: 1, justifyContent: 'center' }]}
                       activeOpacity={0.8}
                       disabled={isSubmittingRsvp}
                       onPress={() => handleRsvp('MAYBE')}
@@ -599,10 +602,10 @@ export default function HomeScreen() {
       {/* ============================================================ */}
       <View style={[styles.hubGrid, isWide ? styles.hubGridRow : styles.hubGridCol]}>
         {/* CARD ESQUERDO: CENTRO DE COMANDO DO HERÓI / MESA */}
-        <View style={styles.hubColumn}>
+        <View style={[styles.hubColumn, isWide && styles.hubColumnWide]}>
           {user?.role === 'DM' ? (
             /* Painel do Mestre */
-            <View style={[styles.hubCard, styles.dmCardBorder]}>
+            <View style={[styles.hubCard, styles.dmCardBorder, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
               <View style={styles.cardHeaderRow}>
                 <View style={styles.cardIconBoxDm}>
                   <Crown color="#C5A059" size={24} />
@@ -654,7 +657,7 @@ export default function HomeScreen() {
             </View>
           ) : user?.role === 'MECHANIC' ? (
             /* Painel do Player Mecânico */
-            <View style={[styles.hubCard, styles.mechanicCardBorder]}>
+            <View style={[styles.hubCard, styles.mechanicCardBorder, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
               <View style={styles.cardHeaderRow}>
                 <View style={styles.cardIconBoxMechanic}>
                   <Sparkles color="#4E9C8E" size={24} />
@@ -688,7 +691,7 @@ export default function HomeScreen() {
             </View>
           ) : user && myCharacter ? (
             /* Card do Herói do Jogador */
-            <View style={[styles.hubCard, { borderColor: myCharacter.themeColor || '#C5A059' }]}>
+            <View style={[styles.hubCard, { borderColor: myCharacter.themeColor || '#C5A059' }, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
               <View style={styles.cardHeaderRow}>
                 <View
                   style={[
@@ -763,7 +766,7 @@ export default function HomeScreen() {
             </View>
           ) : user ? (
             /* Jogador sem ficha atribuída */
-            <View style={[styles.hubCard, styles.heroCardBorder]}>
+            <View style={[styles.hubCard, styles.heroCardBorder, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
               <View style={styles.cardHeaderRow}>
                 <View style={styles.cardIconBoxHero}>
                   <Shield color="#C5A059" size={24} />
@@ -786,7 +789,7 @@ export default function HomeScreen() {
             </View>
           ) : (
             /* Visitante Deslogado */
-            <View style={[styles.hubCard, styles.heroCardBorder]}>
+            <View style={[styles.hubCard, styles.heroCardBorder, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
               <View style={styles.cardHeaderRow}>
                 <View style={styles.cardIconBoxHero}>
                   <Shield color="#C5A059" size={24} />
@@ -811,8 +814,8 @@ export default function HomeScreen() {
         </View>
 
         {/* CARD DIREITO: MURAL DE MISSÕES (KANBAN) */}
-        <View style={styles.hubColumn}>
-          <View style={[styles.hubCard, styles.tasksCardBorder]}>
+        <View style={[styles.hubColumn, isWide && styles.hubColumnWide]}>
+          <View style={[styles.hubCard, styles.tasksCardBorder, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardIconBoxTasks}>
                 <ClipboardList color="#E6C280" size={24} />
@@ -904,13 +907,13 @@ export default function HomeScreen() {
       {/* 3. CRÔNICAS RECENTES: ÚLTIMA SESSÃO DO DIÁRIO               */}
       {/* ============================================================ */}
       <View style={styles.sectionContainer}>
-        <View style={styles.chronicleCard}>
-          <View style={styles.chronicleHeader}>
-            <View style={styles.chronicleHeaderLeft}>
+        <View style={[styles.chronicleCard, isMobile && { padding: 14, gap: 14 }]}>
+          <View style={[styles.chronicleHeader, isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
+            <View style={[styles.chronicleHeaderLeft, isMobile && { width: '100%' }]}>
               <View style={styles.chronicleIconBox}>
                 <BookOpen color="#C5A059" size={22} />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.chronicleTag}>ÚLTIMO REGISTRO DO DIÁRIO</Text>
                 <Text style={styles.chronicleTitle}>
                   {latestSession ? latestSession.title : 'Crônicas de Honra & Egoísmo'}
@@ -924,7 +927,7 @@ export default function HomeScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.chronicleActionBtn}
+              style={[styles.chronicleActionBtn, isMobile && { width: '100%', justifyContent: 'center', alignItems: 'center' }]}
               activeOpacity={0.85}
               onPress={() => router.push('/journal')}
             >
@@ -966,7 +969,7 @@ export default function HomeScreen() {
         <View style={[styles.worldCardsGrid, isWide ? styles.worldCardsGridRow : styles.worldCardsGridCol]}>
           {/* Card Wiki Oficial */}
           <TouchableOpacity
-            style={[styles.worldCardCompact, styles.wikiCardBorder]}
+            style={[styles.worldCardCompact, styles.wikiCardBorder, isWide && styles.worldCardCompactWide, isMobile && { paddingHorizontal: 10, paddingVertical: 10 }]}
             activeOpacity={0.75}
             onPress={() => Linking.openURL('https://hg.a11y.host')}
           >
@@ -994,7 +997,7 @@ export default function HomeScreen() {
 
           {/* Card Drive de Arquivos */}
           <TouchableOpacity
-            style={[styles.worldCardCompact, styles.driveCardBorder]}
+            style={[styles.worldCardCompact, styles.driveCardBorder, isWide && styles.worldCardCompactWide, isMobile && { paddingHorizontal: 10, paddingVertical: 10 }]}
             activeOpacity={0.75}
             onPress={() => Linking.openURL(driveUrl)}
           >
@@ -1025,10 +1028,10 @@ export default function HomeScreen() {
       {/* 5. PRÓXIMA SESSÃO: CONVOCAÇÃO & CONFIRMAÇÃO DE PRESENÇA      */}
       {/* ============================================================ */}
       <View style={styles.sectionContainer}>
-        <View style={styles.scheduleBox}>
+        <View style={[styles.scheduleBox, isMobile && { padding: 14, gap: 16 }]}>
           {/* Cabeçalho do Agendamento */}
-          <View style={styles.scheduleHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+          <View style={[styles.scheduleHeaderRow, isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 14 }]}>
+            <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 12 }, isWide ? { flex: 1 } : { width: '100%' }]}>
               <View style={styles.scheduleIconBox}>
                 <Calendar color="#C5A059" size={24} />
               </View>
@@ -1052,10 +1055,10 @@ export default function HomeScreen() {
             </View>
 
             {/* Ações do Cabeçalho */}
-            <View style={styles.scheduleHeaderActions}>
+            <View style={[styles.scheduleHeaderActions, isMobile && { width: '100%', flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
               {/* Botão de Disponibilidade da Comitiva - Acessível para todos os jogadores */}
               <TouchableOpacity
-                style={styles.availabilityTriggerBtn}
+                style={[styles.availabilityTriggerBtn, isMobile && { width: '100%', justifyContent: 'center' }]}
                 activeOpacity={0.8}
                 onPress={() => setIsAvailabilityModalOpen(true)}
               >
@@ -1066,7 +1069,7 @@ export default function HomeScreen() {
               {/* Botão de Agendamento para Mestre / Mecânico */}
               {(user?.role === 'DM' || user?.role === 'MECHANIC') && (
                 <TouchableOpacity
-                  style={styles.scheduleEditBtn}
+                  style={[styles.scheduleEditBtn, isMobile && { width: '100%', justifyContent: 'center' }]}
                   activeOpacity={0.8}
                   onPress={handleOpenScheduleModal}
                 >
@@ -1082,7 +1085,7 @@ export default function HomeScreen() {
           {/* Grid Principal: Relógio & Quórum */}
           <View style={[styles.scheduleGrid, isWide ? styles.scheduleGridRow : styles.scheduleGridCol]}>
             {/* COLUNA ESQUERDA: RELÓGIO RÚNICO & INFORMAÇÕES */}
-            <View style={styles.scheduleLeftCol}>
+            <View style={[styles.scheduleLeftCol, isWide ? styles.scheduleLeftColWide : styles.scheduleColMobile]}>
               {scheduleData.session?.scheduledAt ? (
                 <>
                   {/* Cronômetro Rúnico */}
@@ -1122,7 +1125,7 @@ export default function HomeScreen() {
                 </>
               ) : (
                 /* Estado sem sessão agendada */
-                <View style={styles.noScheduleBox}>
+                <View style={[styles.noScheduleBox, isMobile && { padding: 16 }]}>
                   <View style={styles.noScheduleIconBox}>
                     <Hourglass color="#C5A059" size={32} />
                   </View>
@@ -1130,9 +1133,9 @@ export default function HomeScreen() {
                   <Text style={styles.noScheduleDesc}>
                     O Mestre ainda não definiu a data do próximo encontro. Mantenha suas armas afiadas e confira os avisos da taverna!
                   </Text>
-                  <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
+                  <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8, width: '100%' }}>
                     <TouchableOpacity
-                      style={styles.availabilityTriggerBtnHighlight}
+                      style={[styles.availabilityTriggerBtnHighlight, isMobile && { width: '100%', justifyContent: 'center' }]}
                       activeOpacity={0.85}
                       onPress={() => setIsAvailabilityModalOpen(true)}
                     >
@@ -1142,7 +1145,7 @@ export default function HomeScreen() {
 
                     {(user?.role === 'DM' || user?.role === 'MECHANIC') && (
                       <TouchableOpacity
-                        style={styles.primaryActionButton}
+                        style={[styles.primaryActionButton, isMobile && { width: '100%', justifyContent: 'center' }]}
                         activeOpacity={0.85}
                         onPress={handleOpenScheduleModal}
                       >
@@ -1156,9 +1159,9 @@ export default function HomeScreen() {
             </View>
 
             {/* COLUNA DIREITA: QUÓRUM DA COMITIVA & MEU RSVP */}
-            <View style={styles.scheduleRightCol}>
+            <View style={[styles.scheduleRightCol, isWide ? styles.scheduleRightColWide : styles.scheduleColMobile]}>
               {/* Card de Ação do Jogador Logado */}
-              <View style={styles.rsvpActionCard}>
+              <View style={[styles.rsvpActionCard, isMobile && { padding: 12, gap: 10 }]}>
                 <View style={styles.rsvpCardHeader}>
                   <Users color="#C5A059" size={18} />
                   <Text style={styles.rsvpCardTitle}>SUA CONFIRMAÇÃO DE PRESENÇA</Text>
@@ -1192,23 +1195,26 @@ export default function HomeScreen() {
 
                     {/* Botões de 1 clique para RSVP */}
                     {scheduleData.session ? (
-                      <View style={styles.rsvpBtnRow}>
+                      <View style={[styles.rsvpBtnRow, isMobile && { gap: 6 }]}>
                         <TouchableOpacity
                           style={[
                             styles.rsvpBtn,
                             styles.rsvpBtnConfirm,
+                            isMobile && { paddingHorizontal: 4, gap: 4 },
                             myRsvpStatus === 'CONFIRMED' && styles.rsvpBtnActiveConfirm,
                           ]}
                           activeOpacity={0.8}
                           disabled={isSubmittingRsvp}
                           onPress={() => handleRsvp('CONFIRMED')}
                         >
-                          <CheckCircle2 color={myRsvpStatus === 'CONFIRMED' ? '#4E9C8E' : '#AEC6CF'} size={15} />
+                          <CheckCircle2 color={myRsvpStatus === 'CONFIRMED' ? '#4E9C8E' : '#AEC6CF'} size={14} />
                           <Text
                             style={[
                               styles.rsvpBtnText,
+                              isMobile && { fontSize: 10.5 },
                               myRsvpStatus === 'CONFIRMED' && { color: '#4E9C8E', fontWeight: 'bold' },
                             ]}
+                            numberOfLines={1}
                           >
                             Confirmar
                           </Text>
@@ -1218,18 +1224,21 @@ export default function HomeScreen() {
                           style={[
                             styles.rsvpBtn,
                             styles.rsvpBtnMaybe,
+                            isMobile && { paddingHorizontal: 4, gap: 4 },
                             myRsvpStatus === 'MAYBE' && styles.rsvpBtnActiveMaybe,
                           ]}
                           activeOpacity={0.8}
                           disabled={isSubmittingRsvp}
                           onPress={() => handleRsvp('MAYBE')}
                         >
-                          <AlertCircle color={myRsvpStatus === 'MAYBE' ? '#E6C280' : '#AEC6CF'} size={15} />
+                          <AlertCircle color={myRsvpStatus === 'MAYBE' ? '#E6C280' : '#AEC6CF'} size={14} />
                           <Text
                             style={[
                               styles.rsvpBtnText,
+                              isMobile && { fontSize: 10.5 },
                               myRsvpStatus === 'MAYBE' && { color: '#E6C280', fontWeight: 'bold' },
                             ]}
+                            numberOfLines={1}
                           >
                             Em Dúvida
                           </Text>
@@ -1239,18 +1248,21 @@ export default function HomeScreen() {
                           style={[
                             styles.rsvpBtn,
                             styles.rsvpBtnDecline,
+                            isMobile && { paddingHorizontal: 4, gap: 4 },
                             myRsvpStatus === 'DECLINED' && styles.rsvpBtnActiveDecline,
                           ]}
                           activeOpacity={0.8}
                           disabled={isSubmittingRsvp}
                           onPress={() => handleRsvp('DECLINED')}
                         >
-                          <XCircle color={myRsvpStatus === 'DECLINED' ? '#C95B5B' : '#AEC6CF'} size={15} />
+                          <XCircle color={myRsvpStatus === 'DECLINED' ? '#C95B5B' : '#AEC6CF'} size={14} />
                           <Text
                             style={[
                               styles.rsvpBtnText,
+                              isMobile && { fontSize: 10.5 },
                               myRsvpStatus === 'DECLINED' && { color: '#C95B5B', fontWeight: 'bold' },
                             ]}
+                            numberOfLines={1}
                           >
                             Ausente
                           </Text>
@@ -1272,7 +1284,7 @@ export default function HomeScreen() {
               </View>
 
               {/* Estatísticas de Quórum da Mesa */}
-              <View style={styles.quorumCard}>
+              <View style={[styles.quorumCard, isMobile && { padding: 12, gap: 10 }]}>
                 <View style={styles.quorumCardHeaderRow}>
                   <Text style={styles.quorumHeaderTitle}>QUÓRUM DA COMITIVA</Text>
                   <View style={[styles.quorumBadgeCapsule, { backgroundColor: isQuorumReached ? 'rgba(78, 156, 142, 0.15)' : 'rgba(197, 160, 89, 0.15)', borderColor: isQuorumReached ? '#4E9C8E' : '#C5A059' }]}>
@@ -1303,34 +1315,34 @@ export default function HomeScreen() {
                   </View>
                 </View>
 
-                <View style={styles.quorumStatsRow}>
-                  <View style={[styles.quorumStatBadge, { borderColor: '#4E9C8E' }]}>
-                    <Text style={[styles.quorumStatNum, { color: '#4E9C8E' }]}>
+                <View style={[styles.quorumStatsRow, isMobile && { gap: 6 }]}>
+                  <View style={[styles.quorumStatBadge, { borderColor: '#4E9C8E' }, isMobile && { paddingVertical: 8, paddingHorizontal: 4 }]}>
+                    <Text style={[styles.quorumStatNum, { color: '#4E9C8E' }, isMobile && { fontSize: 18 }]}>
                       {confirmedList.length}
                     </Text>
-                    <Text style={styles.quorumStatLbl}>CONFIRMADOS</Text>
+                    <Text style={[styles.quorumStatLbl, isMobile && { fontSize: 8.5 }]}>CONFIRMADOS</Text>
                   </View>
 
-                  <View style={[styles.quorumStatBadge, { borderColor: '#E6C280' }]}>
-                    <Text style={[styles.quorumStatNum, { color: '#E6C280' }]}>
+                  <View style={[styles.quorumStatBadge, { borderColor: '#E6C280' }, isMobile && { paddingVertical: 8, paddingHorizontal: 4 }]}>
+                    <Text style={[styles.quorumStatNum, { color: '#E6C280' }, isMobile && { fontSize: 18 }]}>
                       {maybeList.length}
                     </Text>
-                    <Text style={styles.quorumStatLbl}>EM DÚVIDA</Text>
+                    <Text style={[styles.quorumStatLbl, isMobile && { fontSize: 8.5 }]}>EM DÚVIDA</Text>
                   </View>
 
-                  <View style={[styles.quorumStatBadge, { borderColor: '#C95B5B' }]}>
-                    <Text style={[styles.quorumStatNum, { color: '#C95B5B' }]}>
+                  <View style={[styles.quorumStatBadge, { borderColor: '#C95B5B' }, isMobile && { paddingVertical: 8, paddingHorizontal: 4 }]}>
+                    <Text style={[styles.quorumStatNum, { color: '#C95B5B' }, isMobile && { fontSize: 18 }]}>
                       {declinedList.length}
                     </Text>
-                    <Text style={styles.quorumStatLbl}>AUSENTES</Text>
+                    <Text style={[styles.quorumStatLbl, isMobile && { fontSize: 8.5 }]}>AUSENTES</Text>
                   </View>
                 </View>
 
                 {/* Lista de Aventureiros que já confirmaram */}
                 {confirmedList.length > 0 && (
-                  <View style={styles.confirmedMembersBox}>
+                  <View style={[styles.confirmedMembersBox, { width: '100%' }]}>
                     <Text style={styles.confirmedMembersTitle}>⚔️ Aventureiros Confirmados:</Text>
-                    <View style={styles.membersChipsRow}>
+                    <View style={[styles.membersChipsRow, { width: '100%' }]}>
                       {confirmedList.map((r) => (
                         <View key={r.id} style={styles.memberChip}>
                           <CheckCircle2 color="#4E9C8E" size={12} />
@@ -1342,9 +1354,9 @@ export default function HomeScreen() {
                 )}
 
                 {maybeList.length > 0 && (
-                  <View style={[styles.confirmedMembersBox, { marginTop: 8 }]}>
+                  <View style={[styles.confirmedMembersBox, { marginTop: 8, width: '100%' }]}>
                     <Text style={[styles.confirmedMembersTitle, { color: '#E6C280' }]}>⏳ Em Dúvida / Com Atraso:</Text>
-                    <View style={styles.membersChipsRow}>
+                    <View style={[styles.membersChipsRow, { width: '100%' }]}>
                       {maybeList.map((r) => (
                         <View key={r.id} style={[styles.memberChip, { borderColor: '#E6C280' }]}>
                           <AlertCircle color="#E6C280" size={12} />
@@ -1531,6 +1543,12 @@ const styles = StyleSheet.create({
     paddingTop: 36,
     paddingBottom: 60,
     gap: 32,
+  },
+  containerMobile: {
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 100,
+    gap: 20,
   },
   hero: {
     alignItems: 'center',
@@ -1817,8 +1835,12 @@ const styles = StyleSheet.create({
   },
   hubGridCol: {
     flexDirection: 'column',
+    gap: 20,
   },
   hubColumn: {
+    width: '100%',
+  },
+  hubColumnWide: {
     flex: 1,
     minWidth: 280,
     maxWidth: '100%',
@@ -1829,8 +1851,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 20,
     gap: 16,
-    flex: 1,
     justifyContent: 'space-between',
+    width: '100%',
+  },
+  hubCardWide: {
+    flex: 1,
+  },
+  hubCardMobile: {
+    padding: 14,
+    gap: 14,
   },
   heroCardBorder: {
     borderColor: '#C5A059',
@@ -2241,7 +2270,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   worldCardCompact: {
-    flex: 1,
+    width: '100%',
     backgroundColor: '#171411',
     borderWidth: 1,
     borderRadius: 8,
@@ -2251,6 +2280,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
+  },
+  worldCardCompactWide: {
+    flex: 1,
   },
   wikiCardBorder: {
     borderColor: 'rgba(78, 156, 142, 0.3)',
@@ -2340,6 +2372,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 24,
     gap: 20,
+    width: '100%',
+    overflow: 'hidden',
   },
   scheduleHeaderRow: {
     flexDirection: 'row',
@@ -2462,12 +2496,19 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   scheduleLeftCol: {
-    flex: 1.2,
     gap: 16,
   },
+  scheduleLeftColWide: {
+    flex: 1.2,
+  },
   scheduleRightCol: {
-    flex: 1,
     gap: 16,
+  },
+  scheduleRightColWide: {
+    flex: 1,
+  },
+  scheduleColMobile: {
+    width: '100%',
   },
   timerContainer: {
     backgroundColor: '#110F0D',
