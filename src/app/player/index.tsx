@@ -46,14 +46,12 @@ import { SrdSearchModal } from '@/components/player/SrdSearchModal';
 import {
   Award,
   BookOpen,
-  Crown,
   Download,
   FastForward,
   Package,
   Plus,
   Scroll,
   Shield,
-  Sparkles,
   Sword,
   Upload,
   Zap,
@@ -627,30 +625,6 @@ export default function PlayerModule() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.selectorScroll}
           >
-            {/* Tag informativa de permissão especial (Mestre / Mecânico) */}
-            {isElevatedUser && (
-              <View
-                style={[
-                  styles.roleAccessTag,
-                  user?.role === 'DM' ? styles.dmAccessTag : styles.mechanicAccessTag,
-                ]}
-              >
-                {user?.role === 'DM' ? (
-                  <Crown size={14} color="#C5A059" />
-                ) : (
-                  <Sparkles size={14} color="#4E9C8E" />
-                )}
-                <Text
-                  style={[
-                    styles.roleAccessText,
-                    { color: user?.role === 'DM' ? '#C5A059' : '#4E9C8E' },
-                  ]}
-                >
-                  {user?.role === 'DM' ? 'MESTRE • TODAS AS FICHAS' : 'MECÂNICO • TODAS AS FICHAS'}
-                </Text>
-              </View>
-            )}
-
             {visibleCharacters.map((char) => {
               const isSelected = char.id === selectedId;
               const chipColor = char.themeColor || '#C5A059';
@@ -1296,28 +1270,6 @@ const styles = StyleSheet.create({
     borderColor: '#3D342C',
     borderRadius: 8,
     padding: 8,
-  },
-  roleAccessTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  dmAccessTag: {
-    backgroundColor: 'rgba(197, 160, 89, 0.12)',
-    borderColor: '#C5A059',
-  },
-  mechanicAccessTag: {
-    backgroundColor: 'rgba(78, 156, 142, 0.12)',
-    borderColor: '#4E9C8E',
-  },
-  roleAccessText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
   },
   selectorScroll: {
     flexDirection: 'row',
