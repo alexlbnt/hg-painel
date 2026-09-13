@@ -80,7 +80,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
       backstory,
     };
     onSaveLore(serializeCharacterLore(updated));
-    triggerFeedback('Biografia salva');
+    triggerFeedback('Lore salva');
   };
 
   return (
@@ -133,7 +133,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                   mobileSubTab === 'bio' && { color: themeColor, fontWeight: 'bold' },
                 ]}
               >
-                Biografia
+                Lore
               </Text>
             </TouchableOpacity>
 

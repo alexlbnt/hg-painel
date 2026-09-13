@@ -64,7 +64,7 @@ export const ChronicleBiography: React.FC<ChronicleBiographyProps> = ({
       <View style={styles.headerRow}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <BookOpen size={14} color={themeColor} />
-          <Text style={styles.headerTitle}>CRÔNICAS & BIOGRAFIA DO AVENTUREIRO</Text>
+          <Text style={styles.headerTitle}>LORE DO PERSONAGEM</Text>
         </View>
 
         {!isEditing ? (
@@ -74,7 +74,7 @@ export const ChronicleBiography: React.FC<ChronicleBiographyProps> = ({
             activeOpacity={0.7}
           >
             <Edit2 size={11} color="#BAAFA0" />
-            <Text style={styles.actionBtnText}>Editar Biografia</Text>
+            <Text style={styles.actionBtnText}>Editar Lore</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.editActions}>
@@ -168,7 +168,7 @@ export const ChronicleBiography: React.FC<ChronicleBiographyProps> = ({
           activeOpacity={0.7}
         >
           <Text style={styles.emptyText}>
-            Nenhuma história ou crônica redigida ainda. Toque aqui para escrever a lenda do seu herói!
+            Nenhuma lore redigida ainda. Toque aqui para escrever a lore do seu personagem!
           </Text>
         </TouchableOpacity>
       )}
