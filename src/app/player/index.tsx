@@ -455,12 +455,13 @@ export default function PlayerModule() {
     safeUpdateCharacter(selectedChar.id, { gold, silver, copper });
   };
 
-  const handleSaveLore = async (newLore: string) => {
+  const handleSaveLore = async (newLore: string, extraUpdates?: Partial<CharacterData>) => {
     if (!selectedChar) return;
+    const mergedUpdates = { ...extraUpdates, lore: newLore };
     setCharacters((prev) =>
-      prev.map((c) => (c.id === selectedChar.id ? { ...c, lore: newLore } : c))
+      prev.map((c) => (c.id === selectedChar.id ? { ...c, ...mergedUpdates } : c))
     );
-    safeUpdateCharacter(selectedChar.id, { lore: newLore });
+    safeUpdateCharacter(selectedChar.id, mergedUpdates);
   };
 
   const handleSaveEditedEntity = async (updatedData: any) => {

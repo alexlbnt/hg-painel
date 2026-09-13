@@ -1,15 +1,25 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
-import { BookOpen, Edit2, Save } from 'lucide-react-native';
-import Markdown from 'react-native-markdown-display';
+import {
+  CharacterAppearance,
+  parseCharacterLore,
+  serializeCharacterLore,
+} from '@/types/lore';
+import { IdentityHeader } from './lore/IdentityHeader';
+import { PersonalityPillars } from './lore/PersonalityPillars';
+import { PhysicalAppearance } from './lore/PhysicalAppearance';
+import { ChronicleBiography } from './lore/ChronicleBiography';
+import { Sparkles, BookOpen, User } from 'lucide-react-native';
 
 interface LoreTabProps {
   char: CharacterData;
-  onSaveLore: (newLore: string) => void;
+  onSaveLore: (newLore: string, extraUpdates?: Partial<CharacterData>) => void;
   themeColor?: string;
   isMobile?: boolean;
 }
+
+type MobileTab = 'roleplay' | 'bio' | 'appearance';
 
 export const LoreTab: React.FC<LoreTabProps> = ({
   char,
@@ -17,219 +27,260 @@ export const LoreTab: React.FC<LoreTabProps> = ({
   themeColor = '#C5A059',
   isMobile = false,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [loreText, setLoreText] = useState(char.lore || '');
+  const [mobileSubTab, setMobileSubTab] = useState<MobileTab>('roleplay');
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
-  const handleSave = () => {
-    onSaveLore(loreText);
-    setIsEditing(false);
+  // Faz o parse do lore estruturado ou recupera texto legado com segurança
+  const parsedLore = useMemo(() => {
+    return parseCharacterLore(char.lore);
+  }, [char.lore]);
+
+  const triggerFeedback = (msg: string = 'Salvo com sucesso') => {
+    setSaveFeedback(msg);
+    setTimeout(() => {
+      setSaveFeedback(null);
+    }, 2500);
+  };
+
+  const handleSaveIdentity = (data: { alignment: string; background: string; deity: string }) => {
+    onSaveLore(char.lore || '', {
+      alignment: data.alignment,
+      background: data.background,
+      deity: data.deity,
+    });
+    triggerFeedback('Identidade atualizada');
+  };
+
+  const handleSavePillars = (pillars: {
+    personalityTraits: string;
+    ideals: string;
+    bonds: string;
+    flaws: string;
+  }) => {
+    const updated = {
+      ...parsedLore,
+      ...pillars,
+    };
+    onSaveLore(serializeCharacterLore(updated));
+    triggerFeedback('Pilares de roleplay salvos');
+  };
+
+  const handleSaveAppearance = (appearance: CharacterAppearance) => {
+    const updated = {
+      ...parsedLore,
+      appearance,
+    };
+    onSaveLore(serializeCharacterLore(updated));
+    triggerFeedback('Aparência física atualizada');
+  };
+
+  const handleSaveBackstory = (backstory: string) => {
+    const updated = {
+      ...parsedLore,
+      backstory,
+    };
+    onSaveLore(serializeCharacterLore(updated));
+    triggerFeedback('Biografia salva');
   };
 
   return (
     <View style={styles.container}>
-      {/* Informações Gerais do Aventureiro */}
-      <View style={styles.charInfoGrid}>
-        <View style={styles.infoCol}>
-          <Text style={styles.infoLabel}>TENDÊNCIA</Text>
-          <Text style={styles.infoVal}>{char.alignment || 'Neutro'}</Text>
+      {/* Indicador sutil de feedback de salvamento */}
+      {saveFeedback && (
+        <View style={styles.feedbackBanner}>
+          <Text style={styles.feedbackText}>✓ {saveFeedback}</Text>
         </View>
-        <View style={styles.infoCol}>
-          <Text style={styles.infoLabel}>ANTECEDENTE</Text>
-          <Text style={styles.infoVal}>{char.background || 'Herói do Povo'}</Text>
-        </View>
-        <View style={styles.infoCol}>
-          <Text style={styles.infoLabel}>DIVINDADE</Text>
-          <Text style={styles.infoVal}>{char.deity || 'Nenhum'}</Text>
-        </View>
-      </View>
+      )}
 
-      {/* Diário de Lore / História com Markdown */}
-      <View style={styles.loreCard}>
-        <View style={styles.loreHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <BookOpen size={15} color={themeColor} />
-            <Text style={styles.loreTitle}>HISTÓRIA & ANOTAÇÕES DA CAMPANHA</Text>
+      {/* Cabeçalho de Identidade & Crenças (Tendência, Antecedente, Divindade) */}
+      <IdentityHeader
+        alignment={char.alignment}
+        background={char.background}
+        deity={char.deity}
+        themeColor={themeColor}
+        onSaveIdentity={handleSaveIdentity}
+      />
+
+      {/* Visualização Mobile: Sub-Abas Rápidas */}
+      {isMobile ? (
+        <View style={styles.mobileWrap}>
+          <View style={styles.mobileTabBar}>
+            <TouchableOpacity
+              style={[styles.mobileTabItem, mobileSubTab === 'roleplay' && styles.mobileTabItemActive]}
+              onPress={() => setMobileSubTab('roleplay')}
+              activeOpacity={0.7}
+            >
+              <Sparkles size={13} color={mobileSubTab === 'roleplay' ? themeColor : '#7A7265'} />
+              <Text
+                style={[
+                  styles.mobileTabText,
+                  mobileSubTab === 'roleplay' && { color: themeColor, fontWeight: 'bold' },
+                ]}
+              >
+                Interpretação
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.mobileTabItem, mobileSubTab === 'bio' && styles.mobileTabItemActive]}
+              onPress={() => setMobileSubTab('bio')}
+              activeOpacity={0.7}
+            >
+              <BookOpen size={13} color={mobileSubTab === 'bio' ? themeColor : '#7A7265'} />
+              <Text
+                style={[
+                  styles.mobileTabText,
+                  mobileSubTab === 'bio' && { color: themeColor, fontWeight: 'bold' },
+                ]}
+              >
+                Biografia
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.mobileTabItem, mobileSubTab === 'appearance' && styles.mobileTabItemActive]}
+              onPress={() => setMobileSubTab('appearance')}
+              activeOpacity={0.7}
+            >
+              <User size={13} color={mobileSubTab === 'appearance' ? themeColor : '#7A7265'} />
+              <Text
+                style={[
+                  styles.mobileTabText,
+                  mobileSubTab === 'appearance' && { color: themeColor, fontWeight: 'bold' },
+                ]}
+              >
+                Aparência
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.editToggleBtn,
-              isEditing && { backgroundColor: themeColor, borderColor: themeColor },
-            ]}
-            onPress={() => {
-              if (isEditing) {
-                handleSave();
-              } else {
-                setLoreText(char.lore || '');
-                setIsEditing(true);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            {isEditing ? (
-              <>
-                <Save size={12} color="#110F0D" />
-                <Text style={[styles.editToggleText, { color: '#110F0D' }]}>Salvar Lore</Text>
-              </>
-            ) : (
-              <>
-                <Edit2 size={12} color="#BAAFA0" />
-                <Text style={styles.editToggleText}>Editar História</Text>
-              </>
+          {/* Conteúdo Mobile */}
+          <View style={styles.mobileContent}>
+            {mobileSubTab === 'roleplay' && (
+              <PersonalityPillars
+                traits={parsedLore.personalityTraits}
+                ideals={parsedLore.ideals}
+                bonds={parsedLore.bonds}
+                flaws={parsedLore.flaws}
+                themeColor={themeColor}
+                onSavePillars={handleSavePillars}
+              />
             )}
-          </TouchableOpacity>
-        </View>
 
-        {isEditing ? (
-          <TextInput
-            style={styles.loreInput}
-            multiline
-            value={loreText}
-            onChangeText={setLoreText}
-            placeholder="Escreva a história do seu personagem, laços, defeitos e anotações de sessão (suporta Markdown)..."
-            placeholderTextColor="#6B6257"
-          />
-        ) : char.lore ? (
-          <View style={styles.markdownWrap}>
-            <Markdown style={markdownStyles}>{char.lore}</Markdown>
+            {mobileSubTab === 'bio' && (
+              <ChronicleBiography
+                backstory={parsedLore.backstory}
+                themeColor={themeColor}
+                onSaveBackstory={handleSaveBackstory}
+              />
+            )}
+
+            {mobileSubTab === 'appearance' && (
+              <PhysicalAppearance
+                appearance={parsedLore.appearance}
+                themeColor={themeColor}
+                onSaveAppearance={handleSaveAppearance}
+              />
+            )}
           </View>
-        ) : (
-          <View style={styles.emptyLoreBox}>
-            <Text style={styles.emptyLoreText}>
-              Nenhum registro de história ou lore redigido. Clique em &quot;Editar História&quot; para escrever!
-            </Text>
+        </View>
+      ) : (
+        /* Visualização Desktop: Grade em 2 Colunas */
+        <View style={styles.desktopGrid}>
+          {/* Coluna da Esquerda: Pilares de Interpretação e Aparência Física */}
+          <View style={styles.desktopLeftCol}>
+            <PersonalityPillars
+              traits={parsedLore.personalityTraits}
+              ideals={parsedLore.ideals}
+              bonds={parsedLore.bonds}
+              flaws={parsedLore.flaws}
+              themeColor={themeColor}
+              onSavePillars={handleSavePillars}
+            />
+
+            <PhysicalAppearance
+              appearance={parsedLore.appearance}
+              themeColor={themeColor}
+              onSaveAppearance={handleSaveAppearance}
+            />
           </View>
-        )}
-      </View>
+
+          {/* Coluna da Direita: Crônicas & Biografia */}
+          <View style={styles.desktopRightCol}>
+            <ChronicleBiography
+              backstory={parsedLore.backstory}
+              themeColor={themeColor}
+              onSaveBackstory={handleSaveBackstory}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    gap: 14,
+    gap: 12,
   },
-  charInfoGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: '#191613',
+  feedbackBanner: {
+    backgroundColor: '#1E2B1E',
     borderWidth: 1,
-    borderColor: '#302821',
-    borderRadius: 8,
-    padding: 10,
+    borderColor: '#3E6641',
+    borderRadius: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    alignSelf: 'center',
   },
-  infoCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  infoLabel: {
-    color: '#80776C',
-    fontSize: 9.5,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  infoVal: {
-    color: '#E2D8C3',
-    fontSize: 12.5,
-    fontWeight: '600',
-  },
-  loreCard: {
-    backgroundColor: '#181512',
-    borderWidth: 1,
-    borderColor: '#302821',
-    borderRadius: 8,
-    padding: 14,
-    gap: 10,
-  },
-  loreHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2A241E',
-    paddingBottom: 8,
-  },
-  loreTitle: {
-    color: '#E2D8C3',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  editToggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#1E1A16',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 5,
-  },
-  editToggleText: {
-    color: '#BAAFA0',
+  feedbackText: {
+    color: '#81C784',
     fontSize: 11,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
-  loreInput: {
-    backgroundColor: '#14120F',
+  mobileWrap: {
+    gap: 10,
+  },
+  mobileTabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#161310',
     borderWidth: 1,
-    borderColor: '#3D342C',
-    borderRadius: 6,
-    color: '#E2D8C3',
-    padding: 12,
-    minHeight: 180,
-    fontSize: 13,
-    textAlignVertical: 'top',
-    lineHeight: 18,
+    borderColor: '#2F2720',
+    borderRadius: 8,
+    padding: 3,
+    gap: 3,
   },
-  markdownWrap: {
-    paddingVertical: 4,
-  },
-  emptyLoreBox: {
-    paddingVertical: 16,
+  mobileTabItem: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 2,
+    borderRadius: 6,
   },
-  emptyLoreText: {
-    color: '#6B6257',
-    fontSize: 12,
-    fontStyle: 'italic',
+  mobileTabItemActive: {
+    backgroundColor: '#262018',
+  },
+  mobileTabText: {
+    color: '#8A8073',
+    fontSize: 10.5,
+  },
+  mobileContent: {
+    gap: 12,
+  },
+  desktopGrid: {
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'flex-start',
+  },
+  desktopLeftCol: {
+    flex: 4.8,
+    gap: 12,
+  },
+  desktopRightCol: {
+    flex: 5.2,
+    gap: 12,
   },
 });
-
-const markdownStyles = {
-  body: {
-    color: '#BAAFA0',
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  heading1: {
-    color: '#E6C280',
-    fontSize: 16,
-    fontWeight: 'bold' as const,
-    marginVertical: 4,
-  },
-  heading2: {
-    color: '#E6C280',
-    fontSize: 14,
-    fontWeight: 'bold' as const,
-    marginVertical: 4,
-  },
-  bullet_list: {
-    marginVertical: 4,
-  },
-  ordered_list: {
-    marginVertical: 4,
-  },
-  strong: {
-    color: '#FFF',
-    fontWeight: 'bold' as const,
-  },
-  code_inline: {
-    backgroundColor: '#14120F',
-    color: '#E6C280',
-    paddingHorizontal: 4,
-    borderRadius: 3,
-  },
-};
