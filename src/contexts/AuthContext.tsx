@@ -8,6 +8,7 @@ export interface User {
   username: string;
   role: Role;
   name: string;
+  token?: string;
 }
 
 interface AuthContextData {

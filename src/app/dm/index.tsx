@@ -147,6 +147,10 @@ export default function DmModule() {
     );
   }
 
+  if (!user || user.role !== 'DM') {
+    return null;
+  }
+
   return (
     <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
       <View style={styles.container}>

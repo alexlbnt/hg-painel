@@ -1,13 +1,23 @@
 import { prisma } from '../../../lib/prisma';
 import { broadcastEvent } from '../../../lib/eventBus';
+import { getAuthenticatedUser } from '../../../lib/auth';
 
 export async function POST(req: Request) {
   try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) {
+      return Response.json({ error: 'Identificação necessária para confirmar presença' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { scheduledSessionId, userId, status, note } = body;
 
     if (!scheduledSessionId || !userId || !status) {
       return Response.json({ error: 'Dados incompletos para confirmação de presença' }, { status: 400 });
+    }
+
+    if (authUser.id !== userId && authUser.role !== 'DM') {
+      return Response.json({ error: 'Você só pode confirmar presença para o seu próprio usuário' }, { status: 403 });
     }
 
     if (!['CONFIRMED', 'MAYBE', 'DECLINED'].includes(status)) {

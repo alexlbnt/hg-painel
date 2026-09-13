@@ -4,9 +4,11 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { Plus, Trash, BookOpen, User as UserIcon, Edit2, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { confirmAction } from '@/utils/confirm';
-import React, { useEffect, useState } from 'react';
+import { ApiService } from '@/services/api';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -61,30 +63,23 @@ export default function JournalScreen() {
 
   const isDM = user?.role === 'DM';
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
-      if (Platform.OS === 'web') {
-        const res = await fetch('/api/journal/sessions');
-        if (res.ok) {
-          const data = await res.json();
-          setSessions(data);
-          if (data.length > 0 && !activeSessionId) {
-            setActiveSessionId(data[data.length - 1].id);
-          }
-        }
+      const data = await ApiService.getSessions();
+      setSessions(data as any);
+      if (data.length > 0 && !activeSessionId) {
+        setActiveSessionId(data[data.length - 1].id);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Erro ao carregar sessões:', e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeSessionId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSessions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadSessions]);
 
   useRealtimeSync((event) => {
     if (
@@ -104,19 +99,14 @@ export default function JournalScreen() {
     const confirmDelete = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/journal/sessions', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, userId: user.id }),
-        });
-        if (res.ok) {
-          if (activeSessionId === sessionId) {
-            setActiveSessionId(null);
-          }
-          await loadSessions();
+        await ApiService.deleteSession(sessionId, user.id);
+        if (activeSessionId === sessionId) {
+          setActiveSessionId(null);
         }
-      } catch (e) {
+        await loadSessions();
+      } catch (e: any) {
         console.error('Erro ao excluir sessão:', e);
+        Alert.alert('Erro', e.message || 'Falha ao excluir sessão');
       } finally {
         setLoading(false);
       }
@@ -132,18 +122,14 @@ export default function JournalScreen() {
     setLoading(true);
     setModalVisible(false);
     try {
-      const res = await fetch('/api/journal/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newSessionTitle, authorId: user.id }),
-      });
-      if (res.ok) {
-        const newSession = await res.json();
+      const newSession = await ApiService.createSession(newSessionTitle.trim(), user.id);
+      if (newSession && newSession.id) {
         setActiveSessionId(newSession.id);
-        await loadSessions();
       }
-    } catch (e) {
+      await loadSessions();
+    } catch (e: any) {
       console.error(e);
+      Alert.alert('Erro', e.message || 'Falha ao criar sessão');
     } finally {
       setLoading(false);
       setNewSessionTitle('');
@@ -153,68 +139,37 @@ export default function JournalScreen() {
   const handlePostNote = async () => {
     if (!newNoteContent.trim() || !user || !activeSessionId) return;
     try {
-      const res = await fetch('/api/journal/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: newNoteContent,
-          authorId: user.id,
-          sessionId: activeSessionId,
-        }),
-      });
-      if (res.ok) {
-        setNewNoteContent('');
-        await loadSessions();
-      } else {
-        const err = await res.json().catch(() => null);
-        alert(`Erro ao registrar: ${err?.error || res.status}`);
-      }
+      await ApiService.createNote(activeSessionId, user.id, newNoteContent.trim());
+      setNewNoteContent('');
+      await loadSessions();
     } catch (e: any) {
       console.error(e);
-      alert(`Erro de conexão: ${e.message}`);
+      Alert.alert('Erro', e.message || 'Falha ao registrar anotação');
     }
   };
 
   const handleUpdateNote = async () => {
     if (!editingNoteContent.trim() || !user || !editingNoteId) return;
     try {
-      const res = await fetch('/api/journal/notes', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          noteId: editingNoteId,
-          userId: user.id,
-          content: editingNoteContent,
-        }),
-      });
-      if (res.ok) {
-        setEditingNoteId(null);
-        setEditingNoteContent('');
-        await loadSessions();
-      }
-    } catch (e) {
+      await ApiService.updateNote(editingNoteId, user.id, editingNoteContent.trim());
+      setEditingNoteId(null);
+      setEditingNoteContent('');
+      await loadSessions();
+    } catch (e: any) {
       console.error(e);
+      Alert.alert('Erro', e.message || 'Falha ao atualizar anotação');
     }
   };
 
   const handleUpdateSession = async () => {
     if (!editSessionTitle.trim() || !user || !activeSessionId) return;
     try {
-      const res = await fetch('/api/journal/sessions', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: activeSessionId,
-          userId: user.id,
-          title: editSessionTitle,
-        }),
-      });
-      if (res.ok) {
-        setIsEditingSession(false);
-        await loadSessions();
-      }
-    } catch (e) {
+      await ApiService.updateSession(activeSessionId, editSessionTitle.trim(), user.id);
+      setIsEditingSession(false);
+      await loadSessions();
+    } catch (e: any) {
       console.error(e);
+      Alert.alert('Erro', e.message || 'Falha ao atualizar título da sessão');
     }
   };
 
@@ -222,16 +177,11 @@ export default function JournalScreen() {
     if (!user) return;
     confirmAction('Deletar esta anotação definitivamente?', async () => {
       try {
-        const res = await fetch('/api/journal/notes', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ noteId, userId: user.id }),
-        });
-        if (res.ok) {
-          await loadSessions();
-        }
-      } catch (e) {
+        await ApiService.deleteNote(noteId, user.id);
+        await loadSessions();
+      } catch (e: any) {
         console.error(e);
+        Alert.alert('Erro', e.message || 'Falha ao excluir anotação');
       }
     }, 'Excluir Anotação');
   };

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { INITIAL_TASKS } from '@/lib/mockData';
 import { broadcastEvent } from '@/lib/eventBus';
+import { getAuthenticatedUser } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -35,6 +36,14 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser) {
+      return Response.json(
+        { error: 'Identificação necessária para sugerir ou criar tarefas na mesa' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const newTask = await prisma.task.create({
       data: {

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { broadcastEvent } from '@/lib/eventBus';
+import { getAuthenticatedUser } from '@/lib/auth';
 
 function extractId(context: any): string {
   if (typeof context === 'string') return context;
@@ -9,6 +10,14 @@ function extractId(context: any): string {
 
 export async function PUT(request: Request, context: any) {
   try {
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser) {
+      return Response.json(
+        { error: 'Identificação necessária para atualizar tarefas' },
+        { status: 401 }
+      );
+    }
+
     const id = extractId(context);
     const existing = await prisma.task.findUnique({ where: { id } });
     if (!existing) {
@@ -40,6 +49,14 @@ export async function PUT(request: Request, context: any) {
 
 export async function DELETE(request: Request, context: any) {
   try {
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser) {
+      return Response.json(
+        { error: 'Identificação necessária para excluir tarefas' },
+        { status: 401 }
+      );
+    }
+
     const id = extractId(context);
     const existing = await prisma.task.findUnique({ where: { id } });
     if (!existing) {

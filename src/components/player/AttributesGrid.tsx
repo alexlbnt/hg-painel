@@ -1,8 +1,8 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import { formatMod, getMod, getProfBonus } from '@/utils/dnd5e';
 import { Sparkles } from 'lucide-react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface AttributesGridProps {
   char: CharacterData;
@@ -29,8 +29,7 @@ export const AttributesGrid: React.FC<AttributesGridProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.sectionHeader}>ATRIBUTOS & SALVAGUARDAS</Text>
-        <Text style={styles.headerHint}>✦ Bônus de Salvaguarda incluído nos atributos proficientes</Text>
+        <Text style={styles.sectionHeader}>ATRIBUTOS</Text>
       </View>
 
       <View style={[styles.grid, isMobile && { gap: 8 }]}>
@@ -115,10 +114,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.8,
-  },
-  headerHint: {
-    color: '#6B6257',
-    fontSize: 10.5,
   },
   grid: {
     flexDirection: 'row',

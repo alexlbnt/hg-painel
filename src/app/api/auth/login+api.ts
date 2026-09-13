@@ -1,4 +1,5 @@
 import { prisma } from '../../../lib/prisma';
+import { createAuthToken } from '../../../lib/auth';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
@@ -23,11 +24,18 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
+    const token = createAuthToken({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+    });
+
     return Response.json({
       id: user.id,
       name: user.name,
       username: user.username,
       role: user.role,
+      token,
     }, { status: 200 });
 
   } catch (error) {

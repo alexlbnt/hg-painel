@@ -206,7 +206,10 @@ export default function PlayerModule() {
   const safeUpdateCharacter = useCallback(
     async (charId: string, updates: Partial<CharacterData>) => {
       try {
-        await ApiService.updateCharacter(charId, updates);
+        const updated = await ApiService.updateCharacter(charId, updates);
+        if (updated) {
+          setCharacters((prev) => prev.map((c) => (c.id === charId ? updated : c)));
+        }
       } catch (e) {
         console.error('Falha ao sincronizar alteração com o servidor:', e);
         loadCharacters(true);
@@ -953,18 +956,26 @@ export default function PlayerModule() {
           <View style={styles.emptyContainer}>
             <Shield color="#C5A059" size={48} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>
-              {visibleCharacters.length === 0 && !isElevatedUser
-                ? 'Nenhuma ficha vinculada ao seu usuário'
+              {!user
+                ? 'Identificação Necessária'
+                : visibleCharacters.length === 0 && !isElevatedUser
+                ? 'Nenhuma ficha vinculada ao seu perfil'
                 : 'Nenhum personagem selecionado'}
             </Text>
             <Text style={styles.emptySubtitle}>
-              {visibleCharacters.length === 0 && !isElevatedUser
-                ? `Você está identificado como @${user?.username}. Você não possui fichas de personagem associadas ao seu perfil ainda. Crie a sua ficha agora ou solicite ao Mestre para vincular uma ficha existente a você.`
+              {!user
+                ? 'Faça login na Taverna para acessar o seu Grimório de Jogador e visualizar ou criar as fichas do seu aventureiro.'
+                : visibleCharacters.length === 0 && !isElevatedUser
+                ? `Você está identificado como @${user.username}. Você não possui fichas de personagem associadas ao seu perfil ainda. Crie a sua ficha agora ou solicite ao Mestre para vincular uma ficha existente a você.`
                 : 'Crie seu primeiro aventureiro ou selecione uma ficha na barra superior para começar.'}
             </Text>
             <TouchableOpacity
               style={styles.createFirstCharBtn}
               onPress={() => {
+                if (!user) {
+                  router.push('/');
+                  return;
+                }
                 setEditingChar(null);
                 setModalVisible(true);
               }}
@@ -972,7 +983,11 @@ export default function PlayerModule() {
             >
               <Plus color="#110F0D" size={16} />
               <Text style={styles.createFirstCharBtnText}>
-                {visibleCharacters.length === 0 && !isElevatedUser ? 'Criar Minha Ficha' : 'Criar Personagem'}
+                {!user
+                  ? 'Acessar Taverna para Login'
+                  : visibleCharacters.length === 0 && !isElevatedUser
+                  ? 'Criar Minha Ficha'
+                  : 'Criar Personagem'}
               </Text>
             </TouchableOpacity>
           </View>

@@ -159,9 +159,13 @@ if (inMemoryTasks.length === 0) {
 
 function getAuthHeaders(extraHeaders: Record<string, string> = {}, requesterId?: string): Record<string, string> {
   const headers: Record<string, string> = { ...extraHeaders };
-  const currentUserId = requesterId || authStorage.get()?.id;
+  const authUser = authStorage.get();
+  const currentUserId = requesterId || authUser?.id;
   if (currentUserId) {
     headers['x-user-id'] = currentUserId;
+  }
+  if (authUser?.token) {
+    headers['Authorization'] = `Bearer ${authUser.token}`;
   }
   return headers;
 }
@@ -648,6 +652,90 @@ export const ApiService = {
       console.warn('Erro ao buscar sessões do diário:', e);
     }
     return [];
+  },
+
+  async createSession(title: string, authorId: string): Promise<CampaignSessionData> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/journal/sessions`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, authorId),
+      body: JSON.stringify({ title, authorId }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Erro ao criar sessão');
+  },
+
+  async updateSession(sessionId: string, title: string, userId: string): Promise<CampaignSessionData> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/journal/sessions`, {
+      method: 'PUT',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
+      body: JSON.stringify({ sessionId, title, userId }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Erro ao atualizar sessão');
+  },
+
+  async deleteSession(sessionId: string, userId: string): Promise<boolean> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/journal/sessions`, {
+      method: 'DELETE',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
+      body: JSON.stringify({ sessionId, userId }),
+    });
+    if (res.ok) {
+      return true;
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Erro ao excluir sessão');
+  },
+
+  async createNote(sessionId: string, authorId: string, content: string): Promise<SessionNoteData> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/journal/notes`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, authorId),
+      body: JSON.stringify({ sessionId, authorId, content }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Erro ao criar anotação');
+  },
+
+  async updateNote(noteId: string, userId: string, content: string): Promise<SessionNoteData> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/journal/notes`, {
+      method: 'PUT',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
+      body: JSON.stringify({ noteId, userId, content }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Erro ao atualizar anotação');
+  },
+
+  async deleteNote(noteId: string, userId: string): Promise<boolean> {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/journal/notes`, {
+      method: 'DELETE',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
+      body: JSON.stringify({ noteId, userId }),
+    });
+    if (res.ok) {
+      return true;
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Erro ao excluir anotação');
   },
 
   // SCHEDULE / NEXT SESSION & RSVP
