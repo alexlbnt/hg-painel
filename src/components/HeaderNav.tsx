@@ -2,17 +2,21 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { usePathname, useRouter } from 'expo-router';
-import { BookOpen, ClipboardList, Crown, Home, Shield, Sparkles, Sword, X } from 'lucide-react-native';
+import { BookOpen, ClipboardList, Crown, Home, Shield, Sparkles, Sword, X, LogOut, ChevronDown } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import GlobalRoomSwitcher from '@/components/ui/GlobalRoomSwitcher';
 
 export default function HeaderNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isMobile } = useResponsive();
+  const { isMobile, width } = useResponsive();
   const { user, login, logout } = useAuth();
   
+  const isCompactNav = width >= 768 && width < 1250;
+
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -86,56 +90,145 @@ export default function HeaderNav() {
     </Modal>
   );
 
+  const renderUserMenuModal = () => {
+    if (!user) return null;
+    const horizontalOffset = Math.max(20, Math.floor((width - 1600) / 2) + 20);
+
+    return (
+      <Modal
+        visible={showUserMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowUserMenu(false)}
+      >
+        <TouchableOpacity
+          style={[
+            styles.userMenuOverlay,
+            {
+              paddingTop: isMobile ? 56 : 64,
+              paddingRight: isMobile ? 12 : horizontalOffset,
+            },
+          ]}
+          activeOpacity={1}
+          onPress={() => setShowUserMenu(false)}
+        >
+          <View
+            style={[styles.userMenuDropdown, isMobile && styles.userMenuDropdownMobile]}
+            onStartShouldSetResponder={() => true}
+          >
+            {/* Cabeçalho da Conta */}
+            <View style={styles.userMenuHeader}>
+              <View style={[
+                styles.userMenuAvatarLarge,
+                { borderColor: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#8C704F' }
+              ]}>
+                {user.role === 'DM' ? (
+                  <Crown size={18} color="#C5A059" />
+                ) : user.role === 'MECHANIC' ? (
+                  <Sparkles size={18} color="#4E9C8E" />
+                ) : (
+                  <Shield size={18} color="#C5A059" />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.userMenuName} numberOfLines={1}>{user.name}</Text>
+                <Text style={[
+                  styles.userMenuRole,
+                  { color: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#BAAFA0' }
+                ]}>
+                  {user.role === 'DM'
+                    ? 'Mestre da Mesa'
+                    : user.role === 'MECHANIC'
+                    ? 'Mecânico Artífice'
+                    : 'Aventureiro'}
+                </Text>
+                {user.username ? (
+                  <Text style={styles.userMenuUsername}>@{user.username}</Text>
+                ) : null}
+              </View>
+            </View>
+
+            {/* Status da Sessão */}
+            <View style={styles.userMenuStatusRow}>
+              <View style={styles.statusIndicatorDot} />
+              <Text style={styles.statusIndicatorText}>Conectado ao Grimório</Text>
+            </View>
+
+            <View style={styles.userMenuDivider} />
+
+            {/* Sair da Conta */}
+            <TouchableOpacity
+              style={styles.userMenuLogoutBtn}
+              onPress={() => {
+                setShowUserMenu(false);
+                logout();
+                router.push('/');
+              }}
+              activeOpacity={0.7}
+            >
+              <LogOut size={15} color="#E06A6A" />
+              <Text style={styles.userMenuLogoutText}>Sair da Conta</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
+
   if (isMobile) {
     return (
-      <View style={[styles.container, { paddingVertical: 10, paddingHorizontal: 16 }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+      <View style={[styles.container, styles.containerMobile]}>
+        <View style={styles.innerMobile}>
           {/* Logo compacta */}
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }} onPress={() => router.push('/')}>
-            <View style={[styles.iconContainer, { width: 34, height: 34, borderRadius: 6 }]}>
-              <Sword color={Colors.fantasy.gold} size={18} />
+          <TouchableOpacity
+            style={styles.brandMobile}
+            onPress={() => router.push('/')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconContainerMobile}>
+              <Sword color={Colors.fantasy.gold} size={15} />
             </View>
             <View style={{ flexShrink: 1 }}>
-              <Text style={[styles.title, { fontSize: 14, letterSpacing: 1 }]} numberOfLines={1}>HONRA & EGOÍSMO</Text>
-              <Text style={[styles.subtitle, { fontSize: 8, letterSpacing: 0.5 }]} numberOfLines={1}>GRIMÓRIO D&D 5E</Text>
+              <Text style={styles.titleMobile} numberOfLines={1}>HONRA & EGOÍSMO</Text>
+              <Text style={styles.subtitleMobile} numberOfLines={1}>GRIMÓRIO D&D 5E</Text>
             </View>
           </TouchableOpacity>
 
-          {/* Usuário / Login */}
-          {user ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-              <View style={styles.userBadgeMobile}>
-                {user.role === 'DM' ? (
-                  <Crown size={12} color="#C5A059" />
-                ) : user.role === 'MECHANIC' ? (
-                  <Sparkles size={12} color="#4E9C8E" />
-                ) : (
-                  <Shield size={12} color="#C5A059" />
-                )}
-                <Text style={styles.userBadgeMobileText} numberOfLines={1}>
-                  {user.name.split(' ')[0]}
-                </Text>
-              </View>
+          {/* Canto Direito: Mesa Ativa + Avatar */}
+          <View style={styles.headerRightActionsMobile}>
+            <GlobalRoomSwitcher />
+
+            {user ? (
               <TouchableOpacity
-                style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 6, flexShrink: 0 }]}
-                onPress={() => {
-                  logout();
-                  router.push('/');
-                }}
+                style={styles.avatarTriggerMobile}
+                onPress={() => setShowUserMenu(true)}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.roomCode, { marginTop: 0, fontSize: 11 }]}>SAIR ↗</Text>
+                <View style={[
+                  styles.avatarCircleMobile,
+                  { borderColor: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#8C704F' }
+                ]}>
+                  {user.role === 'DM' ? (
+                    <Crown size={12} color="#C5A059" />
+                  ) : user.role === 'MECHANIC' ? (
+                    <Sparkles size={12} color="#4E9C8E" />
+                  ) : (
+                    <Shield size={12} color="#C5A059" />
+                  )}
+                </View>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.roomBadge, { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, flexShrink: 0 }]}
-              onPress={() => setShowLoginModal(true)}
-            >
-              <Text style={[styles.roomCode, { marginTop: 0, fontSize: 11 }]}>LOGIN ↗</Text>
-            </TouchableOpacity>
-          )}
+            ) : (
+              <TouchableOpacity
+                style={styles.loginBtnCompactMobile}
+                onPress={() => setShowLoginModal(true)}
+              >
+                <Text style={styles.loginBtnCompactTextMobile}>LOGIN</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         {renderLoginModal()}
+        {renderUserMenuModal()}
       </View>
     );
   }
@@ -143,83 +236,91 @@ export default function HeaderNav() {
   return (
     <View style={styles.container}>
       <View style={styles.inner}>
-        {/* Logo & Emblema Medieval */}
-        <TouchableOpacity style={styles.brand} onPress={() => router.push('/')}>
-          <View style={styles.iconContainer}>
-            <Sword color={Colors.fantasy.gold} size={22} />
-          </View>
-          <View>
-            <Text style={styles.title}>HONRA & EGOÍSMO</Text>
-            <Text style={styles.subtitle}>GRIMÓRIO D&D 5E</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Links de Navegação Medieval */}
-        <View style={styles.navLinks}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
-            return (
-              <TouchableOpacity
-                key={item.path}
-                style={[
-                  styles.navButton,
-                  isActive && styles.navButtonActive
-                ]}
-                onPress={() => router.push(item.path as any)}
-              >
-                <Icon color={isActive ? Colors.fantasy.goldBright : Colors.fantasy.textSecondary} size={16} />
-                <Text style={[styles.navText, isActive && styles.navTextActive]}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* Coluna Esquerda: Marca / Logo */}
+        <View style={styles.headerLeftCol}>
+          <TouchableOpacity style={styles.brand} onPress={() => router.push('/')} activeOpacity={0.8}>
+            <View style={styles.iconContainer}>
+              <Sword color={Colors.fantasy.gold} size={22} />
+            </View>
+            <View>
+              <Text style={styles.title}>HONRA & EGOÍSMO</Text>
+              <Text style={styles.subtitle}>GRIMÓRIO D&D 5E</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
-        {/* Emblema de Campanha / Login */}
-        {user ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={styles.userBadgeDesktop}>
-              <View style={styles.userAvatarBox}>
+        {/* Coluna Central: Links de Navegação Medieval (Perfeitamente Centralizado) */}
+        <View style={styles.headerCenterCol}>
+          <View style={[styles.navLinks, isCompactNav && styles.navLinksCompact]}>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
+              const label = isCompactNav ? item.mobileName : item.name;
+              return (
+                <TouchableOpacity
+                  key={item.path}
+                  style={[
+                    styles.navButton,
+                    isCompactNav && styles.navButtonCompact,
+                    isActive && styles.navButtonActive
+                  ]}
+                  onPress={() => router.push(item.path as any)}
+                  activeOpacity={0.7}
+                >
+                  <Icon color={isActive ? Colors.fantasy.goldBright : Colors.fantasy.textSecondary} size={isCompactNav ? 14 : 16} />
+                  <Text style={[
+                    styles.navText,
+                    isCompactNav && styles.navTextCompact,
+                    isActive && styles.navTextActive
+                  ]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Coluna Direita: Mesa Ativa e Perfil da Conta */}
+        <View style={styles.headerRightCol}>
+          <GlobalRoomSwitcher />
+
+          {user ? (
+            <TouchableOpacity
+              style={styles.avatarTrigger}
+              onPress={() => setShowUserMenu(true)}
+              activeOpacity={0.7}
+            >
+              <View style={[
+                styles.avatarCircle,
+                { borderColor: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#8C704F' }
+              ]}>
                 {user.role === 'DM' ? (
-                  <Crown size={15} color="#C5A059" />
+                  <Crown size={13} color="#C5A059" />
                 ) : user.role === 'MECHANIC' ? (
-                  <Sparkles size={15} color="#4E9C8E" />
+                  <Sparkles size={13} color="#4E9C8E" />
                 ) : (
-                  <Shield size={15} color="#C5A059" />
+                  <Shield size={13} color="#C5A059" />
                 )}
               </View>
-              <View>
-                <Text style={styles.userBadgeNameDesktop}>{user.name}</Text>
-                <Text style={[
-                  styles.userBadgeRoleDesktop,
-                  { color: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#80776C' }
-                ]}>
-                  {user.role === 'DM' ? 'Mestre da Mesa' : user.role === 'MECHANIC' ? 'Mecânico Artífice' : 'Aventureiro'}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.roomBadge}
-              onPress={() => {
-                logout();
-                router.push('/');
-              }}
-            >
-              <Text style={[styles.roomCode, { marginTop: 0 }]}>SAIR</Text>
+              <Text style={styles.avatarNameShort} numberOfLines={1}>
+                {user.name.split(' ')[0]}
+              </Text>
+              <ChevronDown size={12} color="#8C704F" />
             </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.roomBadge}
-            onPress={() => setShowLoginModal(true)}
-          >
-            <Text style={[styles.roomCode, { marginTop: 0 }]}>LOGIN</Text>
-          </TouchableOpacity>
-        )}
+          ) : (
+            <TouchableOpacity
+              style={styles.loginBtnCompact}
+              onPress={() => setShowLoginModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.loginBtnCompactText}>LOGIN</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       {renderLoginModal()}
+      {renderUserMenuModal()}
     </View>
   );
 }
@@ -229,8 +330,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#110F0D',
     borderBottomWidth: 1,
     borderBottomColor: '#3D342C',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 20,
+    width: '100%',
+    alignItems: 'center',
     ...Platform.select({
       web: {
         position: 'sticky' as any,
@@ -241,14 +344,32 @@ const styles = StyleSheet.create({
     }),
   },
   inner: {
-    maxWidth: 1200,
+    maxWidth: 1600,
+    width: '100%',
+    alignSelf: 'center',
     marginHorizontal: 'auto',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
-    flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
+  },
+  headerLeftCol: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  headerCenterCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerRightCol: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
   },
   brand: {
     flexDirection: 'row',
@@ -288,13 +409,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#3D342C',
   },
+  navLinksCompact: {
+    gap: 4,
+    padding: 3,
+  },
   navButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
     borderRadius: 6,
+  },
+  navButtonCompact: {
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
   navButtonActive: {
     backgroundColor: '#24201C',
@@ -306,6 +436,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     fontFamily: Platform.OS === 'web' ? '"Georgia", "Garamond", serif' : undefined,
+  },
+  navTextCompact: {
+    fontSize: 12,
   },
   navTextActive: {
     color: '#E6C280',
@@ -407,51 +540,253 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: 'center',
   },
-  userBadgeMobile: {
+  headerRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#1A1714',
+    gap: 8,
+    flexShrink: 0,
+  },
+  avatarTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#191613',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer' as any,
+        transition: 'border-color 0.2s ease',
+      },
+    }),
+  },
+  avatarCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#12100E',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarNameShort: {
+    color: '#D4C3A3',
+    fontSize: 12,
+    fontWeight: '600',
+    maxWidth: 80,
+  },
+  loginBtnCompact: {
+    backgroundColor: '#1E1B18',
     borderWidth: 1,
     borderColor: '#5C4E40',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer' as any,
+      },
+    }),
+  },
+  loginBtnCompactText: {
+    color: '#C5A059',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  userMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+  },
+  userMenuDropdown: {
+    width: 240,
+    backgroundColor: '#181512',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 10,
+    padding: 14,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.7,
+    shadowRadius: 16,
+    elevation: 12,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+      } as any,
+    }),
+  },
+  userMenuDropdownMobile: {
+    width: 220,
+  },
+  userMenuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  userMenuAvatarLarge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#12100E',
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userMenuName: {
+    color: '#F4E7D3',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'web' ? '"Cinzel", serif' : undefined,
+  },
+  userMenuRole: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  userMenuUsername: {
+    color: '#80776C',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  userMenuStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1E1B17',
     paddingVertical: 5,
     paddingHorizontal: 8,
     borderRadius: 6,
   },
-  userBadgeMobileText: {
-    color: '#E2D8C3',
-    fontSize: 11,
-    fontWeight: '700',
+  statusIndicatorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4E9C8E',
   },
-  userBadgeDesktop: {
+  statusIndicatorText: {
+    color: '#BAAFA0',
+    fontSize: 10.5,
+    fontWeight: '600',
+  },
+  userMenuDivider: {
+    height: 1,
+    backgroundColor: '#2D251E',
+    marginVertical: 2,
+  },
+  userMenuLogoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#1A1714',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    paddingVertical: 4,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 6,
-  },
-  userAvatarBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#110F0D',
+    backgroundColor: 'rgba(201, 91, 91, 0.1)',
     borderWidth: 1,
-    borderColor: '#5C4E40',
+    borderColor: 'rgba(201, 91, 91, 0.25)',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer' as any,
+      },
+    }),
+  },
+  userMenuLogoutText: {
+    color: '#E06A6A',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  containerMobile: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  innerMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+    gap: 6,
+  },
+  brandMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flexShrink: 1,
+  },
+  iconContainerMobile: {
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    backgroundColor: '#1A1714',
+    borderWidth: 1,
+    borderColor: '#8C704F',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  userBadgeNameDesktop: {
-    color: '#E2D8C3',
+  titleMobile: {
+    color: '#E6C280',
     fontSize: 12,
     fontWeight: '700',
-  },
-  userBadgeRoleDesktop: {
-    fontSize: 9,
-    fontWeight: '600',
     letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", "Garamond", serif' : undefined,
+  },
+  subtitleMobile: {
+    color: '#80776C',
+    fontSize: 7.5,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+  },
+  headerRightActionsMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  avatarTriggerMobile: {
+    padding: 2,
+    borderRadius: 16,
+    backgroundColor: '#191613',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer' as any,
+      },
+    }),
+  },
+  avatarCircleMobile: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#12100E',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loginBtnCompactMobile: {
+    backgroundColor: '#1E1B18',
+    borderWidth: 1,
+    borderColor: '#5C4E40',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loginBtnCompactTextMobile: {
+    color: '#C5A059',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

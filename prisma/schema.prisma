@@ -25,6 +25,8 @@ model User {
   username  String   @unique
   password  String
   role      Role     @default(PLAYER)
+  roomId    String?
+  room      Room?    @relation("UserRoom", fields: [roomId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   journalNotes JournalNote[]
@@ -34,13 +36,17 @@ model User {
 }
 
 model Room {
-  id         String      @id @default(uuid())
-  code       String      @unique
-  name       String
-  dmName     String      @default("Mestre")
-  characters Character[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id                String             @id @default(uuid())
+  code              String             @unique
+  name              String
+  dmName            String             @default("Mestre")
+  dmUsername        String?
+  characters        Character[]
+  users             User[]             @relation("UserRoom")
+  campaignSessions  CampaignSession[]
+  scheduledSessions ScheduledSession[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 model Character {
@@ -209,9 +215,13 @@ model CampaignSession {
   id        String        @id @default(uuid())
   title     String
   date      DateTime      @default(now())
+  roomId    String?
+  room      Room?         @relation(fields: [roomId], references: [id], onDelete: SetNull)
   notes     JournalNote[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+
+  @@index([roomId])
 }
 
 model JournalNote {
@@ -238,9 +248,13 @@ model ScheduledSession {
   location    String        @default("Discord")
   description String        @default("")
   isActive    Boolean       @default(true)
+  roomId      String?
+  room        Room?         @relation(fields: [roomId], references: [id], onDelete: SetNull)
   rsvps       SessionRsvp[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+
+  @@index([roomId])
 }
 
 model SessionRsvp {

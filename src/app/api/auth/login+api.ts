@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       name: user.name,
       username: user.username,
       role: user.role,
+      roomId: user.roomId,
       token,
     }, { status: 200 });
 

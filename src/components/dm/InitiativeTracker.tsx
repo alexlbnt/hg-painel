@@ -18,13 +18,18 @@ export interface Combatant {
 
 interface InitiativeTrackerProps {
   characters: CharacterData[];
+  roomId?: string;
   onInterveneCharacter?: (characterId: string, action: { type: 'DAMAGE' | 'HEAL' | 'TEMP_HP'; value: number }) => void;
 }
 
-export default function InitiativeTracker({ characters, onInterveneCharacter }: InitiativeTrackerProps) {
+export default function InitiativeTracker({ characters, roomId, onInterveneCharacter }: InitiativeTrackerProps) {
+  const storageKey = roomId ? `hg_dm_combatants_${roomId}` : 'hg_dm_combatants';
+  const roundKey = roomId ? `hg_dm_round_${roomId}` : 'hg_dm_round';
+  const turnKey = roomId ? `hg_dm_active_turn_id_${roomId}` : 'hg_dm_active_turn_id';
+
   const [combatants, setCombatants] = useState<Combatant[]>(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      const saved = window.localStorage.getItem('hg_dm_combatants');
+      const saved = window.localStorage.getItem(storageKey);
       if (saved) {
         try { return JSON.parse(saved); } catch {}
       }
@@ -34,7 +39,7 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
 
   const [round, setRound] = useState<number>(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      const saved = window.localStorage.getItem('hg_dm_round');
+      const saved = window.localStorage.getItem(roundKey);
       if (saved) return parseInt(saved, 10) || 1;
     }
     return 1;
@@ -42,7 +47,7 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
 
   const [activeTurnId, setActiveTurnId] = useState<string | null>(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      return window.localStorage.getItem('hg_dm_active_turn_id') || null;
+      return window.localStorage.getItem(turnKey) || null;
     }
     return null;
   });
@@ -57,15 +62,15 @@ export default function InitiativeTracker({ characters, onInterveneCharacter }: 
   // Salvar no localStorage sempre que o combate mudar
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('hg_dm_combatants', JSON.stringify(combatants));
-      window.localStorage.setItem('hg_dm_round', round.toString());
+      window.localStorage.setItem(storageKey, JSON.stringify(combatants));
+      window.localStorage.setItem(roundKey, round.toString());
       if (activeTurnId) {
-        window.localStorage.setItem('hg_dm_active_turn_id', activeTurnId);
+        window.localStorage.setItem(turnKey, activeTurnId);
       } else {
-        window.localStorage.removeItem('hg_dm_active_turn_id');
+        window.localStorage.removeItem(turnKey);
       }
     }
-  }, [combatants, round, activeTurnId]);
+  }, [combatants, round, activeTurnId, storageKey, roundKey, turnKey]);
 
   // Manter HP de jogadores sincronizado com as fichas reais
   useEffect(() => {

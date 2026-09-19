@@ -21,7 +21,7 @@ export default function BottomNav() {
   const navItems = [
     { name: 'Taverna', path: '/', icon: Home },
     { name: 'Diário', path: '/journal', icon: BookOpen },
-    { name: 'Tasks', path: '/tasks', icon: ClipboardList },
+    { name: 'Tarefas', path: '/tasks', icon: ClipboardList },
     { name: 'Jogador', path: '/player', icon: Shield },
     ...(isDM ? [{ name: 'Mestre', path: '/dm', icon: Crown }] : []),
   ];

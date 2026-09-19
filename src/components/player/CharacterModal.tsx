@@ -1,9 +1,10 @@
 import { CharacterData } from '@/lib/mockData';
-import { Minus, Plus, Save, Sparkles, Sword, X } from 'lucide-react-native';
+import { Minus, Plus, Save, Sparkles, Sword, X, Crown } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoom } from '@/contexts/RoomContext';
 import { parseClassesAndCalculateSlots } from '@/utils/spellProgression';
 
 interface CharacterModalProps {
@@ -46,6 +47,11 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
   const [themeColor, setThemeColor] = useState('#C5A059');
   const [assignedUsername, setAssignedUsername] = useState('');
 
+  const { rooms, userAccessibleRooms, activeRoom, isSuperDm } = useRoom();
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+
+  const selectableRooms = isSuperDm ? rooms : (userAccessibleRooms && userAccessibleRooms.length > 0 ? userAccessibleRooms : rooms);
+
   // Espaços de Magia por Nível (1 a 9)
   const [slotsByLevel, setSlotsByLevel] = useState<Record<number, number>>({
     1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0
@@ -57,6 +63,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setName(initialData.name);
       setPlayerName(initialData.playerName);
       setAssignedUsername(initialData.username || '');
+      setSelectedRoomId(initialData.roomId || activeRoom?.id || (selectableRooms[0]?.id || ''));
       setRace(initialData.race);
       setClassName(initialData.class);
       setLevel(initialData.level.toString());
@@ -101,6 +108,8 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setName('');
       setPlayerName(user?.name || 'Alex');
       setAssignedUsername(user?.role === 'DM' ? '' : (user?.username || ''));
+      const defaultRoom = selectableRooms.find(r => r.id === user?.roomId || r.code === user?.roomId) || (selectableRooms.find(r => r.id === activeRoom?.id) || selectableRooms[0]);
+      setSelectedRoomId(defaultRoom?.id || '');
       setRace('Meio-Elfo');
       setClassName('Paladino');
       setLevel('1');
@@ -174,6 +183,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
 
     onSave({
       name,
+      roomId: selectedRoomId || null,
       playerName: (user?.role === 'DM' || user?.role === 'MECHANIC') ? playerName : (user?.name || playerName),
       username: (user?.role === 'DM' || user?.role === 'MECHANIC') ? assignedUsername.trim().toLowerCase() : (user?.username || ''),
       race,
@@ -262,6 +272,44 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
                 />
               </View>
             )}
+
+            {/* Seletor de Mesa / Ambiente */}
+            <View style={[styles.inputGroup, { marginBottom: 16 }]}>
+              <Text style={styles.label}>Mesa / Ambiente da Campanha *</Text>
+              <View style={styles.roomPickerRow}>
+                {selectableRooms.map((r) => {
+                  const isSelected = selectedRoomId === r.id;
+                  const isAlex = r.code.includes('ALEX');
+                  const isLobo = r.code.includes('LOBO');
+                  const isJoao = r.code.includes('JOAO');
+                  const themeColor = isAlex ? '#D63939' : isLobo ? '#2E6DD1' : isJoao ? '#27AE60' : '#80776C';
+                  return (
+                    <TouchableOpacity
+                      key={r.id}
+                      style={[
+                        styles.roomPickerOption,
+                        isSelected && {
+                          borderColor: themeColor,
+                          backgroundColor: `${themeColor}22`,
+                        },
+                      ]}
+                      onPress={() => setSelectedRoomId(r.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Crown size={14} color={isSelected ? themeColor : '#80776C'} />
+                      <Text
+                        style={[
+                          styles.roomPickerOptionText,
+                          isSelected && { color: '#F4E7D3', fontWeight: 'bold' },
+                        ]}
+                      >
+                        {r.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
 
             <View style={styles.row}>
               <View style={styles.inputGroup}>
@@ -755,5 +803,29 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 2,
     minWidth: 32,
+  },
+  roomPickerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 6,
+  },
+  roomPickerOption: {
+    flex: 1,
+    minWidth: 130,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#161311',
+    borderWidth: 1,
+    borderColor: '#2D2620',
+  },
+  roomPickerOptionText: {
+    fontSize: 12,
+    color: '#BAAFA0',
+    fontWeight: '500',
   },
 });

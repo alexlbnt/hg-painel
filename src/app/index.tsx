@@ -41,6 +41,7 @@ import {
 } from 'lucide-react-native';
 import AvailabilityModal from '@/components/portal/AvailabilityModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoom, getRoomColor } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import {
   ApiService,
@@ -150,9 +151,12 @@ const CountdownTimer = React.memo(function CountdownTimer({ targetIso }: Countdo
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { activeRoom } = useRoom();
   const { isMobile } = useResponsive();
   const { width } = useWindowDimensions();
   const { user, isLoading: authLoading } = useAuth();
+
+  const roomColor = getRoomColor(activeRoom?.code);
 
   const [driveUrl] = useState<string>(() => {
     const defaultUrl = 'https://drive.google.com/drive/folders/1_Jz1km6fxK8pgtERQqPrMvi1y5wfQlOJ?usp=sharing';
@@ -170,7 +174,6 @@ export default function HomeScreen() {
   const [loadingData, setLoadingData] = useState(true);
 
   // Estados de RSVP e Agendamento
-
   const [isSubmittingRsvp, setIsSubmittingRsvp] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
@@ -199,10 +202,10 @@ export default function HomeScreen() {
     const init = async () => {
       try {
         const [charsData, tasksData, sessionsData, schedData] = await Promise.all([
-          ApiService.getCharacters().catch(() => []),
+          ApiService.getCharacters({ roomId: activeRoom?.id }).catch(() => []),
           ApiService.getTasks().catch(() => []),
-          ApiService.getSessions().catch(() => []),
-          ApiService.getScheduledSession().catch(() => ({ session: null })),
+          ApiService.getSessions(activeRoom?.id).catch(() => []),
+          ApiService.getScheduledSession(activeRoom?.id).catch(() => ({ session: null })),
         ]);
         if (!isMounted) return;
         setCharacters(charsData);
@@ -219,19 +222,18 @@ export default function HomeScreen() {
     return () => {
       isMounted = false;
     };
-  }, []);
-
+  }, [activeRoom?.id]);
 
   // Sincronização em tempo real via SSE
   useRealtimeSync((event) => {
     if (event.type === 'SCHEDULE_UPDATED' || event.type === 'RSVP_UPDATED') {
-      ApiService.getScheduledSession().then(setScheduleData).catch(() => {});
+      ApiService.getScheduledSession(activeRoom?.id).then(setScheduleData).catch(() => {});
     } else if (event.type === 'TASK_CREATED' || event.type === 'TASK_UPDATED' || event.type === 'TASK_DELETED') {
       ApiService.getTasks().then(setTasks).catch(() => {});
     } else if (event.type === 'CHARACTER_UPDATED' || event.type === 'CHARACTER_CREATED' || event.type === 'CHARACTER_DELETED') {
-      ApiService.getCharacters().then(setCharacters).catch(() => {});
+      ApiService.getCharacters({ roomId: activeRoom?.id }).then(setCharacters).catch(() => {});
     } else if (event.type === 'JOURNAL_NOTE_CREATED' || event.type === 'JOURNAL_SESSION_CREATED') {
-      ApiService.getSessions().then(setSessions).catch(() => {});
+      ApiService.getSessions(activeRoom?.id).then(setSessions).catch(() => {});
     }
   });
 
@@ -255,7 +257,7 @@ export default function HomeScreen() {
         userId: user.id,
         status,
       });
-      const updated = await ApiService.getScheduledSession();
+      const updated = await ApiService.getScheduledSession(activeRoom?.id);
       setScheduleData(updated);
     } catch (err: any) {
       const msg = err.message || 'Erro ao registrar presença';
@@ -314,10 +316,11 @@ export default function HomeScreen() {
         location: scheduleForm.location.trim() || 'Discord - Canal Honra & Egoísmo',
         description: scheduleForm.description.trim(),
         userId: user.id,
+        roomId: activeRoom?.id,
         resetRsvps: scheduleForm.resetRsvps,
       });
 
-      const updated = await ApiService.getScheduledSession();
+      const updated = await ApiService.getScheduledSession(activeRoom?.id);
       setScheduleData(updated);
       setIsScheduleModalOpen(false);
     } catch (err: any) {
@@ -399,9 +402,9 @@ export default function HomeScreen() {
     return sessionScheduledDate.toDateString() === tomorrow.toDateString();
   }, [sessionScheduledDate]);
 
-  const totalRegisteredParty = Math.max(characters.length || 0, 4);
+  const totalRegisteredParty = scheduleData.totalUsers || Math.max(characters.length || 0, 3);
   const quorumPercent = Math.min(100, Math.round((confirmedList.length / totalRegisteredParty) * 100));
-  const isQuorumReached = confirmedList.length >= Math.min(characters.length || 4, 3);
+  const isQuorumReached = confirmedList.length >= Math.max(1, Math.min(totalRegisteredParty, 2));
 
   // Estatísticas para Mestre e Mecânico
   const totalPartyHp = characters.reduce((acc, c) => acc + (c.currentHp || 0), 0);
@@ -1038,6 +1041,12 @@ export default function HomeScreen() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <Text style={styles.scheduleCategoryTag}>CONVOCAÇÃO DA COMITIVA</Text>
+                  {activeRoom && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 4, backgroundColor: roomColor + '20', borderWidth: 1, borderColor: roomColor + '40' }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: roomColor }} />
+                      <Text style={{ fontSize: 10, color: roomColor, fontWeight: '700' }}>{activeRoom.name.toUpperCase()}</Text>
+                    </View>
+                  )}
                   {scheduleData.session?.scheduledAt ? (
                     <View style={styles.scheduleStatusPillActive}>
                       <Text style={styles.scheduleStatusPillTextActive}>• AGENDADA</Text>

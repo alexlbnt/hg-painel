@@ -8,6 +8,7 @@ export interface User {
   username: string;
   role: Role;
   name: string;
+  roomId?: string | null;
   token?: string;
 }
 
@@ -15,6 +16,7 @@ interface AuthContextData {
   user: User | null;
   login: (username: string, pass: string) => Promise<boolean>;
   logout: () => void;
+  updateCurrentUser: (patch: Partial<User>) => void;
   isLoading: boolean;
 }
 
@@ -74,12 +76,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (stored) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser(stored);
+
+        // Atualiza dados atualizados do usuário (como roomId) em background
+        const baseUrl = getApiBaseUrl();
+        fetch(`${baseUrl}/api/users?t=${Date.now()}`)
+          .then((res) => res.json())
+          .then((allUsers: any[]) => {
+            if (Array.isArray(allUsers)) {
+              const fresh = allUsers.find((u) => u.id === stored.id || u.username === stored.username);
+              if (fresh && (fresh.roomId !== stored.roomId || fresh.role !== stored.role || fresh.name !== stored.name)) {
+                const updatedUser: User = {
+                  ...stored,
+                  roomId: fresh.roomId,
+                  role: fresh.role,
+                  name: fresh.name,
+                };
+                setUser(updatedUser);
+                authStorage.set(updatedUser);
+              }
+            }
+          })
+          .catch(() => {});
       }
     } catch (e) {
       console.error(e);
     }
     setIsLoading(false);
   }, []);
+
+  const updateCurrentUser = (patch: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...patch };
+      authStorage.set(updated);
+      return updated;
+    });
+  };
 
   const login = async (username: string, pass: string) => {
     try {
@@ -108,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateCurrentUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

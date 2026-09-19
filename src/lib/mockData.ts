@@ -46,9 +46,30 @@ export interface ItemData {
   armorClassBonus?: number;
 }
 
+export interface RoomData {
+  id: string;
+  code: string;
+  name: string;
+  dmName: string;
+  dmUsername?: string | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  _count?: {
+    characters: number;
+  };
+}
+
 export interface CharacterData {
   id: string;
   userId?: string;
+  roomId?: string | null;
+  room?: {
+    id: string;
+    code: string;
+    name: string;
+    dmName: string;
+    dmUsername?: string | null;
+  } | null;
   name: string;
   playerName: string;
   username?: string;
@@ -393,5 +414,34 @@ export const INITIAL_TASKS: TaskData[] = [
     reward: 'Inspiração Bárdica',
     assignedTo: 'Marina',
     createdAt: new Date().toISOString(),
-  }
+  },
 ];
+
+export const INITIAL_ROOMS: RoomData[] = [
+  {
+    id: 'room-alex',
+    code: 'MESA-ALEX',
+    name: 'Mesa do Alex',
+    dmName: 'Alex (Mestre)',
+    dmUsername: 'alex.g',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'room-joao',
+    code: 'MESA-JOAO',
+    name: 'Mesa do João',
+    dmName: 'João (Mestre)',
+    dmUsername: 'joao.c',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'room-lobo',
+    code: 'MESA-LOBO',
+    name: 'Mesa do Lobo',
+    dmName: 'Lobo (Mestre)',
+    dmUsername: 'lobo.l',
+    createdAt: new Date().toISOString(),
+  },
+];
+
+

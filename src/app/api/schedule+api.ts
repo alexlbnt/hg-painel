@@ -3,9 +3,20 @@ import { broadcastEvent } from '../../lib/eventBus';
 
 export async function GET(req: Request) {
   try {
-    // Busca a sessão agendada ativa mais recente
-    const session = await prisma.scheduledSession.findFirst({
-      where: { isActive: true },
+    const { searchParams } = new URL(req.url);
+    const roomId = searchParams.get('roomId');
+
+    const sessionWhere: any = { isActive: true };
+    const userCountWhere: any = {};
+
+    if (roomId && roomId !== 'all') {
+      sessionWhere.roomId = roomId;
+      userCountWhere.roomId = roomId;
+    }
+
+    // Busca a sessão agendada ativa mais recente da sala informada
+    let session = await prisma.scheduledSession.findFirst({
+      where: sessionWhere,
       orderBy: { createdAt: 'desc' },
       include: {
         rsvps: {
@@ -24,8 +35,31 @@ export async function GET(req: Request) {
       },
     });
 
-    // Total de usuários cadastrados que podem participar
-    const totalUsers = await prisma.user.count();
+    // Fallback: se não encontrou sessão na sala específica, busca qualquer ativa
+    if (!session && roomId) {
+      session = await prisma.scheduledSession.findFirst({
+        where: { isActive: true },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          rsvps: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  username: true,
+                  role: true,
+                },
+              },
+            },
+            orderBy: { updatedAt: 'asc' },
+          },
+        },
+      });
+    }
+
+    // Total de usuários cadastrados da mesa (ou geral)
+    const totalUsers = await prisma.user.count({ where: userCountWhere });
 
     if (!session) {
       return Response.json({
@@ -56,7 +90,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { title, scheduledAt, location, description, userId, resetRsvps } = body;
+    const { title, scheduledAt, location, description, userId, resetRsvps, roomId } = body;
 
     if (!userId) {
       return Response.json({ error: 'Usuário não informado' }, { status: 400 });
@@ -68,9 +102,16 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Apenas o Mestre ou Mecânico podem definir a próxima sessão' }, { status: 403 });
     }
 
-    // Procura se já existe uma sessão ativa para atualizar
+    const targetRoomId = roomId || user.roomId || null;
+
+    // Procura se já existe uma sessão ativa desta sala para atualizar
+    const activeWhere: any = { isActive: true };
+    if (targetRoomId) {
+      activeWhere.roomId = targetRoomId;
+    }
+
     let activeSession = await prisma.scheduledSession.findFirst({
-      where: { isActive: true },
+      where: activeWhere,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -91,6 +132,7 @@ export async function POST(req: Request) {
           scheduledAt: parsedDate !== null ? parsedDate : activeSession.scheduledAt,
           location: location !== undefined ? location : activeSession.location,
           description: description !== undefined ? description : activeSession.description,
+          roomId: targetRoomId !== null ? targetRoomId : activeSession.roomId,
           isActive: true,
         },
       });
@@ -101,12 +143,13 @@ export async function POST(req: Request) {
           scheduledAt: parsedDate,
           location: location || 'Discord - Canal Honra & Egoísmo',
           description: description || '',
+          roomId: targetRoomId,
           isActive: true,
         },
       });
     }
 
-    broadcastEvent({ type: 'SCHEDULE_UPDATED', data: activeSession });
+    broadcastEvent({ type: 'SCHEDULE_UPDATED', data: activeSession, roomId: targetRoomId });
     return Response.json(activeSession, { status: 200 });
   } catch (error) {
     console.error('Erro ao agendar sessão:', error);

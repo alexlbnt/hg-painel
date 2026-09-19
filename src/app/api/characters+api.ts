@@ -4,16 +4,25 @@ import { broadcastEvent } from '@/lib/eventBus';
 
 export async function GET(request?: Request) {
   try {
-    let where: any = undefined;
+    let where: any = {};
     if (request && request.url) {
       try {
         const url = new URL(request.url);
         const role = url.searchParams.get('role');
         const username = url.searchParams.get('username')?.toLowerCase()?.trim();
+        const roomId = url.searchParams.get('roomId');
+
         if (role === 'PLAYER' && username) {
-          where = { username };
+          where.username = username;
+        }
+        if (roomId && roomId !== 'all') {
+          where.roomId = roomId;
         }
       } catch {}
+    }
+
+    if (Object.keys(where).length === 0) {
+      where = undefined;
     }
 
     const characters = await prisma.character.findMany({
@@ -24,6 +33,15 @@ export async function GET(request?: Request) {
         abilities: true,
         conditions: true,
         items: true,
+        room: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            dmName: true,
+            dmUsername: true,
+          },
+        },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -144,12 +162,25 @@ export async function POST(request: Request) {
     const body = await request.json();
     const requesterId = request.headers.get('x-user-id') || body.userId;
     let userIdToSet: string | undefined = undefined;
+    let fallbackRoomId: string | undefined = undefined;
+
     if (requesterId) {
       const u = await prisma.user.findUnique({ where: { id: requesterId } });
       if (u) {
         userIdToSet = u.id;
+        if (u.roomId) fallbackRoomId = u.roomId;
       }
     }
+
+    if (!fallbackRoomId && body.username) {
+      const u = await prisma.user.findUnique({ where: { username: String(body.username).toLowerCase().trim() } });
+      if (u && u.roomId) {
+        fallbackRoomId = u.roomId;
+        if (!userIdToSet) userIdToSet = u.id;
+      }
+    }
+
+    const assignedRoomId = body.roomId ? String(body.roomId) : (fallbackRoomId || undefined);
 
     const newChar = await prisma.character.create({
       data: {
@@ -163,6 +194,7 @@ export async function POST(request: Request) {
         background: String(body.background || 'Herói do Povo'),
         deity: String(body.deity || 'Nenhum'),
         lore: String(body.lore || ''),
+        roomId: assignedRoomId,
         currentHp: toSafeNumber(body.currentHp, 10),
         maxHp: Math.max(1, toSafeNumber(body.maxHp, 10)),
         tempHp: Math.max(0, toSafeNumber(body.tempHp, 0)),
@@ -265,6 +297,15 @@ export async function POST(request: Request) {
         abilities: true,
         conditions: true,
         items: true,
+        room: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            dmName: true,
+            dmUsername: true,
+          },
+        },
       },
     });
 

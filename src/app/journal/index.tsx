@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoom, getRoomColor } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Plus, Trash, BookOpen, User as UserIcon, Edit2, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
@@ -42,8 +43,10 @@ interface SessionData {
 
 export default function JournalScreen() {
   const { user } = useAuth();
+  const { activeRoom } = useRoom();
   const { isMobile } = useResponsive();
   
+  const roomColor = getRoomColor(activeRoom?.code);
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -65,17 +68,23 @@ export default function JournalScreen() {
 
   const loadSessions = useCallback(async () => {
     try {
-      const data = await ApiService.getSessions();
+      setLoading(true);
+      const data = await ApiService.getSessions(activeRoom?.id);
       setSessions(data as any);
-      if (data.length > 0 && !activeSessionId) {
-        setActiveSessionId(data[data.length - 1].id);
+      if (data.length > 0) {
+        setActiveSessionId((prev) => {
+          if (prev && data.some((s) => s.id === prev)) return prev;
+          return data[data.length - 1].id;
+        });
+      } else {
+        setActiveSessionId(null);
       }
     } catch (e) {
       console.error('Erro ao carregar sessões:', e);
     } finally {
       setLoading(false);
     }
-  }, [activeSessionId]);
+  }, [activeRoom?.id]);
 
   useEffect(() => {
     loadSessions();
@@ -122,7 +131,7 @@ export default function JournalScreen() {
     setLoading(true);
     setModalVisible(false);
     try {
-      const newSession = await ApiService.createSession(newSessionTitle.trim(), user.id);
+      const newSession = await ApiService.createSession(newSessionTitle.trim(), user.id, activeRoom?.id);
       if (newSession && newSession.id) {
         setActiveSessionId(newSession.id);
       }
@@ -197,13 +206,25 @@ export default function JournalScreen() {
           activeOpacity={isMobile ? 0.7 : 1}
           onPress={() => isMobile && setIsSidebarExpanded(!isSidebarExpanded)}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <BookOpen color="#C5A059" size={24} />
-            <Text style={styles.sidebarTitle}>Capítulos</Text>
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <BookOpen color="#C5A059" size={24} />
+              <View>
+                <Text style={styles.sidebarTitle}>Capítulos</Text>
+                {activeRoom && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: roomColor }} />
+                    <Text style={{ fontSize: 11, color: roomColor, fontWeight: '700' }}>
+                      {activeRoom.name}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            {isMobile && (
+              isSidebarExpanded ? <ChevronUp color="#C5A059" size={20} /> : <ChevronDown color="#C5A059" size={20} />
+            )}
           </View>
-          {isMobile && (
-            isSidebarExpanded ? <ChevronUp color="#C5A059" size={20} /> : <ChevronDown color="#C5A059" size={20} />
-          )}
         </TouchableOpacity>
         
         {(!isMobile || isSidebarExpanded) && (
@@ -227,7 +248,9 @@ export default function JournalScreen() {
                 </TouchableOpacity>
               ))}
               {sessions.length === 0 && !loading && (
-                <Text style={styles.emptyText}>Nenhuma sessão registrada.</Text>
+                <Text style={styles.emptyText}>
+                  Nenhum capítulo para {activeRoom?.name || 'esta mesa'}.
+                </Text>
               )}
             </ScrollView>
 
@@ -387,7 +410,11 @@ export default function JournalScreen() {
         ) : (
           <View style={styles.noSessionSelected}>
             <BookOpen color="#3D342C" size={48} />
-            <Text style={styles.emptyText}>Selecione ou crie uma sessão para abrir o diário.</Text>
+            <Text style={[styles.emptyText, { marginTop: 8, textAlign: 'center', paddingHorizontal: 20 }]}>
+              {sessions.length === 0
+                ? `Nenhum capítulo registrado ainda para a ${activeRoom?.name || 'mesa'}.`
+                : 'Selecione ou crie um capítulo ao lado para abrir o diário.'}
+            </Text>
           </View>
         )}
       </View>

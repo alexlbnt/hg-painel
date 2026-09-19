@@ -41,16 +41,24 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({
     <View style={[styles.headerContainer, isMobile && { gap: 12, paddingBottom: 14 }]}>
       {/* Informações Básicas do Aventureiro */}
       <View style={{ flexShrink: 1, minWidth: isMobile ? '100%' : 180 }}>
-        <View
-          style={[
-            styles.levelBadge,
-            { borderColor: `${themeColor}66`, backgroundColor: `${themeColor}15` },
-          ]}
-        >
-          <Scroll color={themeColor} size={13} />
-          <Text style={[styles.levelText, { color: themeColor }]}>
-            NÍVEL {char.level} • {char.race.toUpperCase()}
-          </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+          <View
+            style={[
+              styles.levelBadge,
+              { borderColor: `${themeColor}66`, backgroundColor: `${themeColor}15` },
+            ]}
+          >
+            <Scroll color={themeColor} size={13} />
+            <Text style={[styles.levelText, { color: themeColor }]}>
+              NÍVEL {char.level} • {char.race.toUpperCase()}
+            </Text>
+          </View>
+
+          {char.room?.name && (
+            <View style={styles.roomTag}>
+              <Text style={styles.roomTagText}>🏰 {char.room.name.toUpperCase()}</Text>
+            </View>
+          )}
         </View>
 
         <Text
@@ -236,7 +244,20 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     alignSelf: 'flex-start',
-    marginBottom: 6,
+  },
+  roomTag: {
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(197, 160, 89, 0.4)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  roomTagText: {
+    fontSize: 9.5,
+    fontWeight: 'bold',
+    color: '#E6C280',
+    letterSpacing: 0.5,
   },
   levelText: {
     fontSize: 10.5,

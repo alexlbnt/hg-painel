@@ -1,32 +1,52 @@
 import BottomNav from '@/components/BottomNav';
 import HeaderNav from '@/components/HeaderNav';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { RoomProvider } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { DarkTheme, ThemeProvider, Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
+import FantasyLoadingScreen from '@/components/ui/FantasyLoadingScreen';
+import LoginGateScreen from '@/components/auth/LoginGateScreen';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function MainContentGate() {
   const { isMobile } = useResponsive();
+  const { user, isLoading } = useAuth();
 
+  if (isLoading) {
+    return <FantasyLoadingScreen />;
+  }
+
+  if (!user) {
+    return <LoginGateScreen />;
+  }
+
+  return (
+    <View style={styles.container}>
+      <HeaderNav />
+      <View style={[styles.mainContent, isMobile && { paddingBottom: 70 }]}>
+        <Slot />
+      </View>
+      <BottomNav />
+    </View>
+  );
+}
+
+export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
 
   return (
     <AuthProvider>
-      <ThemeProvider value={DarkTheme}>
-        <View style={styles.container}>
-          <HeaderNav />
-          <View style={[styles.mainContent, isMobile && { paddingBottom: 70 }]}>
-            <Slot />
-          </View>
-          <BottomNav />
-        </View>
-      </ThemeProvider>
+      <RoomProvider>
+        <ThemeProvider value={DarkTheme}>
+          <MainContentGate />
+        </ThemeProvider>
+      </RoomProvider>
     </AuthProvider>
   );
 }

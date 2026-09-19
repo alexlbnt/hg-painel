@@ -9,6 +9,16 @@ export async function GET(req: Request) {
         name: true,
         username: true,
         role: true,
+        roomId: true,
+        room: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            dmUsername: true,
+            dmName: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },
@@ -23,7 +33,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { name, username, password, role } = await req.json();
+    const { name, username, password, role, roomId } = await req.json();
 
     if (!name || !username || !password) {
       return Response.json({ error: 'Nome, usuário e senha são obrigatórios' }, { status: 400 });
@@ -73,12 +83,21 @@ export async function POST(req: Request) {
         username: cleanUsername,
         password: hashedPassword,
         role: validRole,
+        roomId: roomId || undefined,
       },
       select: {
         id: true,
         name: true,
         username: true,
         role: true,
+        roomId: true,
+        room: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
         createdAt: true,
       },
     });

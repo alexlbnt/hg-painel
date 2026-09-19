@@ -75,6 +75,12 @@ export async function PATCH(req: Request, context: any) {
         dataToUpdate.role = body.role;
       }
     }
+    if (body.roomId !== undefined) {
+      if (!requester || requester.role !== 'DM') {
+        return Response.json({ error: 'Apenas o Mestre pode alterar a mesa vinculada do usuário' }, { status: 403 });
+      }
+      dataToUpdate.roomId = body.roomId ? String(body.roomId) : null;
+    }
     if (body.password) {
       dataToUpdate.password = await bcrypt.hash(body.password, 10);
     }
@@ -87,6 +93,14 @@ export async function PATCH(req: Request, context: any) {
         name: true,
         username: true,
         role: true,
+        roomId: true,
+        room: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },

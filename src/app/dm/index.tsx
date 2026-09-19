@@ -8,6 +8,7 @@ import { Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, Chevro
 import { useEffect, useState, useRef } from 'react';
 import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoom } from '@/contexts/RoomContext';
 import { useRouter } from 'expo-router';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { confirmAction } from '@/utils/confirm';
@@ -22,6 +23,8 @@ export default function DmModule() {
     }
   }, [authLoading, user, router]);
 
+  const { activeRoom, isSuperDm, userAccessibleRooms, setActiveRoom } = useRoom();
+
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedChar, setSelectedChar] = useState<CharacterData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -33,9 +36,30 @@ export default function DmModule() {
   const [assignUserInputs, setAssignUserInputs] = useState<Record<string, string>>({});
   const lastDataHash = useRef<string>('');
 
+  // Ao entrar no Escudo do Mestre, se não for Super-DM, garante que a mesa ativa seja a que ele mestra
+  useEffect(() => {
+    if (!isSuperDm && user && userAccessibleRooms.length > 0) {
+      const dmRoom = userAccessibleRooms.find(
+        (r) => (r.dmUsername || '').toLowerCase().trim() === (user.username || '').toLowerCase().trim()
+      );
+      if (dmRoom && activeRoom?.id !== dmRoom.id) {
+        setActiveRoom(dmRoom);
+      }
+    }
+  }, [isSuperDm, user, userAccessibleRooms, activeRoom?.id, setActiveRoom]);
+
+  // Se não for Super-DM e a aba estiver em 'users', reverte para 'monitor'
+  useEffect(() => {
+    if (!isSuperDm && activeTab === 'users') {
+      setActiveTab('monitor');
+    }
+  }, [isSuperDm, activeTab]);
+
   const fetchTableData = async (silent = false) => {
     try {
-      const data = await ApiService.getCharacters();
+      const data = await ApiService.getCharacters(
+        activeRoom ? { roomId: activeRoom.id } : undefined
+      );
       const serialized = JSON.stringify(data);
       if (serialized !== lastDataHash.current) {
         lastDataHash.current = serialized;
@@ -80,7 +104,7 @@ export default function DmModule() {
       fetchTableData(true);
     }, 60000);
     return () => clearInterval(timer);
-  }, []);
+  }, [activeRoom?.id]);
 
   const handleInterveneClick = (char: CharacterData) => {
     setSelectedChar(char);
@@ -201,15 +225,17 @@ export default function DmModule() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'users' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('users')}
-        >
-          <Key color={activeTab === 'users' ? '#E6C280' : '#80776C'} size={18} />
-          <Text style={[styles.tabText, activeTab === 'users' && styles.tabTextActive]}>
-            Usuários & Permissões
-          </Text>
-        </TouchableOpacity>
+        {isSuperDm && (
+          <TouchableOpacity
+            style={[styles.tabBtn, activeTab === 'users' && styles.tabBtnActive]}
+            onPress={() => setActiveTab('users')}
+          >
+            <Key color={activeTab === 'users' ? '#E6C280' : '#80776C'} size={18} />
+            <Text style={[styles.tabText, activeTab === 'users' && styles.tabTextActive]}>
+              Usuários & Permissões
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       
@@ -444,7 +470,9 @@ export default function DmModule() {
       {/* SEÇÃO 2: RASTREIO DE INICIATIVA E COMBATE */}
       <View style={{ display: activeTab === 'initiative' ? 'flex' : 'none', width: '100%' }}>
         <InitiativeTracker
+          key={activeRoom?.id || 'default'}
           characters={characters}
+          roomId={activeRoom?.id}
           onInterveneCharacter={async (id, action) => {
             await ApiService.dmIntervene(id, action);
             fetchTableData(true);
@@ -452,10 +480,12 @@ export default function DmModule() {
         />
       </View>
 
-      {/* SEÇÃO 3: GESTÃO DE USUÁRIOS E PERMISSÕES */}
-      <View style={{ display: activeTab === 'users' ? 'flex' : 'none', width: '100%' }}>
-        <UserManagement />
-      </View>
+      {/* SEÇÃO 3: GESTÃO DE USUÁRIOS E PERMISSÕES (Exclusivo Super-DM Alex) */}
+      {isSuperDm && (
+        <View style={{ display: activeTab === 'users' ? 'flex' : 'none', width: '100%' }}>
+          <UserManagement />
+        </View>
+      )}
 
       {/* Modal de Intervenção Remota */}
       <InterventionModal

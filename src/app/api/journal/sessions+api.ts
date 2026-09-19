@@ -3,7 +3,16 @@ import { broadcastEvent } from '../../../lib/eventBus';
 
 export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const roomId = searchParams.get('roomId');
+
+    const where: any = {};
+    if (roomId && roomId !== 'all') {
+      where.roomId = roomId;
+    }
+
     const sessions = await prisma.campaignSession.findMany({
+      where,
       orderBy: { date: 'asc' },
       include: {
         notes: {
@@ -25,7 +34,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { title, authorId } = await req.json();
+    const { title, authorId, roomId } = await req.json();
 
     if (!title || !authorId) {
       return Response.json({ error: 'Missing fields' }, { status: 400 });
@@ -39,6 +48,7 @@ export async function POST(req: Request) {
     const newSession = await prisma.campaignSession.create({
       data: {
         title,
+        roomId: roomId || user.roomId || null,
       },
       include: {
         notes: true,

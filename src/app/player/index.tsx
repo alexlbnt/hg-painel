@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoom } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import {
@@ -46,6 +47,7 @@ import { SrdSearchModal } from '@/components/player/SrdSearchModal';
 import {
   Award,
   BookOpen,
+  Crown,
   Download,
   FastForward,
   Package,
@@ -70,6 +72,7 @@ export default function PlayerModule() {
   }, [authLoading, user, router]);
 
   const { isMobile, isTablet, isDesktop } = useResponsive();
+  const { activeRoom } = useRoom();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -107,20 +110,24 @@ export default function PlayerModule() {
   // Usuários com acesso total à mesa (Mestre e Mecânico)
   const isElevatedUser = user?.role === 'DM' || user?.role === 'MECHANIC';
 
-  // Fichas visíveis: Mestre e Mecânico visualizam todas; Player Comum apenas as suas
+  // Fichas visíveis: Mestre e Mecânico visualizam todas da mesa ativa; Player Comum apenas as suas da mesa ativa
   const visibleCharacters = useMemo(() => {
     if (!user) return [];
-    if (isElevatedUser) {
-      return characters;
+    let list = characters;
+    if (!isElevatedUser) {
+      const loggedUser = (user.username || '').trim().toLowerCase();
+      const loggedName = (user.name || '').trim().toLowerCase();
+      list = characters.filter((c) => {
+        const charUser = (c.username || '').trim().toLowerCase();
+        const charPlayerName = (c.playerName || '').trim().toLowerCase();
+        return (charUser && charUser === loggedUser) || (charPlayerName && charPlayerName === loggedName);
+      });
     }
-    const loggedUser = (user.username || '').trim().toLowerCase();
-    const loggedName = (user.name || '').trim().toLowerCase();
-    return characters.filter((c) => {
-      const charUser = (c.username || '').trim().toLowerCase();
-      const charPlayerName = (c.playerName || '').trim().toLowerCase();
-      return (charUser && charUser === loggedUser) || (charPlayerName && charPlayerName === loggedName);
-    });
-  }, [characters, user, isElevatedUser]);
+    if (activeRoom) {
+      return list.filter((c) => c.roomId === activeRoom.id || (!c.roomId && activeRoom.code.includes('ALEX')));
+    }
+    return list;
+  }, [characters, user, isElevatedUser, activeRoom]);
 
   // Carregamento de Personagens
   const loadCharacters = useCallback(async (silent = false) => {
@@ -655,6 +662,7 @@ export default function PlayerModule() {
                     </Text>
                     <Text style={styles.chipClass}>
                       {char.class} • Nvl {char.level}
+                      {char.room?.name ? ` • ${char.room.name}` : ''}
                       {isElevatedUser && char.playerName ? ` (${char.playerName})` : ''}
                     </Text>
                   </View>
@@ -982,7 +990,11 @@ export default function PlayerModule() {
                     prev.map((c) => (c.id === editingChar.id ? updated : c))
                   );
                 } else {
-                  const created = await ApiService.createCharacter(data);
+                  const payload = {
+                    ...data,
+                    roomId: data.roomId || user?.roomId || activeRoom?.id,
+                  };
+                  const created = await ApiService.createCharacter(payload);
                   setCharacters((prev) => [...prev, created]);
                   setSelectedId(created.id);
                 }
@@ -1526,4 +1538,5 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '600',
   },
+
 });

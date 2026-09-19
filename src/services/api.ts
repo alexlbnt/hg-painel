@@ -1,4 +1,4 @@
-import { CharacterData, ConditionData, INITIAL_CHARACTERS, TaskData, INITIAL_TASKS } from '@/lib/mockData';
+import { CharacterData, ConditionData, INITIAL_CHARACTERS, TaskData, INITIAL_TASKS, RoomData, INITIAL_ROOMS } from '@/lib/mockData';
 import { Platform } from 'react-native';
 import { Role, authStorage, getApiBaseUrl } from '@/contexts/AuthContext';
 
@@ -7,6 +7,8 @@ export interface UserData {
   name: string;
   username: string;
   role: Role;
+  roomId?: string | null;
+  room?: RoomData | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -157,6 +159,38 @@ if (inMemoryTasks.length === 0) {
   saveTasksToStorage(inMemoryTasks);
 }
 
+const STORAGE_KEY_ROOMS = 'honra_egoismo_rooms_v1';
+let inMemoryRooms: RoomData[] = [...INITIAL_ROOMS];
+
+function loadRoomsFromStorage(): RoomData[] {
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const data = window.localStorage.getItem(STORAGE_KEY_ROOMS);
+      if (data) return JSON.parse(data);
+    }
+  } catch (e) {
+    console.warn('Erro ao carregar rooms do localStorage', e);
+  }
+  return inMemoryRooms;
+}
+
+function saveRoomsToStorage(rooms: RoomData[]) {
+  inMemoryRooms = rooms;
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(STORAGE_KEY_ROOMS, JSON.stringify(rooms));
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar rooms no localStorage', e);
+  }
+}
+
+inMemoryRooms = loadRoomsFromStorage();
+if (inMemoryRooms.length === 0) {
+  inMemoryRooms = [...INITIAL_ROOMS];
+  saveRoomsToStorage(inMemoryRooms);
+}
+
 function getAuthHeaders(extraHeaders: Record<string, string> = {}, requesterId?: string): Record<string, string> {
   const headers: Record<string, string> = { ...extraHeaders };
   const authUser = authStorage.get();
@@ -266,14 +300,63 @@ export const ApiService = {
     return true;
   },
 
+  // ROOMS
+  async getRooms(): Promise<RoomData[]> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/rooms?t=${Date.now()}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          saveRoomsToStorage(data);
+          return data;
+        }
+      }
+    } catch {
+      // Usar fallback
+    }
+    return loadRoomsFromStorage();
+  },
+
+  async createRoom(data: Partial<RoomData>): Promise<RoomData> {
+    const newRoom: RoomData = {
+      id: `room-${Date.now()}`,
+      code: data.code || `MESA-${Date.now()}`,
+      name: data.name || 'Nova Mesa',
+      dmName: data.dmName || 'Mestre',
+      dmUsername: data.dmUsername || null,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/rooms`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(newRoom),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      if (Platform.OS === 'web') throw e;
+    }
+    const rooms = loadRoomsFromStorage();
+    rooms.push(newRoom);
+    saveRoomsToStorage(rooms);
+    return newRoom;
+  },
+
   // CHARACTERS
-  async getCharacters(filter?: { username?: string; role?: Role }): Promise<CharacterData[]> {
+  async getCharacters(filter?: { username?: string; role?: Role; roomId?: string }): Promise<CharacterData[]> {
     try {
       const query = new URLSearchParams();
       query.set('t', Date.now().toString());
       if (filter?.role === 'PLAYER' && filter.username) {
         query.set('role', 'PLAYER');
         query.set('username', filter.username);
+      }
+      if (filter?.roomId && filter.roomId !== 'all') {
+        query.set('roomId', filter.roomId);
       }
 
       const baseUrl = getApiBaseUrl();
@@ -287,7 +370,7 @@ export const ApiService = {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          if (!filter || filter.role !== 'PLAYER') {
+          if (!filter || (!filter.role && !filter.roomId)) {
             saveToStorage(data);
           }
           return data;
@@ -296,7 +379,11 @@ export const ApiService = {
     } catch (e) {
       console.warn('Erro ao buscar personagens da API, usando armazenamento local', e);
     }
-    return loadFromStorage();
+    const local = loadFromStorage();
+    if (filter?.roomId && filter.roomId !== 'all') {
+      return local.filter(c => c.roomId === filter.roomId);
+    }
+    return local;
   },
 
   async getCharacter(id: string): Promise<CharacterData | null> {
@@ -309,6 +396,7 @@ export const ApiService = {
     const newChar: CharacterData = {
       id: `char-${Date.now()}`,
       userId: data.userId || currentAuth?.id,
+      roomId: data.roomId || null,
       name: data.name || 'Novo Herói',
       playerName: data.playerName || 'Jogador',
       race: data.race || 'Humano',
@@ -593,7 +681,7 @@ export const ApiService = {
     return [];
   },
 
-  async createUser(data: { name: string; username: string; password?: string; role: Role }, requesterId?: string): Promise<UserData> {
+  async createUser(data: { name: string; username: string; password?: string; role: Role; roomId?: string }, requesterId?: string): Promise<UserData> {
     const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/api/users`, {
       method: 'POST',
@@ -608,7 +696,7 @@ export const ApiService = {
     }
   },
 
-  async updateUser(id: string, data: { name?: string; role?: Role; password?: string; currentPassword?: string }, requesterId?: string): Promise<UserData> {
+  async updateUser(id: string, data: { name?: string; role?: Role; password?: string; currentPassword?: string; roomId?: string | null }, requesterId?: string): Promise<UserData> {
     const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/api/users/${id}`, {
       method: 'PATCH',
@@ -638,10 +726,15 @@ export const ApiService = {
   },
 
   // SESSIONS / JOURNAL
-  async getSessions(): Promise<CampaignSessionData[]> {
+  async getSessions(roomId?: string): Promise<CampaignSessionData[]> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/journal/sessions?t=${Date.now()}`, {
+      const query = new URLSearchParams();
+      query.set('t', Date.now().toString());
+      if (roomId && roomId !== 'all') {
+        query.set('roomId', roomId);
+      }
+      const res = await fetch(`${baseUrl}/api/journal/sessions?${query.toString()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -654,12 +747,12 @@ export const ApiService = {
     return [];
   },
 
-  async createSession(title: string, authorId: string): Promise<CampaignSessionData> {
+  async createSession(title: string, authorId: string, roomId?: string): Promise<CampaignSessionData> {
     const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/api/journal/sessions`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, authorId),
-      body: JSON.stringify({ title, authorId }),
+      body: JSON.stringify({ title, authorId, roomId }),
     });
     if (res.ok) {
       return await res.json();
@@ -739,10 +832,15 @@ export const ApiService = {
   },
 
   // SCHEDULE / NEXT SESSION & RSVP
-  async getScheduledSession(): Promise<ScheduleResponseData> {
+  async getScheduledSession(roomId?: string): Promise<ScheduleResponseData> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/schedule?t=${Date.now()}`, {
+      const query = new URLSearchParams();
+      query.set('t', Date.now().toString());
+      if (roomId && roomId !== 'all') {
+        query.set('roomId', roomId);
+      }
+      const res = await fetch(`${baseUrl}/api/schedule?${query.toString()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -760,6 +858,7 @@ export const ApiService = {
     location?: string;
     description?: string;
     userId: string;
+    roomId?: string;
     resetRsvps?: boolean;
   }): Promise<ScheduledSessionData> {
     const baseUrl = getApiBaseUrl();

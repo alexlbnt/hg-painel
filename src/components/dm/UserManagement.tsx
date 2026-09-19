@@ -24,9 +24,11 @@ import {
   X,
   RefreshCw,
   Lock,
+  Dices,
 } from 'lucide-react-native';
 import { ApiService, UserData } from '@/services/api';
 import { Role, useAuth } from '@/contexts/AuthContext';
+import { useRoom } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { confirmAction } from '@/utils/confirm';
 
@@ -63,6 +65,7 @@ const ROLE_CONFIG: Record<
 export default function UserManagement() {
   const { user: currentUser } = useAuth();
   const { isMobile } = useResponsive();
+  const { rooms } = useRoom();
 
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +77,7 @@ export default function UserManagement() {
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<Role>('PLAYER');
+  const [newRoomId, setNewRoomId] = useState<string>('');
   const [createError, setCreateError] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -82,6 +86,12 @@ export default function UserManagement() {
   const [selectedUserForRole, setSelectedUserForRole] = useState<UserData | null>(null);
   const [targetRole, setTargetRole] = useState<Role>('PLAYER');
   const [updatingRole, setUpdatingRole] = useState(false);
+
+  // Modal Vincular / Transferir Mesa
+  const [roomModalVisible, setRoomModalVisible] = useState(false);
+  const [selectedUserForRoom, setSelectedUserForRoom] = useState<UserData | null>(null);
+  const [targetRoomId, setTargetRoomId] = useState<string>('');
+  const [updatingRoom, setUpdatingRoom] = useState(false);
 
   // Modal Redefinir Senha
   const [pwdModalVisible, setPwdModalVisible] = useState(false);
@@ -142,6 +152,7 @@ export default function UserManagement() {
         username: newUsername.toLowerCase().trim(),
         password: newPassword.trim(),
         role: newRole,
+        roomId: newRoomId || undefined,
       });
 
       setCreateModalVisible(false);
@@ -149,6 +160,7 @@ export default function UserManagement() {
       setNewUsername('');
       setNewPassword('');
       setNewRole('PLAYER');
+      setNewRoomId('');
       await loadUsers();
 
       if (Platform.OS === 'web') {
@@ -160,6 +172,57 @@ export default function UserManagement() {
       setCreateError(err.message || 'Erro ao registrar aventureiro.');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const openRoomModal = (u: UserData) => {
+    setSelectedUserForRoom(u);
+    const initialRoomId = u.roomId || (rooms.find((r) => r.code.includes('ALEX'))?.id || rooms[0]?.id || '');
+    setTargetRoomId(initialRoomId);
+    setRoomModalVisible(true);
+  };
+
+  const handleSaveRoom = async () => {
+    if (!selectedUserForRoom) return;
+    setUpdatingRoom(true);
+    try {
+      await ApiService.updateUser(selectedUserForRoom.id, { roomId: targetRoomId }, currentUser?.id);
+      const chosenRoom = rooms.find((r) => r.id === targetRoomId);
+      setUsers((prev) =>
+        prev.map((item) =>
+          item.id === selectedUserForRoom.id
+            ? {
+                ...item,
+                roomId: targetRoomId,
+                room: chosenRoom
+                  ? {
+                      id: chosenRoom.id,
+                      name: chosenRoom.name,
+                      code: chosenRoom.code,
+                      dmUsername: chosenRoom.dmUsername,
+                      dmName: chosenRoom.dmName,
+                    }
+                  : null,
+              }
+            : item
+        )
+      );
+      setRoomModalVisible(false);
+      await loadUsers();
+      const roomName = chosenRoom?.name || 'Mesa';
+      if (Platform.OS === 'web') {
+        window.alert(`Usuário '${selectedUserForRoom.name}' vinculado com sucesso à ${roomName}.`);
+      } else {
+        Alert.alert('Sucesso', `Usuário '${selectedUserForRoom.name}' vinculado à ${roomName}.`);
+      }
+    } catch (err: any) {
+      if (Platform.OS === 'web') {
+        window.alert(`Erro: ${err.message || 'Falha ao vincular usuário à mesa.'}`);
+      } else {
+        Alert.alert('Erro', err.message || 'Falha ao vincular usuário à mesa.');
+      }
+    } finally {
+      setUpdatingRoom(false);
     }
   };
 
@@ -311,6 +374,7 @@ export default function UserManagement() {
             activeOpacity={0.8}
             onPress={() => {
               setCreateError('');
+              setNewRoomId(rooms[0]?.id || '');
               setCreateModalVisible(true);
             }}
           >
@@ -372,6 +436,12 @@ export default function UserManagement() {
           {users.map((u) => {
             const roleCfg = ROLE_CONFIG[u.role] || ROLE_CONFIG.PLAYER;
             const isSelf = currentUser?.id === u.id || currentUser?.username === u.username;
+            const userRoom = rooms.find((r) => r.id === u.roomId || r.code === u.roomId) || (u.room as any);
+            const isAlex = userRoom?.code?.includes('ALEX');
+            const isLobo = userRoom?.code?.includes('LOBO');
+            const isJoao = userRoom?.code?.includes('JOAO');
+            const roomThemeColor = isAlex ? '#D63939' : isLobo ? '#2E6DD1' : isJoao ? '#27AE60' : '#80776C';
+            const roomName = userRoom?.name || 'Sem mesa atribuída';
 
             return (
               <View key={u.id} style={styles.userCard}>
@@ -399,18 +469,41 @@ export default function UserManagement() {
                 </View>
 
                 <View style={[styles.userCardRight, isMobile && { flexDirection: 'column', alignItems: 'flex-start', width: '100%' }]}>
-                  {/* Badge de Permissão Clicável */}
-                  <TouchableOpacity
-                    style={[styles.roleBadge, { backgroundColor: roleCfg.bg, borderColor: roleCfg.borderColor }]}
-                    activeOpacity={0.7}
-                    onPress={() => openRoleModal(u)}
-                  >
-                    <Text style={[styles.roleBadgeText, { color: roleCfg.color }]}>{roleCfg.label}</Text>
-                    <Edit2 color={roleCfg.color} size={12} style={{ marginLeft: 6 }} />
-                  </TouchableOpacity>
+                  {/* Badges de Permissão e Mesa */}
+                  <View style={[styles.badgesContainer, isMobile && { flexDirection: 'column', width: '100%' }]}>
+                    {/* Badge de Permissão Clicável */}
+                    <TouchableOpacity
+                      style={[styles.roleBadge, { backgroundColor: roleCfg.bg, borderColor: roleCfg.borderColor }]}
+                      activeOpacity={0.7}
+                      onPress={() => openRoleModal(u)}
+                    >
+                      <Text style={[styles.roleBadgeText, { color: roleCfg.color }]}>{roleCfg.label}</Text>
+                      <Edit2 color={roleCfg.color} size={12} style={{ marginLeft: 6 }} />
+                    </TouchableOpacity>
+
+                    {/* Badge de Mesa RPG Clicável */}
+                    <TouchableOpacity
+                      style={[styles.roomBadge, { backgroundColor: `${roomThemeColor}18`, borderColor: roomThemeColor }]}
+                      activeOpacity={0.7}
+                      onPress={() => openRoomModal(u)}
+                    >
+                      <Dices color={roomThemeColor} size={13} />
+                      <Text style={[styles.roomBadgeText, { color: roomThemeColor }]}>{roomName}</Text>
+                      <Edit2 color={roomThemeColor} size={11} style={{ marginLeft: 4 }} />
+                    </TouchableOpacity>
+                  </View>
 
                   {/* Ações de Usuário */}
                   <View style={styles.userActionsRow}>
+                    <TouchableOpacity
+                      style={styles.actionIconBtn}
+                      activeOpacity={0.7}
+                      onPress={() => openRoomModal(u)}
+                    >
+                      <Dices color="#C5A059" size={16} />
+                      <Text style={styles.actionBtnLabel}>Mesa</Text>
+                    </TouchableOpacity>
+
                     <TouchableOpacity
                       style={styles.actionIconBtn}
                       activeOpacity={0.7}
@@ -519,6 +612,41 @@ export default function UserManagement() {
                 </View>
               </View>
 
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Mesa de RPG Inicial</Text>
+                <View style={styles.roomPickerList}>
+                  {rooms.map((r) => {
+                    const isSelected = newRoomId === r.id;
+                    const isAlex = r.code.includes('ALEX');
+                    const isLobo = r.code.includes('LOBO');
+                    const isJoao = r.code.includes('JOAO');
+                    const themeColor = isAlex ? '#D63939' : isLobo ? '#2E6DD1' : isJoao ? '#27AE60' : '#80776C';
+                    return (
+                      <TouchableOpacity
+                        key={r.id}
+                        style={[
+                          styles.roomOptionCard,
+                          isSelected && { borderColor: themeColor, backgroundColor: `${themeColor}22` },
+                        ]}
+                        onPress={() => setNewRoomId(r.id)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.roomOptionTop}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Dices color={themeColor} size={16} />
+                            <Text style={[styles.roomOptionName, { color: themeColor }]}>{r.name}</Text>
+                          </View>
+                          {isSelected && <Check color={themeColor} size={16} />}
+                        </View>
+                        <Text style={styles.roomOptionDesc}>
+                          Mestre: {r.dmName} • Código: {r.code}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
               {!!createError && <Text style={styles.errorText}>{createError}</Text>}
             </ScrollView>
 
@@ -608,6 +736,80 @@ export default function UserManagement() {
                   <ActivityIndicator color="#110F0D" size="small" />
                 ) : (
                   <Text style={styles.submitBtnText}>Salvar Permissão</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: VINCULAR À MESA DE RPG */}
+      <Modal visible={roomModalVisible} transparent animationType="fade" onRequestClose={() => setRoomModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Dices color="#C5A059" size={24} />
+                <Text style={styles.modalTitle}>Vincular à Mesa de RPG</Text>
+              </View>
+              <TouchableOpacity onPress={() => setRoomModalVisible(false)}>
+                <X color="#80776C" size={22} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Selecione a mesa onde o aventureiro <Text style={{ color: '#E6C280', fontWeight: 'bold' }}>{selectedUserForRoom?.name}</Text> (@{selectedUserForRoom?.username}) irá jogar:
+            </Text>
+
+            <View style={styles.roomPickerList}>
+              {rooms.map((r) => {
+                const isSelected = targetRoomId === r.id;
+                const isAlex = r.code.includes('ALEX');
+                const isLobo = r.code.includes('LOBO');
+                const isJoao = r.code.includes('JOAO');
+                const themeColor = isAlex ? '#D63939' : isLobo ? '#2E6DD1' : isJoao ? '#27AE60' : '#80776C';
+                return (
+                  <TouchableOpacity
+                    key={r.id}
+                    style={[
+                      styles.roomOptionCard,
+                      isSelected && { borderColor: themeColor, backgroundColor: `${themeColor}22` },
+                    ]}
+                    onPress={() => setTargetRoomId(r.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.roomOptionTop}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Dices color={themeColor} size={16} />
+                        <Text style={[styles.roomOptionName, { color: themeColor }]}>{r.name}</Text>
+                      </View>
+                      {isSelected && <Check color={themeColor} size={16} />}
+                    </View>
+                    <Text style={styles.roomOptionDesc}>
+                      Mestre Responsável: <Text style={{ color: '#E2D8C3' }}>{r.dmName}</Text> • Código: {r.code}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setRoomModalVisible(false)}
+                disabled={updatingRoom}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.submitBtn}
+                onPress={handleSaveRoom}
+                disabled={updatingRoom}
+              >
+                {updatingRoom ? (
+                  <ActivityIndicator color="#110F0D" size="small" />
+                ) : (
+                  <Text style={styles.submitBtnText}>Salvar Mesa</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -880,6 +1082,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  badgesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -889,6 +1097,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   roleBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  roomBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    gap: 6,
+  },
+  roomBadgeText: {
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -990,6 +1211,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   roleOptionDesc: {
+    color: '#80776C',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  roomPickerList: {
+    gap: 10,
+    marginTop: 4,
+  },
+  roomOptionCard: {
+    backgroundColor: '#110F0D',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 8,
+    padding: 12,
+    gap: 4,
+  },
+  roomOptionTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  roomOptionName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  roomOptionDesc: {
     color: '#80776C',
     fontSize: 12,
     lineHeight: 16,

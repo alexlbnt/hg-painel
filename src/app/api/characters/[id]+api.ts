@@ -325,6 +325,7 @@ export async function PUT(request: Request, context: any) {
         where: { id },
         data: {
           userId: body.userId !== undefined ? (body.userId || null) : undefined,
+          roomId: body.roomId !== undefined ? (body.roomId || null) : undefined,
           currentHp: toOptionalNumber(body.currentHp),
           maxHp: toOptionalNumber(body.maxHp),
           tempHp: toOptionalNumber(body.tempHp),
@@ -374,6 +375,15 @@ export async function PUT(request: Request, context: any) {
           abilities: true,
           conditions: true,
           items: true,
+          room: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              dmName: true,
+              dmUsername: true,
+            },
+          },
         },
       });
     }, { timeout: 15000, maxWait: 10000 });
