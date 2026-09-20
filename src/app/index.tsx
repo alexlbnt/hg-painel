@@ -232,7 +232,14 @@ export default function HomeScreen() {
       ApiService.getTasks().then(setTasks).catch(() => {});
     } else if (event.type === 'CHARACTER_UPDATED' || event.type === 'CHARACTER_CREATED' || event.type === 'CHARACTER_DELETED') {
       ApiService.getCharacters({ roomId: activeRoom?.id }).then(setCharacters).catch(() => {});
-    } else if (event.type === 'JOURNAL_NOTE_CREATED' || event.type === 'JOURNAL_SESSION_CREATED') {
+    } else if (
+      event.type === 'JOURNAL_NOTE_CREATED' ||
+      event.type === 'JOURNAL_NOTE_UPDATED' ||
+      event.type === 'JOURNAL_NOTE_DELETED' ||
+      event.type === 'JOURNAL_SESSION_CREATED' ||
+      event.type === 'JOURNAL_SESSION_UPDATED' ||
+      event.type === 'JOURNAL_SESSION_DELETED'
+    ) {
       ApiService.getSessions(activeRoom?.id).then(setSessions).catch(() => {});
     }
   });
@@ -475,7 +482,7 @@ export default function HomeScreen() {
             >
               <Shield color={myCharacter.themeColor || '#C5A059'} size={13} />
               <Text style={styles.heroHeroCapsuleText} numberOfLines={1}>
-                {myCharacter.name} • {myCharacter.class} Nv.{myCharacter.level} ({myCharacter.currentHp}/{myCharacter.maxHp} HP)
+                {myCharacter.name} • {myCharacter.class}{myCharacter.archetype ? ` (${myCharacter.archetype})` : ''} Nv.{myCharacter.level} ({myCharacter.currentHp}/{myCharacter.maxHp} HP)
               </Text>
             </TouchableOpacity>
           )}
@@ -710,7 +717,7 @@ export default function HomeScreen() {
                   </Text>
                   <Text style={styles.cardMainTitle}>{myCharacter.name}</Text>
                   <Text style={styles.heroSubMeta}>
-                    {myCharacter.race} • {myCharacter.class} • Nível {myCharacter.level}
+                    {myCharacter.race} • {myCharacter.class}{myCharacter.archetype ? ` (${myCharacter.archetype})` : ''} • Nível {myCharacter.level}
                   </Text>
                 </View>
               </View>

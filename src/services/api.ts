@@ -387,8 +387,51 @@ export const ApiService = {
   },
 
   async getCharacter(id: string): Promise<CharacterData | null> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/characters/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback para lista local/completa em caso de falha de rede
+    }
     const chars = await this.getCharacters();
     return chars.find(c => c.id === id) || null;
+  },
+
+  async getTask(id: string): Promise<TaskData | null> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/tasks/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+    const tasks = await this.getTasks();
+    return tasks.find(t => t.id === id) || null;
+  },
+
+  async getUser(id: string): Promise<UserData | null> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/users/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+    const users = await this.getUsers();
+    return users.find(u => u.id === id) || null;
   },
 
   async createCharacter(data: Partial<CharacterData>): Promise<CharacterData> {
@@ -401,6 +444,7 @@ export const ApiService = {
       playerName: data.playerName || 'Jogador',
       race: data.race || 'Humano',
       class: data.class || 'Guerreiro',
+      archetype: data.archetype || '',
       level: data.level || 1,
       alignment: data.alignment || 'Neutro',
       background: data.background || 'Herói do Povo',

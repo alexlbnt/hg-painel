@@ -72,7 +72,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({
         </Text>
 
         <Text style={styles.charMeta}>
-          {char.class} • Jogador:{' '}
+          {char.class}{char.archetype ? ` • ${char.archetype}` : ''} • Jogador:{' '}
           <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{char.playerName}</Text>
         </Text>
 

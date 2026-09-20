@@ -20,6 +20,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
   const [playerName, setPlayerName] = useState('');
   const [race, setRace] = useState('');
   const [className, setClassName] = useState('');
+  const [archetype, setArchetype] = useState('');
   const [level, setLevel] = useState('1');
   const [maxHp, setMaxHp] = useState('10');
   const [armorClass, setArmorClass] = useState('10');
@@ -66,6 +67,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setSelectedRoomId(initialData.roomId || activeRoom?.id || (selectableRooms[0]?.id || ''));
       setRace(initialData.race);
       setClassName(initialData.class);
+      setArchetype(initialData.archetype || '');
       setLevel(initialData.level.toString());
       setMaxHp(initialData.maxHp.toString());
       setArmorClass(initialData.armorClass.toString());
@@ -112,6 +114,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       setSelectedRoomId(defaultRoom?.id || '');
       setRace('Meio-Elfo');
       setClassName('Paladino');
+      setArchetype('');
       setLevel('1');
       setMaxHp('12');
       setArmorClass('16');
@@ -188,6 +191,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       username: (user?.role === 'DM' || user?.role === 'MECHANIC') ? assignedUsername.trim().toLowerCase() : (user?.username || ''),
       race,
       class: className,
+      archetype: archetype.trim(),
       level: parseInt(level, 10) || 1,
       maxHp: parseInt(maxHp, 10) || 10,
       currentHp: initialData ? initialData.currentHp : (parseInt(maxHp, 10) || 10),
@@ -313,15 +317,28 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
 
             <View style={styles.row}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Classe & Subclasse</Text>
+                <Text style={styles.label}>Classe Principal *</Text>
                 <TextInput
                   style={styles.input}
                   value={className}
                   onChangeText={setClassName}
-                  placeholder="Ex: Paladino (Vingança)"
+                  placeholder="Ex: Paladino, Mago, Guerreiro..."
                   placeholderTextColor="#80776C"
                 />
               </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Arquétipo / Subclasse</Text>
+                <TextInput
+                  style={styles.input}
+                  value={archetype}
+                  onChangeText={setArchetype}
+                  placeholder="Ex: Juramento da Devoção, Evocação..."
+                  placeholderTextColor="#80776C"
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Raça Medieval</Text>
                 <TextInput

@@ -7,6 +7,44 @@ function extractId(context: any): string {
   return typeof raw === 'string' ? raw : String(raw || '');
 }
 
+export async function GET(req: Request, context: any) {
+  try {
+    const id = extractId(context);
+    if (!id) {
+      return Response.json({ error: 'Missing user ID' }, { status: 400 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        role: true,
+        roomId: true,
+        room: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      return Response.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+
+    return Response.json(user, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching user by ID:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: Request, context: any) {
   try {
     const id = extractId(context);

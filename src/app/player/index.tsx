@@ -661,7 +661,7 @@ export default function PlayerModule() {
                       {char.name}
                     </Text>
                     <Text style={styles.chipClass}>
-                      {char.class} • Nvl {char.level}
+                      {char.class}{char.archetype ? ` (${char.archetype})` : ''} • Nvl {char.level}
                       {char.room?.name ? ` • ${char.room.name}` : ''}
                       {isElevatedUser && char.playerName ? ` (${char.playerName})` : ''}
                     </Text>

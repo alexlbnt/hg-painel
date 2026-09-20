@@ -72,7 +72,7 @@ export const ExportService = {
         if (item && typeof item === 'object' && (item.name || item.class)) {
           validChars.push({
             ...item,
-            id: `char-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            id: `char-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             name: item.name || 'Herói Importado',
             class: item.class || 'Aventureiro',
             level: Number(item.level) || 1,

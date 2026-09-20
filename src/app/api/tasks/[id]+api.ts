@@ -8,6 +8,20 @@ function extractId(context: any): string {
   return typeof raw === 'string' ? raw : String(raw || '');
 }
 
+export async function GET(request: Request, context: any) {
+  try {
+    const id = extractId(context);
+    const task = await prisma.task.findUnique({ where: { id } });
+    if (!task) {
+      return Response.json({ error: 'Tarefa não encontrada' }, { status: 404 });
+    }
+    return Response.json(task);
+  } catch (error) {
+    console.error('Erro no Prisma GET /api/tasks/[id]:', error);
+    return Response.json({ error: 'Falha ao buscar task' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request, context: any) {
   try {
     const authUser = await getAuthenticatedUser(request);

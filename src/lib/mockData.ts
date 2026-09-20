@@ -75,6 +75,7 @@ export interface CharacterData {
   username?: string;
   race: string;
   class: string;
+  archetype?: string;
   level: number;
   alignment: string;
   background: string;
@@ -153,7 +154,8 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     name: 'Thalor Vane',
     playerName: 'Alex',
     race: 'Aasimar Caído',
-    class: 'Paladino (Vingança)',
+    class: 'Paladino',
+    archetype: 'Juramento da Vingança',
     level: 5,
     alignment: 'Leal e Neutro',
     background: 'Cavaleiro Caído',
@@ -212,7 +214,8 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     name: 'Kaelen "Sombra"',
     playerName: 'Marina',
     race: 'Tiefling',
-    class: 'Bruxo (Corruptor)',
+    class: 'Bruxo',
+    archetype: 'O Corruptor',
     level: 5,
     alignment: 'Caótico e Bom',
     background: 'Charlatão',
@@ -272,7 +275,8 @@ export const INITIAL_CHARACTERS: CharacterData[] = [
     name: 'Lyra Montenegra',
     playerName: 'Rafael',
     race: 'Meio-Elfo',
-    class: 'Clérigo (Sepultura)',
+    class: 'Clérigo',
+    archetype: 'Domínio da Sepultura',
     level: 5,
     alignment: 'Neutro e Bom',
     background: 'Acólito das Sombras',

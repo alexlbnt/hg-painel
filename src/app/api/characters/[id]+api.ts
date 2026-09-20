@@ -19,6 +19,40 @@ function extractId(context: any): string {
   return typeof raw === 'string' ? raw : String(raw || '');
 }
 
+export async function GET(request: Request, context: any) {
+  const id = extractId(context);
+  try {
+    const character = await prisma.character.findUnique({
+      where: { id },
+      include: {
+        spellSlots: { orderBy: { level: 'asc' } },
+        spells: { orderBy: { level: 'asc' } },
+        abilities: true,
+        conditions: true,
+        items: true,
+        room: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            dmName: true,
+            dmUsername: true,
+          },
+        },
+      },
+    });
+
+    if (!character) {
+      return Response.json({ error: 'Personagem não encontrado' }, { status: 404 });
+    }
+
+    return Response.json(character);
+  } catch (error) {
+    console.error(`Erro no Prisma GET /api/characters/${id}:`, error);
+    return Response.json({ error: 'Falha ao buscar personagem' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request, context: any) {
   const id = extractId(context);
   try {
@@ -341,6 +375,7 @@ export async function PUT(request: Request, context: any) {
           playerName: body.playerName !== undefined ? String(body.playerName) : undefined,
           race: body.race !== undefined ? String(body.race) : undefined,
           class: body.class !== undefined ? String(body.class) : undefined,
+          archetype: body.archetype !== undefined ? String(body.archetype).trim() : undefined,
           level: toOptionalNumber(body.level),
           alignment: body.alignment !== undefined ? String(body.alignment) : undefined,
           background: body.background !== undefined ? String(body.background) : undefined,

@@ -300,7 +300,7 @@ export default function DmModule() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.charName}>{char.name}</Text>
                     <Text style={styles.charClass}>
-                      {char.class} • Nvl {char.level}
+                      {char.class}{char.archetype ? ` (${char.archetype})` : ''} • Nvl {char.level}
                     </Text>
                     <Text style={styles.playerName}>
                       Jogador: <Text style={{ color: '#E6C280', fontWeight: 'bold' }}>{char.playerName}</Text>
