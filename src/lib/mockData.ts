@@ -434,7 +434,7 @@ export const INITIAL_ROOMS: RoomData[] = [
   {
     id: 'room-alex',
     code: 'MESA-ALEX',
-    name: 'Mesa do Alex',
+    name: 'Mesa Alex',
     dmName: 'Alex (Mestre)',
     dmUsername: 'alex.g',
     createdAt: new Date().toISOString(),
@@ -442,7 +442,7 @@ export const INITIAL_ROOMS: RoomData[] = [
   {
     id: 'room-joao',
     code: 'MESA-JOAO',
-    name: 'Mesa do João',
+    name: 'Mesa João',
     dmName: 'João (Mestre)',
     dmUsername: 'joao.c',
     createdAt: new Date().toISOString(),
@@ -450,7 +450,7 @@ export const INITIAL_ROOMS: RoomData[] = [
   {
     id: 'room-lobo',
     code: 'MESA-LOBO',
-    name: 'Mesa do Lobo',
+    name: 'Mesa Lobo',
     dmName: 'Lobo (Mestre)',
     dmUsername: 'lobo.l',
     createdAt: new Date().toISOString(),

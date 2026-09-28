@@ -403,7 +403,7 @@ export default function ProfileScreen() {
                 style={[styles.textInput, styles.textArea]}
                 value={bio}
                 onChangeText={(text) => setBio(text.slice(0, 160))}
-                placeholder="Ex: Combatente visceral e estrategista de linha de frente da Mesa do Lobo."
+                placeholder="Ex: Combatente visceral e estrategista de linha de frente da Mesa Lobo."
                 placeholderTextColor="#7A6F62"
                 multiline
                 numberOfLines={3}

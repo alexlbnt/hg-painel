@@ -6,7 +6,7 @@ const HERO_DATA = {
   thorgnar: {
     avatarUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=900&q=85',
     lore: 'Cicatrizes de guerra forjadas no gelo do norte. Onde a fúria começa, a dúvida dos deuses termina.',
-    playerBio: 'A vanguarda e a força inabalável da Mesa do Lobo.',
+    playerBio: 'A vanguarda e a força inabalável da Mesa Lobo.',
   },
   ayla: {
     avatarUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=900&q=85',
@@ -42,11 +42,11 @@ const HERO_DATA = {
 
 const USER_DATA = {
   'allan.m': {
-    bio: 'Combatente visceral e estrategista de linha de frente da Mesa do Lobo.',
+    bio: 'Combatente visceral e estrategista de linha de frente da Mesa Lobo.',
     avatarUrl: 'icon:axe',
   },
   'gabi.f': {
-    bio: 'Defensora incansável e coração moral da Mesa do João.',
+    bio: 'Defensora incansável e coração moral da Mesa João.',
     avatarUrl: 'icon:sun',
   },
   'leo.a': {
@@ -58,15 +58,15 @@ const USER_DATA = {
     avatarUrl: 'icon:book',
   },
   'joao.c': {
-    bio: 'Mestre da Mesa do João e combatente destemido quando veste a armadura.',
+    bio: 'Mestre da Mesa João e combatente destemido quando veste a armadura.',
     avatarUrl: 'icon:shield',
   },
   'luis.k': {
-    bio: 'Sentinela da natureza e conhecedor dos segredos ocultos da Mesa do Alex.',
+    bio: 'Sentinela da natureza e conhecedor dos segredos ocultos da Mesa Alex.',
     avatarUrl: 'icon:compass',
   },
   'lobo.l': {
-    bio: 'Mestre da Mesa do Lobo e conjurador arcano de segredos ancestrais.',
+    bio: 'Mestre da Mesa Lobo e conjurador arcano de segredos ancestrais.',
     avatarUrl: 'icon:skull',
   },
   'alex.g': {

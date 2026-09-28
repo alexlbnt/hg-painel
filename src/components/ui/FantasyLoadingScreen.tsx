@@ -18,17 +18,17 @@ const LORE_TIDBITS = [
   },
   {
     icon: 'flame',
-    title: 'Mesa do Alex • Sacrilégio & Glória',
+    title: 'Mesa Alex • Sacrilégio & Glória',
     text: 'Sob o olhar do Mestre Alex, forças primordiais e mistérios arcanos testam a sanidade e a determinação dos campeões.',
   },
   {
     icon: 'shield',
-    title: 'Mesa do Lobo • Aço & Sobrevivência',
+    title: 'Mesa Lobo • Aço & Sobrevivência',
     text: 'A comitiva guiada pelo Mestre Lobo enfrenta embates implacáveis, onde bravura tática e lealdade decidem a vida ou a morte.',
   },
   {
     icon: 'sparkles',
-    title: 'Mesa do João • Véu dos Destinos',
+    title: 'Mesa João • Véu dos Destinos',
     text: 'Conduzidos pelo Mestre João, os aventureiros desvendam intrigas políticas e pactos ancestrais ocultos sob as brumas.',
   },
   {
