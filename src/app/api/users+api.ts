@@ -10,6 +10,8 @@ export async function GET(req: Request) {
         username: true,
         role: true,
         roomId: true,
+        avatarUrl: true,
+        bio: true,
         room: {
           select: {
             id: true,
@@ -91,6 +93,8 @@ export async function POST(req: Request) {
         username: true,
         role: true,
         roomId: true,
+        avatarUrl: true,
+        bio: true,
         room: {
           select: {
             id: true,

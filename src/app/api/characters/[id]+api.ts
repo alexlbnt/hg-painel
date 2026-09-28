@@ -30,6 +30,15 @@ export async function GET(request: Request, context: any) {
         abilities: true,
         conditions: true,
         items: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatarUrl: true,
+            bio: true,
+          },
+        },
         room: {
           select: {
             id: true,
@@ -381,6 +390,8 @@ export async function PUT(request: Request, context: any) {
           background: body.background !== undefined ? String(body.background) : undefined,
           deity: body.deity !== undefined ? String(body.deity) : undefined,
           lore: body.lore !== undefined ? String(body.lore) : undefined,
+          description: body.description !== undefined ? String(body.description).trim() : undefined,
+          avatarUrl: body.avatarUrl !== undefined ? String(body.avatarUrl).trim() : undefined,
           gold: toOptionalNumber(body.gold),
           silver: toOptionalNumber(body.silver),
           copper: toOptionalNumber(body.copper),
@@ -472,4 +483,7 @@ export async function DELETE(request: Request, context: any) {
     return Response.json({ error: 'Falha ao deletar personagem' }, { status: 500 });
   }
 }
+
+export const PATCH = PUT;
+
 

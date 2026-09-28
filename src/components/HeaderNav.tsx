@@ -2,10 +2,12 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { usePathname, useRouter } from 'expo-router';
-import { BookOpen, ClipboardList, Crown, Home, Shield, Sparkles, Sword, X, LogOut, ChevronDown } from 'lucide-react-native';
+import { BookOpen, ClipboardList, Crown, Home, Shield, Sparkles, Sword, X, LogOut, ChevronDown, User as UserIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import GlobalRoomSwitcher from '@/components/ui/GlobalRoomSwitcher';
+import { UserAvatar } from '@/components/common/UserAvatar';
 
 export default function HeaderNav() {
   const router = useRouter();
@@ -118,18 +120,7 @@ export default function HeaderNav() {
           >
             {/* Cabeçalho da Conta */}
             <View style={styles.userMenuHeader}>
-              <View style={[
-                styles.userMenuAvatarLarge,
-                { borderColor: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#8C704F' }
-              ]}>
-                {user.role === 'DM' ? (
-                  <Crown size={18} color="#C5A059" />
-                ) : user.role === 'MECHANIC' ? (
-                  <Sparkles size={18} color="#4E9C8E" />
-                ) : (
-                  <Shield size={18} color="#C5A059" />
-                )}
-              </View>
+              <UserAvatar avatarUrl={user.avatarUrl} name={user.name} fallbackRole={user.role} size={38} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.userMenuName} numberOfLines={1}>{user.name}</Text>
                 <Text style={[
@@ -153,6 +144,19 @@ export default function HeaderNav() {
               <View style={styles.statusIndicatorDot} />
               <Text style={styles.statusIndicatorText}>Conectado ao Grimório</Text>
             </View>
+
+            {/* Atalho para Meu Perfil */}
+            <TouchableOpacity
+              style={styles.userMenuItemBtn}
+              onPress={() => {
+                setShowUserMenu(false);
+                router.push('/profile' as any);
+              }}
+              activeOpacity={0.7}
+            >
+              <UserIcon size={15} color="#C5A059" />
+              <Text style={styles.userMenuItemText}>Meu Perfil</Text>
+            </TouchableOpacity>
 
             <View style={styles.userMenuDivider} />
 
@@ -204,18 +208,7 @@ export default function HeaderNav() {
                 onPress={() => setShowUserMenu(true)}
                 activeOpacity={0.7}
               >
-                <View style={[
-                  styles.avatarCircleMobile,
-                  { borderColor: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#8C704F' }
-                ]}>
-                  {user.role === 'DM' ? (
-                    <Crown size={12} color="#C5A059" />
-                  ) : user.role === 'MECHANIC' ? (
-                    <Sparkles size={12} color="#4E9C8E" />
-                  ) : (
-                    <Shield size={12} color="#C5A059" />
-                  )}
-                </View>
+                <UserAvatar avatarUrl={user.avatarUrl} name={user.name} fallbackRole={user.role} size={24} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -291,18 +284,7 @@ export default function HeaderNav() {
               onPress={() => setShowUserMenu(true)}
               activeOpacity={0.7}
             >
-              <View style={[
-                styles.avatarCircle,
-                { borderColor: user.role === 'DM' ? '#C5A059' : user.role === 'MECHANIC' ? '#4E9C8E' : '#8C704F' }
-              ]}>
-                {user.role === 'DM' ? (
-                  <Crown size={13} color="#C5A059" />
-                ) : user.role === 'MECHANIC' ? (
-                  <Sparkles size={13} color="#4E9C8E" />
-                ) : (
-                  <Shield size={13} color="#C5A059" />
-                )}
-              </View>
+              <UserAvatar avatarUrl={user.avatarUrl} name={user.name} fallbackRole={user.role} size={24} />
               <Text style={styles.avatarNameShort} numberOfLines={1}>
                 {user.name.split(' ')[0]}
               </Text>
@@ -571,6 +553,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarCircleImage: {
+    width: '100%',
+    height: '100%',
   },
   avatarNameShort: {
     color: '#D4C3A3',
@@ -640,6 +627,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  userMenuAvatarImage: {
+    width: '100%',
+    height: '100%',
   },
   userMenuName: {
     color: '#F4E7D3',
@@ -676,6 +668,27 @@ const styles = StyleSheet.create({
     color: '#BAAFA0',
     fontSize: 10.5,
     fontWeight: '600',
+  },
+  userMenuItemBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: 'rgba(197, 160, 89, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(197, 160, 89, 0.2)',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer' as any,
+      },
+    }),
+  },
+  userMenuItemText: {
+    color: '#C5A059',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   userMenuDivider: {
     height: 1,
@@ -773,6 +786,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   loginBtnCompactMobile: {
     backgroundColor: '#1E1B18',

@@ -40,6 +40,7 @@ import {
   Sun,
 } from 'lucide-react-native';
 import AvailabilityModal from '@/components/portal/AvailabilityModal';
+import { CharacterShowcaseSection } from '@/components/portal/showcase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRoom, getRoomColor } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -49,7 +50,7 @@ import {
   ScheduleResponseData,
   RsvpStatus,
 } from '@/services/api';
-import { CharacterData, TaskData } from '@/lib/mockData';
+import { INITIAL_CHARACTERS, CharacterData, TaskData } from '@/lib/mockData';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 const TASK_CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -168,6 +169,7 @@ export default function HomeScreen() {
 
   // Dados reais da mesa
   const [characters, setCharacters] = useState<CharacterData[]>([]);
+  const [allCharacters, setAllCharacters] = useState<CharacterData[]>(INITIAL_CHARACTERS);
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [sessions, setSessions] = useState<CampaignSessionData[]>([]);
   const [scheduleData, setScheduleData] = useState<ScheduleResponseData>({ session: null });
@@ -201,14 +203,16 @@ export default function HomeScreen() {
     let isMounted = true;
     const init = async () => {
       try {
-        const [charsData, tasksData, sessionsData, schedData] = await Promise.all([
+        const [charsData, allCharsData, tasksData, sessionsData, schedData] = await Promise.all([
           ApiService.getCharacters({ roomId: activeRoom?.id }).catch(() => []),
+          ApiService.getCharacters().catch(() => []),
           ApiService.getTasks().catch(() => []),
           ApiService.getSessions(activeRoom?.id).catch(() => []),
           ApiService.getScheduledSession(activeRoom?.id).catch(() => ({ session: null })),
         ]);
         if (!isMounted) return;
         setCharacters(charsData);
+        setAllCharacters(allCharsData);
         setTasks(tasksData);
         setSessions(sessionsData);
         setScheduleData(schedData);
@@ -230,8 +234,9 @@ export default function HomeScreen() {
       ApiService.getScheduledSession(activeRoom?.id).then(setScheduleData).catch(() => {});
     } else if (event.type === 'TASK_CREATED' || event.type === 'TASK_UPDATED' || event.type === 'TASK_DELETED') {
       ApiService.getTasks().then(setTasks).catch(() => {});
-    } else if (event.type === 'CHARACTER_UPDATED' || event.type === 'CHARACTER_CREATED' || event.type === 'CHARACTER_DELETED') {
+    } else if (event.type === 'CHARACTER_UPDATED' || event.type === 'CHARACTER_CREATED' || event.type === 'CHARACTER_DELETED' || event.type === 'USER_UPDATED') {
       ApiService.getCharacters({ roomId: activeRoom?.id }).then(setCharacters).catch(() => {});
+      ApiService.getCharacters().then(setAllCharacters).catch(() => {});
     } else if (
       event.type === 'JOURNAL_NOTE_CREATED' ||
       event.type === 'JOURNAL_NOTE_UPDATED' ||
@@ -418,6 +423,13 @@ export default function HomeScreen() {
   const maxPartyHp = characters.reduce((acc, c) => acc + (c.maxHp || 10), 0);
   const woundedCount = characters.filter((c) => (c.currentHp || 0) < (c.maxHp || 10)).length;
 
+  const hasLeftCard = Boolean(
+    myCharacter ||
+    user?.role === 'MECHANIC' ||
+    (!user) ||
+    (user && user.role === 'PLAYER' && !myCharacter)
+  );
+
   // Última sessão do diário
   const latestSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
   const latestNote =
@@ -505,167 +517,25 @@ export default function HomeScreen() {
         </Text>
       </View>
 
+
+
       {/* ============================================================ */}
-      {/* 1.1 BARRA RÁPIDA DE SESSÃO & QUÓRUM (MODO DIA DE SESSÃO)     */}
+      {/* 1.2 COMITIVA DOS HERÓIS (SHOWCASE INTERATIVO DARK FANTASY)  */}
       {/* ============================================================ */}
-      {scheduleData.session?.scheduledAt && (
-        <View style={[styles.quickSessionBar, sessionIsToday && styles.quickSessionBarToday]}>
-          <View style={[styles.quickSessionMainRow, !isWide && styles.quickSessionMainCol]}>
-            {/* Lado Esquerdo: Tag, Título e Data */}
-            <View style={[styles.quickSessionInfoCol, isMobile && { width: '100%', minWidth: 0 }]}>
-              <View style={styles.quickSessionTagRow}>
-                {sessionIsToday ? (
-                  <View style={styles.pillToday}>
-                    <Sparkles color="#110F0D" size={11} />
-                    <Text style={styles.pillTodayText}>SESSÃO HOJE!</Text>
-                  </View>
-                ) : sessionIsTomorrow ? (
-                  <View style={styles.pillTomorrow}>
-                    <Clock color="#E6C280" size={11} />
-                    <Text style={styles.pillTomorrowText}>SESSÃO AMANHÃ</Text>
-                  </View>
-                ) : (
-                  <View style={styles.pillScheduled}>
-                    <Calendar color="#C5A059" size={11} />
-                    <Text style={styles.pillScheduledText}>PRÓXIMA SESSÃO</Text>
-                  </View>
-                )}
-                <Text style={styles.quickSessionTitle} numberOfLines={1}>
-                  {scheduleData.session.title || 'Sessão de Campanha'}
-                </Text>
-              </View>
-
-              <View style={styles.quickSessionMetaRow}>
-                <Text style={styles.quickSessionDateTime}>
-                  📅 {sessionScheduledDate?.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })} às {sessionScheduledDate?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-                <Text style={styles.quickSessionLocation} numberOfLines={1}>
-                  📍 {scheduleData.session.location || 'Discord - Taverna Principal'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Centro: Medidor Visual de Quórum */}
-            <View style={[styles.quickSessionQuorumCol, isMobile && { width: '100%', minWidth: 0 }]}>
-              <View style={styles.quorumHeaderMini}>
-                <Text style={styles.quorumPercentLabel}>
-                  Quórum: {confirmedList.length}/{totalRegisteredParty} ({quorumPercent}%)
-                </Text>
-                <Text style={[styles.quorumStatusMini, { color: isQuorumReached ? '#4E9C8E' : '#C5A059' }]}>
-                  {isQuorumReached ? '⚔️ Quórum Atingido' : '⏳ Aguardando'}
-                </Text>
-              </View>
-              <View style={styles.quorumProgressBarTrack}>
-                <View
-                  style={[
-                    styles.quorumProgressBarFill,
-                    {
-                      width: `${quorumPercent}%`,
-                      backgroundColor: isQuorumReached ? '#4E9C8E' : '#C5A059',
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-
-            {/* Lado Direito: Quick RSVP em 1 toque */}
-            <View style={[styles.quickSessionActionCol, isMobile && { width: '100%', alignItems: 'stretch' }]}>
-              {user ? (
-                myRsvpStatus === 'CONFIRMED' ? (
-                  <View style={[styles.quickRsvpConfirmedBadge, isMobile && { width: '100%', justifyContent: 'center' }]}>
-                    <CheckCircle2 color="#4E9C8E" size={14} />
-                    <Text style={styles.quickRsvpConfirmedText}>Presença Confirmada</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.quickRsvpButtonsRow, isMobile && { width: '100%' }]}>
-                    <TouchableOpacity
-                      style={[styles.quickRsvpBtn, styles.quickRsvpBtnConfirm, isMobile && { flex: 1, justifyContent: 'center' }]}
-                      activeOpacity={0.8}
-                      disabled={isSubmittingRsvp}
-                      onPress={() => handleRsvp('CONFIRMED')}
-                    >
-                      <CheckCircle2 color="#110F0D" size={13} />
-                      <Text style={styles.quickRsvpBtnConfirmText}>Confirmar</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.quickRsvpBtn, styles.quickRsvpBtnMaybe, isMobile && { flex: 1, justifyContent: 'center' }]}
-                      activeOpacity={0.8}
-                      disabled={isSubmittingRsvp}
-                      onPress={() => handleRsvp('MAYBE')}
-                    >
-                      <AlertCircle color="#E6C280" size={13} />
-                      <Text style={styles.quickRsvpBtnMaybeText}>Dúvida</Text>
-                    </TouchableOpacity>
-                  </View>
-                )
-              ) : (
-                <Text style={styles.quickSessionGuestText}>Faça login para confirmar</Text>
-              )}
-            </View>
-          </View>
-        </View>
-      )}
+      <CharacterShowcaseSection
+        characters={allCharacters.length > 0 ? allCharacters : characters}
+        isMobile={isMobile}
+        containerWidth={width}
+      />
 
       {/* ============================================================ */}
       {/* 2. HUB CENTRAL: COMANDO DO HERÓI & MURAL DE MISSÕES         */}
       {/* ============================================================ */}
-      <View style={[styles.hubGrid, isWide ? styles.hubGridRow : styles.hubGridCol]}>
+      <View style={[styles.hubGrid, isWide && hasLeftCard ? styles.hubGridRow : styles.hubGridCol]}>
         {/* CARD ESQUERDO: CENTRO DE COMANDO DO HERÓI / MESA */}
-        <View style={[styles.hubColumn, isWide && styles.hubColumnWide]}>
-          {user?.role === 'DM' ? (
-            /* Painel do Mestre */
-            <View style={[styles.hubCard, styles.dmCardBorder, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
-              <View style={styles.cardHeaderRow}>
-                <View style={styles.cardIconBoxDm}>
-                  <Crown color="#C5A059" size={24} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardCategoryTagDm}>COMANDO DO MESTRE</Text>
-                  <Text style={styles.cardMainTitle}>Escudo & Situação da Mesa</Text>
-                </View>
-              </View>
-
-              <View style={styles.dmPartyOverviewBox}>
-                <View style={styles.dmStatItem}>
-                  <Text style={styles.dmStatNum}>{characters.length}</Text>
-                  <Text style={styles.dmStatLbl}>HERÓIS</Text>
-                </View>
-                <View style={[styles.dmStatItem, { borderColor: '#B82828' }]}>
-                  <Text style={[styles.dmStatNum, { color: woundedCount > 0 ? '#C95B5B' : '#4E9C8E' }]}>
-                    {woundedCount}
-                  </Text>
-                  <Text style={styles.dmStatLbl}>FERIDOS</Text>
-                </View>
-                <View style={styles.dmStatItem}>
-                  <Text style={styles.dmStatNum}>
-                    {totalPartyHp}/{maxPartyHp}
-                  </Text>
-                  <Text style={styles.dmStatLbl}>HP COLETIVO</Text>
-                </View>
-              </View>
-
-              <View style={styles.actionRowGrid}>
-                <TouchableOpacity
-                  style={styles.primaryActionButton}
-                  activeOpacity={0.85}
-                  onPress={() => router.push('/dm')}
-                >
-                  <Crown color="#110F0D" size={16} />
-                  <Text style={styles.primaryActionButtonText}>Abrir Escudo do Mestre →</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.secondaryActionButton}
-                  activeOpacity={0.85}
-                  onPress={() => router.push('/dm')}
-                >
-                  <Key color="#C5A059" size={16} />
-                  <Text style={styles.secondaryActionButtonText}>Usuários & Permissões</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : user?.role === 'MECHANIC' ? (
+        {hasLeftCard && (
+          <View style={[styles.hubColumn, isWide && styles.hubColumnWide]}>
+            {user?.role === 'MECHANIC' ? (
             /* Painel do Player Mecânico */
             <View style={[styles.hubCard, styles.mechanicCardBorder, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
               <View style={styles.cardHeaderRow}>
@@ -822,10 +692,11 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+      )}
 
-        {/* CARD DIREITO: MURAL DE MISSÕES (KANBAN) */}
-        <View style={[styles.hubColumn, isWide && styles.hubColumnWide]}>
-          <View style={[styles.hubCard, styles.tasksCardBorder, isWide && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
+      {/* CARD DIREITO: MURAL DE MISSÕES (KANBAN) */}
+      <View style={[styles.hubColumn, isWide && hasLeftCard && styles.hubColumnWide]}>
+        <View style={[styles.hubCard, styles.tasksCardBorder, isWide && hasLeftCard && styles.hubCardWide, isMobile && styles.hubCardMobile]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardIconBoxTasks}>
                 <ClipboardList color="#E6C280" size={24} />

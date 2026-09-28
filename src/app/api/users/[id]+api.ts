@@ -1,4 +1,5 @@
 import { prisma } from '../../../lib/prisma';
+import { broadcastEvent } from '../../../lib/eventBus';
 import bcrypt from 'bcryptjs';
 
 function extractId(context: any): string {
@@ -22,6 +23,8 @@ export async function GET(req: Request, context: any) {
         username: true,
         role: true,
         roomId: true,
+        avatarUrl: true,
+        bio: true,
         room: {
           select: {
             id: true,
@@ -71,10 +74,10 @@ export async function PATCH(req: Request, context: any) {
       }
     }
 
-    // Apenas o próprio usuário ou o Mestre podem alterar o nome
-    if (body.name !== undefined) {
+    // Apenas o próprio usuário ou o Mestre podem alterar nome, bio e foto
+    if (body.name !== undefined || body.bio !== undefined || body.avatarUrl !== undefined) {
       if (!requester || (requester.id !== existing.id && requester.role !== 'DM')) {
-        return Response.json({ error: 'Sem permissão para alterar o nome deste usuário' }, { status: 403 });
+        return Response.json({ error: 'Sem permissão para alterar os dados deste perfil' }, { status: 403 });
       }
     }
 
@@ -119,6 +122,8 @@ export async function PATCH(req: Request, context: any) {
       }
       dataToUpdate.roomId = body.roomId ? String(body.roomId) : null;
     }
+    if (body.bio !== undefined) dataToUpdate.bio = String(body.bio).trim();
+    if (body.avatarUrl !== undefined) dataToUpdate.avatarUrl = String(body.avatarUrl).trim();
     if (body.password) {
       dataToUpdate.password = await bcrypt.hash(body.password, 10);
     }
@@ -132,6 +137,8 @@ export async function PATCH(req: Request, context: any) {
         username: true,
         role: true,
         roomId: true,
+        avatarUrl: true,
+        bio: true,
         room: {
           select: {
             id: true,
@@ -143,6 +150,27 @@ export async function PATCH(req: Request, context: any) {
         updatedAt: true,
       },
     });
+
+    // Sincronizar nome e vínculo de userId nos personagens deste usuário
+    try {
+      await prisma.character.updateMany({
+        where: {
+          OR: [
+            { userId: id },
+            { username: { equals: updatedUser.username, mode: 'insensitive' } },
+          ],
+        },
+        data: {
+          playerName: updatedUser.name,
+          userId: id,
+        },
+      });
+    } catch (charSyncErr) {
+      console.warn('Aviso: falha ao sincronizar personagens com dados do usuário:', charSyncErr);
+    }
+
+    broadcastEvent({ type: 'USER_UPDATED', id: updatedUser.id, data: updatedUser });
+    broadcastEvent({ type: 'CHARACTER_UPDATED', id: updatedUser.id, data: updatedUser });
 
     return Response.json(updatedUser, { status: 200 });
   } catch (error) {

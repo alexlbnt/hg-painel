@@ -36,6 +36,8 @@ export async function POST(req: Request) {
       username: user.username,
       role: user.role,
       roomId: user.roomId,
+      avatarUrl: user.avatarUrl || '',
+      bio: user.bio || '',
       token,
     }, { status: 200 });
 

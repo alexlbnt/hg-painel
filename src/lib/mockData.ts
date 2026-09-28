@@ -73,6 +73,13 @@ export interface CharacterData {
   name: string;
   playerName: string;
   username?: string;
+  user?: {
+    id: string;
+    name: string;
+    username: string;
+    avatarUrl?: string;
+    bio?: string;
+  } | null;
   race: string;
   class: string;
   archetype?: string;
@@ -81,6 +88,8 @@ export interface CharacterData {
   background: string;
   deity?: string;
   lore?: string;
+  description?: string;
+  avatarUrl?: string;
   currentHp: number;
   maxHp: number;
   tempHp: number;

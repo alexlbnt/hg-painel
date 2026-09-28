@@ -33,6 +33,15 @@ export async function GET(request?: Request) {
         abilities: true,
         conditions: true,
         items: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatarUrl: true,
+            bio: true,
+          },
+        },
         room: {
           select: {
             id: true,
@@ -61,6 +70,7 @@ export async function GET(request?: Request) {
               level: char.level,
               alignment: char.alignment,
               background: char.background,
+              avatarUrl: char.avatarUrl || '',
               currentHp: char.currentHp,
               maxHp: char.maxHp,
               tempHp: char.tempHp,
@@ -196,6 +206,8 @@ export async function POST(request: Request) {
         background: String(body.background || 'Herói do Povo'),
         deity: String(body.deity || 'Nenhum'),
         lore: String(body.lore || ''),
+        description: String(body.description || ''),
+        avatarUrl: String(body.avatarUrl || ''),
         roomId: assignedRoomId,
         currentHp: toSafeNumber(body.currentHp, 10),
         maxHp: Math.max(1, toSafeNumber(body.maxHp, 10)),

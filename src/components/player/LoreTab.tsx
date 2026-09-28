@@ -10,6 +10,7 @@ import { IdentityHeader } from './lore/IdentityHeader';
 import { PersonalityPillars } from './lore/PersonalityPillars';
 import { PhysicalAppearance } from './lore/PhysicalAppearance';
 import { ChronicleBiography } from './lore/ChronicleBiography';
+import { CardShowcaseSection } from './lore/CardShowcaseSection';
 import { Sparkles, BookOpen, User } from 'lucide-react-native';
 
 interface LoreTabProps {
@@ -81,6 +82,18 @@ export const LoreTab: React.FC<LoreTabProps> = ({
     };
     onSaveLore(serializeCharacterLore(updated));
     triggerFeedback('Lore salva');
+  };
+
+  const handleSaveCardShowcase = (data: { description: string; avatarUrl: string }) => {
+    const updated = {
+      ...parsedLore,
+      description: data.description,
+    };
+    onSaveLore(serializeCharacterLore(updated), {
+      description: data.description,
+      avatarUrl: data.avatarUrl,
+    });
+    triggerFeedback('Apresentação do card atualizada');
   };
 
   return (
@@ -168,11 +181,20 @@ export const LoreTab: React.FC<LoreTabProps> = ({
             )}
 
             {mobileSubTab === 'bio' && (
-              <ChronicleBiography
-                backstory={parsedLore.backstory}
-                themeColor={themeColor}
-                onSaveBackstory={handleSaveBackstory}
-              />
+              <>
+                <CardShowcaseSection
+                  description={char.description || parsedLore.description || ''}
+                  avatarUrl={char.avatarUrl || ''}
+                  themeColor={themeColor}
+                  isMobile={true}
+                  onSaveCardShowcase={handleSaveCardShowcase}
+                />
+                <ChronicleBiography
+                  backstory={parsedLore.backstory}
+                  themeColor={themeColor}
+                  onSaveBackstory={handleSaveBackstory}
+                />
+              </>
             )}
 
             {mobileSubTab === 'appearance' && (
@@ -205,8 +227,16 @@ export const LoreTab: React.FC<LoreTabProps> = ({
             />
           </View>
 
-          {/* Coluna da Direita: Crônicas & Biografia */}
+          {/* Coluna da Direita: Apresentação no Portal da Taverna & Crônicas/Biografia */}
           <View style={styles.desktopRightCol}>
+            <CardShowcaseSection
+              description={char.description || parsedLore.description || ''}
+              avatarUrl={char.avatarUrl || ''}
+              themeColor={themeColor}
+              isMobile={false}
+              onSaveCardShowcase={handleSaveCardShowcase}
+            />
+
             <ChronicleBiography
               backstory={parsedLore.backstory}
               themeColor={themeColor}

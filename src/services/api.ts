@@ -9,6 +9,8 @@ export interface UserData {
   role: Role;
   roomId?: string | null;
   room?: RoomData | null;
+  avatarUrl?: string;
+  bio?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -448,6 +450,7 @@ export const ApiService = {
       level: data.level || 1,
       alignment: data.alignment || 'Neutro',
       background: data.background || 'Herói do Povo',
+      avatarUrl: data.avatarUrl || '',
       currentHp: data.maxHp || 10,
       maxHp: data.maxHp || 10,
       tempHp: 0,
@@ -740,11 +743,23 @@ export const ApiService = {
     }
   },
 
-  async updateUser(id: string, data: { name?: string; role?: Role; password?: string; currentPassword?: string; roomId?: string | null }, requesterId?: string): Promise<UserData> {
+  async updateUser(
+    id: string,
+    data: {
+      name?: string;
+      role?: Role;
+      bio?: string;
+      avatarUrl?: string;
+      password?: string;
+      currentPassword?: string;
+      roomId?: string | null;
+    },
+    requesterId?: string
+  ): Promise<UserData> {
     const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/api/users/${id}`, {
       method: 'PATCH',
-      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, requesterId),
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }, requesterId || id),
       body: JSON.stringify(data),
     });
     if (res.ok) {

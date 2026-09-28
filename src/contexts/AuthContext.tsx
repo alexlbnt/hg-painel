@@ -10,6 +10,8 @@ export interface User {
   name: string;
   roomId?: string | null;
   token?: string;
+  avatarUrl?: string;
+  bio?: string;
 }
 
 interface AuthContextData {
@@ -84,12 +86,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .then((allUsers: any[]) => {
             if (Array.isArray(allUsers)) {
               const fresh = allUsers.find((u) => u.id === stored.id || u.username === stored.username);
-              if (fresh && (fresh.roomId !== stored.roomId || fresh.role !== stored.role || fresh.name !== stored.name)) {
+              if (
+                fresh &&
+                (fresh.roomId !== stored.roomId ||
+                  fresh.role !== stored.role ||
+                  fresh.name !== stored.name ||
+                  fresh.avatarUrl !== stored.avatarUrl ||
+                  fresh.bio !== stored.bio)
+              ) {
                 const updatedUser: User = {
                   ...stored,
                   roomId: fresh.roomId,
                   role: fresh.role,
                   name: fresh.name,
+                  avatarUrl: fresh.avatarUrl || '',
+                  bio: fresh.bio || '',
                 };
                 setUser(updatedUser);
                 authStorage.set(updatedUser);

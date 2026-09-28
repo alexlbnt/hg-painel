@@ -9,6 +9,9 @@ export interface CharacterAppearance {
 }
 
 export interface CharacterParsedLore {
+  // Descrição do Card da Taverna
+  description: string;
+
   // 4 Pilares de Interpretação Canônicos de D&D 5e
   personalityTraits: string;
   ideals: string;
@@ -23,6 +26,7 @@ export interface CharacterParsedLore {
 }
 
 export const DEFAULT_LORE: CharacterParsedLore = {
+  description: '',
   personalityTraits: '',
   ideals: '',
   bonds: '',
@@ -62,6 +66,7 @@ export function parseCharacterLore(rawLore?: string | null): CharacterParsedLore
           'appearance' in parsed)
       ) {
         return {
+          description: String(parsed.description || ''),
           personalityTraits: String(parsed.personalityTraits || ''),
           ideals: String(parsed.ideals || ''),
           bonds: String(parsed.bonds || ''),
