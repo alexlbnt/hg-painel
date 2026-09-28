@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Sparkles, Users, Compass } from 'lucide-react-native';
 import { CharacterData } from '@/lib/mockData';
+import { useRouter } from 'expo-router';
+import { Compass } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CharacterCarousel } from './CharacterCarousel';
 
 interface CharacterShowcaseSectionProps {
@@ -58,18 +58,12 @@ export const CharacterShowcaseSection: React.FC<CharacterShowcaseSectionProps> =
     <View style={[styles.sectionContainer, isMobile && styles.sectionContainerMobile]}>
       {/* Cabeçalho da Seção com Atmosfera Dark Fantasy */}
       <View style={styles.header}>
-        <View style={styles.eyebrowRow}>
-          <Sparkles size={14} color="#C5A059" />
-          <Text style={styles.eyebrowText}>CRÔNICAS & LENDAS VIVAS</Text>
-          <Sparkles size={14} color="#C5A059" />
-        </View>
-
         <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-          Comitiva dos Heróis
+          Heróis da Mesa
         </Text>
 
         <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>
-          Conheça os campeões forjados no aço, na fé e nos mistérios arcanos que moldam o destino do mundo.
+          Conheça os personagens forjados pela Honra e pelo Egoísmo que moldam o destino do mundo.
         </Text>
 
         {/* Abas de Filtro por Mesa */}
