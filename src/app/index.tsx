@@ -50,7 +50,7 @@ import {
   ScheduleResponseData,
   RsvpStatus,
 } from '@/services/api';
-import { INITIAL_CHARACTERS, CharacterData, TaskData } from '@/lib/mockData';
+import { CharacterData, TaskData } from '@/lib/mockData';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 const TASK_CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -169,7 +169,7 @@ export default function HomeScreen() {
 
   // Dados reais da mesa
   const [characters, setCharacters] = useState<CharacterData[]>([]);
-  const [allCharacters, setAllCharacters] = useState<CharacterData[]>(INITIAL_CHARACTERS);
+  const [allCharacters, setAllCharacters] = useState<CharacterData[]>([]);
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [sessions, setSessions] = useState<CampaignSessionData[]>([]);
   const [scheduleData, setScheduleData] = useState<ScheduleResponseData>({ session: null });
@@ -526,6 +526,7 @@ export default function HomeScreen() {
         characters={allCharacters.length > 0 ? allCharacters : characters}
         isMobile={isMobile}
         containerWidth={width}
+        isLoading={loadingData}
       />
 
       {/* ============================================================ */}

@@ -9,12 +9,14 @@ interface CharacterShowcaseSectionProps {
   characters: CharacterData[];
   isMobile?: boolean;
   containerWidth: number;
+  isLoading?: boolean;
 }
 
 export const CharacterShowcaseSection: React.FC<CharacterShowcaseSectionProps> = ({
   characters,
   isMobile = false,
   containerWidth,
+  isLoading = false,
 }) => {
   const router = useRouter();
   const [selectedRoomFilter, setSelectedRoomFilter] = useState<string>('all');
@@ -49,6 +51,46 @@ export const CharacterShowcaseSection: React.FC<CharacterShowcaseSectionProps> =
     }
     router.push('/player');
   };
+
+  if (isLoading && (!characters || characters.length === 0)) {
+    return (
+      <View style={[styles.sectionContainer, isMobile && styles.sectionContainerMobile]}>
+        <View style={styles.header}>
+          <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
+            Heróis da Mesa
+          </Text>
+          <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>
+            Conhecendo os personagens forjados pela Honra e pelo Egoísmo...
+          </Text>
+        </View>
+
+        <View style={styles.skeletonContainer}>
+          {[1, 2, 3].map((key) => (
+            <View
+              key={key}
+              style={[
+                styles.skeletonCard,
+                { width: isMobile ? Math.min(Math.max(containerWidth - 64, 260), 320) : 320 },
+              ]}
+            >
+              <View style={styles.skeletonHeaderRow}>
+                <View style={styles.skeletonTag} />
+                <View style={styles.skeletonTagSmall} />
+              </View>
+              <View style={styles.skeletonCenterCircle} />
+              <View style={styles.skeletonContentBottom}>
+                <View style={styles.skeletonLineShort} />
+                <View style={styles.skeletonLineTitle} />
+                <View style={styles.skeletonLineMeta} />
+                <View style={styles.skeletonLineQuote} />
+                <View style={styles.skeletonBtn} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   if (!characters || characters.length === 0) {
     return null;
@@ -247,5 +289,82 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#80776C',
     textAlign: 'center',
+  },
+  skeletonContainer: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingHorizontal: 8,
+    overflow: 'hidden',
+  },
+  skeletonCard: {
+    height: 480,
+    borderRadius: 12,
+    backgroundColor: '#141210',
+    borderWidth: 1,
+    borderColor: '#25201B',
+    padding: 14,
+    justifyContent: 'space-between',
+    opacity: 0.65,
+  },
+  skeletonHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  skeletonTag: {
+    width: 70,
+    height: 18,
+    borderRadius: 4,
+    backgroundColor: '#221D18',
+  },
+  skeletonTagSmall: {
+    width: 44,
+    height: 18,
+    borderRadius: 4,
+    backgroundColor: '#221D18',
+  },
+  skeletonCenterCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#1B1714',
+    alignSelf: 'center',
+    marginVertical: 40,
+  },
+  skeletonContentBottom: {
+    gap: 8,
+  },
+  skeletonLineShort: {
+    width: '40%',
+    height: 12,
+    borderRadius: 4,
+    backgroundColor: '#221D18',
+  },
+  skeletonLineTitle: {
+    width: '75%',
+    height: 22,
+    borderRadius: 4,
+    backgroundColor: '#2A241E',
+  },
+  skeletonLineMeta: {
+    width: '90%',
+    height: 14,
+    borderRadius: 4,
+    backgroundColor: '#1F1A15',
+  },
+  skeletonLineQuote: {
+    width: '100%',
+    height: 28,
+    borderRadius: 4,
+    backgroundColor: '#1A1612',
+    marginTop: 4,
+  },
+  skeletonBtn: {
+    width: '100%',
+    height: 38,
+    borderRadius: 6,
+    backgroundColor: '#1C1814',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#2A241E',
   },
 });

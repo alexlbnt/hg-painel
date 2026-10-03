@@ -18,7 +18,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#C5A059',
-    runicSymbol: '✦ ⚔ ✦',
+    runicSymbol: '⚔️',
     archetypeSuggestion: 'Juramento da Devoção / Vingança',
   },
   mago: {
@@ -26,7 +26,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#7B68EE',
-    runicSymbol: '✧ 📜 ✧',
+    runicSymbol: '📜',
     archetypeSuggestion: 'Escola de Evocação / Abjuração',
   },
   monge: {
@@ -34,7 +34,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#E67E22',
-    runicSymbol: '☯ ⚡ ☯',
+    runicSymbol: '🥋',
     archetypeSuggestion: 'Caminho da Misericórdia / Palma Aberta',
   },
   barbaro: {
@@ -42,7 +42,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#C95B5B',
-    runicSymbol: '🪓 🩸 🪓',
+    runicSymbol: '🪓',
     archetypeSuggestion: 'Caminho do Berserker / Totêmico',
   },
   bardo: {
@@ -50,7 +50,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#E84393',
-    runicSymbol: '♫ 🎭 ♫',
+    runicSymbol: '🎭',
     archetypeSuggestion: 'Colégio da Bravura / Conhecimento',
   },
   druida: {
@@ -58,7 +58,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#4E9C8E',
-    runicSymbol: '🌿 🌙 🌿',
+    runicSymbol: '🌿',
     archetypeSuggestion: 'Círculo da Lua / da Terra',
   },
   clerigo: {
@@ -66,7 +66,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#F1C40F',
-    runicSymbol: '⚖ ☀️ ⚖',
+    runicSymbol: '☀️',
     archetypeSuggestion: 'Domínio da Vida / Luz / Sepultura',
   },
   bruxo: {
@@ -74,7 +74,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#9B59B6',
-    runicSymbol: '👁 🔮 👁',
+    runicSymbol: '🔮',
     archetypeSuggestion: 'O Corruptor / Grande Antigo',
   },
   ladino: {
@@ -82,7 +82,7 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#7F8C8D',
-    runicSymbol: '🗡 🌑 🗡',
+    runicSymbol: '🗡️',
     archetypeSuggestion: 'Assassino / Ladrão / Trapaceiro Arcano',
   },
   guerreiro: {
@@ -90,8 +90,40 @@ export const CLASS_PORTRAITS: Record<string, ClassPortraitInfo> = {
     portraitUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
     accentColor: '#95A5A6',
-    runicSymbol: '🛡 ⚔ 🛡',
+    runicSymbol: '🛡️',
     archetypeSuggestion: 'Mestre de Batalha / Campeão',
+  },
+  feiticeiro: {
+    className: 'Feiticeiro',
+    portraitUrl: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?auto=format&fit=crop&w=800&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+    accentColor: '#E74C3C',
+    runicSymbol: '🔥',
+    archetypeSuggestion: 'Magia Selvagem / Linhagem Dracônica',
+  },
+  patrulheiro: {
+    className: 'Patrulheiro',
+    portraitUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+    accentColor: '#27AE60',
+    runicSymbol: '🏹',
+    archetypeSuggestion: 'Caçador / Mestre das Feras',
+  },
+  ranger: {
+    className: 'Ranger',
+    portraitUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+    accentColor: '#27AE60',
+    runicSymbol: '🏹',
+    archetypeSuggestion: 'Caçador / Mestre das Feras',
+  },
+  artifice: {
+    className: 'Artífice',
+    portraitUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+    accentColor: '#D35400',
+    runicSymbol: '⚙️',
+    archetypeSuggestion: 'Alquimista / Armeiro',
   },
 };
 
@@ -100,7 +132,7 @@ const DEFAULT_PORTRAIT: ClassPortraitInfo = {
   portraitUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=800&q=80',
   bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
   accentColor: '#C5A059',
-  runicSymbol: '✦ ⚔ ✦',
+  runicSymbol: '⚔️',
   archetypeSuggestion: 'Lenda da Comitiva',
 };
 

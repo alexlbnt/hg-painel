@@ -71,10 +71,10 @@ export function EditItemModal({
       weight: Math.max(0, parseFloat(weight) || 0),
       quantity: Math.max(1, parseInt(quantity, 10) || 1),
       isWeapon,
-      damage: isWeapon ? (damage.trim() || '1d6 cortante') : undefined,
+      damage: isWeapon ? (damage.trim() || '1d6 cortante') : '',
       isArmor,
-      armorClassBonus: isArmor ? (parseInt(armorClassBonus, 10) || 0) : undefined,
-      isEquipped: isArmor ? isEquipped : false,
+      armorClassBonus: isArmor ? (parseInt(armorClassBonus, 10) || 0) : 0,
+      isEquipped: isArmor || isWeapon ? isEquipped : false,
     };
 
     onSave(updatedItem);
@@ -90,7 +90,7 @@ export function EditItemModal({
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <Edit3 color={themeColor} size={22} />
-              <Text style={styles.title}>Editar Equipamento</Text>
+              <Text style={styles.title}>{item.name ? 'Editar Equipamento' : 'Novo Equipamento'}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} accessibilityLabel="Fechar">
               <X color="#BAAFA0" size={24} />
@@ -155,14 +155,32 @@ export function EditItemModal({
             {/* Campos Condicionais: Arma */}
             {itemType === 'weapon' && (
               <View style={styles.conditionalBox}>
-                <Text style={styles.label}>Dano da Arma</Text>
-                <TextInput
-                  style={styles.input}
-                  value={damage}
-                  onChangeText={setDamage}
-                  placeholder="Ex: 1d8 cortante, 2d6 perfurante..."
-                  placeholderTextColor="#80776C"
-                />
+                <View style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>Dano da Arma</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={damage}
+                      onChangeText={setDamage}
+                      placeholder="Ex: 1d8 cortante, 2d6 perfurante..."
+                      placeholderTextColor="#80776C"
+                    />
+                  </View>
+                  <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: 2 }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.equipToggleBtn,
+                        isEquipped && { backgroundColor: '#38783C', borderColor: '#4A8C59' },
+                      ]}
+                      onPress={() => setIsEquipped(!isEquipped)}
+                    >
+                      <Sword color={isEquipped ? '#FFF' : '#80776C'} size={16} />
+                      <Text style={[styles.equipToggleText, isEquipped && { color: '#FFF' }]}>
+                        {isEquipped ? 'Equipada (Combate)' : 'Desequipada'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             )}
 

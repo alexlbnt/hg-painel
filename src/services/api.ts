@@ -95,14 +95,24 @@ export interface AvailabilityResponseData {
 const STORAGE_KEY = 'honra_egoismo_characters_v1';
 
 // Gerenciador de armazenamento local com fallback em memória (para funcionar em SSR/Native e Browser)
-let inMemoryCharacters: CharacterData[] = [...INITIAL_CHARACTERS];
+let inMemoryCharacters: CharacterData[] = [];
 
 function loadFromStorage(): CharacterData[] {
   try {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
       const data = window.localStorage.getItem(STORAGE_KEY);
       if (data) {
-        return JSON.parse(data);
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          // Filtro defensivo: expurga personagens de teste antigos (char-1, char-2, etc.)
+          const clean = parsed.filter(
+            (c: any) => c && c.id && !String(c.id).startsWith('char-')
+          );
+          if (clean.length !== parsed.length) {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+          }
+          return clean;
+        }
       }
     }
   } catch (e) {
@@ -150,10 +160,6 @@ function saveToStorage(characters: CharacterData[]) {
 
 // Inicializar
 inMemoryCharacters = loadFromStorage();
-if (inMemoryCharacters.length === 0) {
-  inMemoryCharacters = [...INITIAL_CHARACTERS];
-  saveToStorage(inMemoryCharacters);
-}
 
 inMemoryTasks = loadTasksFromStorage();
 if (inMemoryTasks.length === 0) {
@@ -706,9 +712,8 @@ export const ApiService = {
   },
 
   async resetToDefaultData(): Promise<CharacterData[]> {
-    const data = JSON.parse(JSON.stringify(INITIAL_CHARACTERS));
-    saveToStorage(data);
-    return data;
+    saveToStorage([]);
+    return [];
   },
 
   // USERS & PERMISSIONS

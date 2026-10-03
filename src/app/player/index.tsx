@@ -474,9 +474,14 @@ export default function PlayerModule() {
   const handleSaveEditedEntity = async (updatedData: any) => {
     if (!selectedChar) return;
     if (editEntityType === 'spell') {
-      const updatedSpells = (selectedChar.spells || []).map((s) =>
-        s.id === updatedData.id ? { ...s, ...updatedData } : s
-      );
+      const itemWithId = updatedData.id ? updatedData : { ...updatedData, id: generateId() };
+      const exists = (selectedChar.spells || []).some((s) => s.id === itemWithId.id);
+      const updatedSpells = exists
+        ? (selectedChar.spells || []).map((s) =>
+            s.id === itemWithId.id ? { ...s, ...itemWithId } : s
+          )
+        : [...(selectedChar.spells || []), itemWithId];
+
       setCharacters((prev) =>
         prev.map((c) =>
           c.id === selectedChar.id ? { ...c, spells: updatedSpells } : c
@@ -484,9 +489,14 @@ export default function PlayerModule() {
       );
       safeUpdateCharacter(selectedChar.id, { spells: updatedSpells });
     } else {
-      const updatedAbilities = (selectedChar.abilities || []).map((a) =>
-        a.id === updatedData.id ? { ...a, ...updatedData } : a
-      );
+      const itemWithId = updatedData.id ? updatedData : { ...updatedData, id: generateId() };
+      const exists = (selectedChar.abilities || []).some((a) => a.id === itemWithId.id);
+      const updatedAbilities = exists
+        ? (selectedChar.abilities || []).map((a) =>
+            a.id === itemWithId.id ? { ...a, ...itemWithId } : a
+          )
+        : [...(selectedChar.abilities || []), itemWithId];
+
       setCharacters((prev) =>
         prev.map((c) =>
           c.id === selectedChar.id ? { ...c, abilities: updatedAbilities } : c
@@ -502,9 +512,13 @@ export default function PlayerModule() {
 
   const handleSaveEditedItem = async (updatedItem: ItemData) => {
     if (!selectedChar) return;
-    const updatedItems = (selectedChar.items || []).map((i) =>
-      i.id === updatedItem.id ? updatedItem : i
-    );
+    const exists = (selectedChar.items || []).some((i) => i.id === updatedItem.id);
+    const updatedItems = exists
+      ? (selectedChar.items || []).map((i) =>
+          i.id === updatedItem.id ? updatedItem : i
+        )
+      : [...(selectedChar.items || []), updatedItem];
+
     setCharacters((prev) =>
       prev.map((c) =>
         c.id === selectedChar.id ? { ...c, items: updatedItems } : c
