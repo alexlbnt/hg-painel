@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -18,6 +19,7 @@ import {
 } from '@/types/companion';
 import { pickAndOptimizeImage } from '@/utils/imageUpload';
 import {
+  AlertTriangle,
   Check,
   Edit2,
   HeartHandshake,
@@ -67,6 +69,7 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
   const [tempUrlInput, setTempUrlInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Sincroniza form quando o companheiro ativo mudar ou entrar/sair de edição
   React.useEffect(() => {
@@ -171,15 +174,14 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
                 <Text style={styles.actionBtnText}>Editar</Text>
               </TouchableOpacity>
 
-              {allCompanions.length > 1 && (
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.deleteBtn]}
-                  onPress={() => onDeleteCompanion(companion.id)}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={11} color="#E06A6A" />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.deleteBtn]}
+                onPress={() => setShowDeleteModal(true)}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={11} color="#E06A6A" />
+                <Text style={[styles.actionBtnText, { color: '#E06A6A' }]}>Excluir</Text>
+              </TouchableOpacity>
             </>
           ) : (
             <View style={styles.editBtnGroup}>
@@ -425,6 +427,54 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
           </View>
         </View>
       )}
+
+      {/* POP-UP MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalIconCircle}>
+              <AlertTriangle size={26} color="#E57373" />
+            </View>
+
+            <Text style={styles.modalTitle}>Excluir Companheiro?</Text>
+
+            <Text style={styles.modalText}>
+              Tem certeza que deseja excluir permanentemente{' '}
+              <Text style={{ color: '#FFF', fontWeight: 'bold' }}>
+                {companion.name || 'este companheiro'}
+              </Text>
+              ? Esta ação apagará todas as informações registradas (vida, atributos, ataques e notas) e não poderá ser desfeita.
+            </Text>
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setShowDeleteModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalCancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalConfirmBtn}
+                onPress={() => {
+                  setShowDeleteModal(false);
+                  onDeleteCompanion(companion.id);
+                }}
+                activeOpacity={0.8}
+              >
+                <Trash2 size={13} color="#FFF" />
+                <Text style={styles.modalConfirmBtnText}>Confirmar Exclusão</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -720,5 +770,85 @@ const styles = StyleSheet.create({
   optionPillText: {
     color: '#8A8073',
     fontSize: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.82)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    zIndex: 9999,
+  },
+  modalBox: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#181512',
+    borderWidth: 1.5,
+    borderColor: '#542626',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(229, 115, 115, 0.15)',
+    borderWidth: 1,
+    borderColor: '#7A2C2C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    color: '#E57373',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  modalText: {
+    color: '#BAAFA0',
+    fontSize: 12.5,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+    width: '100%',
+  },
+  modalCancelBtn: {
+    flex: 1,
+    backgroundColor: '#201C18',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    borderRadius: 6,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelBtnText: {
+    color: '#BAAFA0',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  modalConfirmBtn: {
+    flex: 1.3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#7A1F1F',
+    borderWidth: 1,
+    borderColor: '#A82E2E',
+    borderRadius: 6,
+    paddingVertical: 10,
+  },
+  modalConfirmBtnText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

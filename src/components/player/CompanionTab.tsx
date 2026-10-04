@@ -154,7 +154,7 @@ export const CompanionTab: React.FC<CompanionTabProps> = ({
     setIsEditing(false);
     setIsNew(false);
     setEditingCompanion(null);
-    persistList(updatedList, 'Criatura desvinculada');
+    persistList(updatedList, 'Companheiro excluído com sucesso');
   };
 
   // Atualiza a criatura atualmente selecionada (usado para ações imediatas como dano/cura)
