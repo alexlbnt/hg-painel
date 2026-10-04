@@ -24,7 +24,7 @@ interface CharacterHeaderProps {
   onDeleteChar: () => void;
 }
 
-export const CharacterHeader: React.FC<CharacterHeaderProps> = ({
+export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
   char,
   passivePerception,
   totalAc,
@@ -222,7 +222,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   headerContainer: {

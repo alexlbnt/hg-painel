@@ -10,21 +10,21 @@ interface AttributesGridProps {
   isMobile?: boolean;
 }
 
-export const AttributesGrid: React.FC<AttributesGridProps> = ({
+export const AttributesGrid: React.FC<AttributesGridProps> = React.memo(({
   char,
   themeColor = '#C5A059',
   isMobile = false,
 }) => {
-  const prof = getProfBonus(char.level);
+  const prof = React.useMemo(() => getProfBonus(char.level), [char.level]);
 
-  const attributes = [
+  const attributes = React.useMemo(() => [
     { name: 'FORÇA', abbr: 'FOR', score: char.str, prof: char.strProf },
     { name: 'DESTREZA', abbr: 'DES', score: char.dex, prof: char.dexProf },
     { name: 'CONSTITUIÇÃO', abbr: 'CON', score: char.con, prof: char.conProf },
     { name: 'INTELIGÊNCIA', abbr: 'INT', score: char.int, prof: char.intProf },
     { name: 'SABEDORIA', abbr: 'SAB', score: char.wis, prof: char.wisProf },
     { name: 'CARISMA', abbr: 'CAR', score: char.cha, prof: char.chaProf },
-  ];
+  ], [char.str, char.strProf, char.dex, char.dexProf, char.con, char.conProf, char.int, char.intProf, char.wis, char.wisProf, char.cha, char.chaProf]);
 
   return (
     <View style={styles.container}>
@@ -95,7 +95,7 @@ export const AttributesGrid: React.FC<AttributesGridProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

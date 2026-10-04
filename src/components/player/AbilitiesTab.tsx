@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AbilityData, CharacterData } from '@/lib/mockData';
 import {
@@ -29,7 +29,7 @@ interface AbilitiesTabProps {
   isMobile?: boolean;
 }
 
-export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
+export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
   char,
   onAdjustAbilityUses,
   onResetAbilityUses,
@@ -48,15 +48,16 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const abilities = char.abilities || [];
-  const filteredAbilities =
-    filterAction === 'ALL'
+  const abilities = useMemo(() => char.abilities || [], [char.abilities]);
+  const filteredAbilities = useMemo(() => {
+    return filterAction === 'ALL'
       ? abilities
       : abilities.filter((a) => (a.actionType || 'LIVRE').toUpperCase() === filterAction);
+  }, [abilities, filterAction]);
 
   // Recursos Especiais (Monk Ki / Sorcerer Points)
-  const isMonk = char.class.toLowerCase().includes('monge');
-  const isSorcerer = char.class.toLowerCase().includes('feiticeiro');
+  const isMonk = useMemo(() => (char.class || '').toLowerCase().includes('monge'), [char.class]);
+  const isSorcerer = useMemo(() => (char.class || '').toLowerCase().includes('feiticeiro'), [char.class]);
 
   return (
     <View style={styles.container}>
@@ -363,7 +364,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

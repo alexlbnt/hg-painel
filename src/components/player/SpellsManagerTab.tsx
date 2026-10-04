@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CharacterData, SpellItemData } from '@/lib/mockData';
 import { getMod, getProfBonus } from '@/utils/dnd5e';
@@ -34,7 +34,7 @@ interface SpellsManagerTabProps {
   isMobile?: boolean;
 }
 
-export const SpellsManagerTab: React.FC<SpellsManagerTabProps> = ({
+export const SpellsManagerTab: React.FC<SpellsManagerTabProps> = React.memo(({
   char,
   onToggleSpellSlot,
   onRestoreSlotsLevel,
@@ -54,39 +54,52 @@ export const SpellsManagerTab: React.FC<SpellsManagerTabProps> = ({
     1: true,
   });
 
-  const prof = getProfBonus(char.level);
+  const prof = useMemo(() => getProfBonus(char.level), [char.level]);
 
   // Atributo de Conjuração
-  const spellAttr =
-    char.class.toLowerCase().includes('mago')
-      ? 'int'
-      : char.class.toLowerCase().includes('clérigo') ||
-        char.class.toLowerCase().includes('clerigo') ||
-        char.class.toLowerCase().includes('druida') ||
-        char.class.toLowerCase().includes('patrulheiro')
-      ? 'wis'
-      : 'cha';
+  const spellAttr = useMemo(() => {
+    const cls = (char.class || '').toLowerCase();
+    if (cls.includes('mago')) return 'int';
+    if (
+      cls.includes('clérigo') ||
+      cls.includes('clerigo') ||
+      cls.includes('druida') ||
+      cls.includes('patrulheiro')
+    ) {
+      return 'wis';
+    }
+    return 'cha';
+  }, [char.class]);
 
-  const attrName = spellAttr === 'int' ? 'Inteligência' : spellAttr === 'wis' ? 'Sabedoria' : 'Carisma';
-  const attrMod = getMod((char as any)[spellAttr] || 10);
-  const saveDc = 8 + prof + attrMod;
-  const attackBonus = prof + attrMod;
+  const { attrName, attrMod, saveDc, attackBonus } = useMemo(() => {
+    const name = spellAttr === 'int' ? 'Inteligência' : spellAttr === 'wis' ? 'Sabedoria' : 'Carisma';
+    const mod = getMod((char as any)[spellAttr] || 10);
+    return {
+      attrName: name,
+      attrMod: mod,
+      saveDc: 8 + prof + mod,
+      attackBonus: prof + mod,
+    };
+  }, [spellAttr, (char as any)[spellAttr], prof]);
 
   const toggleLevel = (lvl: number) => {
     setExpandedLevels((prev) => ({ ...prev, [lvl]: !prev[lvl] }));
   };
 
   // Níveis disponíveis
-  const charSpells = char.spells || [];
-  const availableLevelsSet = new Set<number>([0, 1]);
-  charSpells.forEach((s) => availableLevelsSet.add(s.level));
-  (char.spellSlots || []).forEach((s) => availableLevelsSet.add(s.level));
+  const sortedLevels = useMemo(() => {
+    const availableLevelsSet = new Set<number>([0, 1]);
+    (char.spells || []).forEach((s) => availableLevelsSet.add(s.level));
+    (char.spellSlots || []).forEach((s) => availableLevelsSet.add(s.level));
 
-  const calculated = parseClassesAndCalculateSlots(char.class || '', char.level || 1);
-  Object.keys(calculated.standard).forEach((lvl) => availableLevelsSet.add(Number(lvl)));
-  if (calculated.warlock) availableLevelsSet.add(calculated.warlock.level);
+    const calculated = parseClassesAndCalculateSlots(char.class || '', char.level || 1);
+    Object.keys(calculated.standard).forEach((lvl) => availableLevelsSet.add(Number(lvl)));
+    if (calculated.warlock) availableLevelsSet.add(calculated.warlock.level);
 
-  const sortedLevels = Array.from(availableLevelsSet).sort((a, b) => a - b);
+    return Array.from(availableLevelsSet).sort((a, b) => a - b);
+  }, [char.spells, char.spellSlots, char.class, char.level]);
+
+  const charSpells: SpellItemData[] = useMemo(() => char.spells || [], [char.spells]);
 
   return (
     <View style={styles.container}>
@@ -355,7 +368,7 @@ export const SpellsManagerTab: React.FC<SpellsManagerTabProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

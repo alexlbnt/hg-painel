@@ -128,6 +128,9 @@ model Character {
   
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
+
+  @@index([roomId])
+  @@index([userId])
 }
 
 model SpellSlot {
@@ -137,6 +140,8 @@ model SpellSlot {
   used        Int       @default(0)
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
 }
 
 model Ability {
@@ -149,6 +154,8 @@ model Ability {
   actionType  String    @default("LIVRE")
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
 }
 
 model Condition {
@@ -157,6 +164,8 @@ model Condition {
   description String    @default("")
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
 }
 
 model Item {
@@ -172,6 +181,8 @@ model Item {
   armorClassBonus Int       @default(0)
   characterId     String
   character       Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
 }
 
 model Spell {
@@ -186,6 +197,8 @@ model Spell {
   isPrepared  Boolean   @default(false)
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
 }
 
 enum TaskCategory {

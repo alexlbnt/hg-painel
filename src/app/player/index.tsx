@@ -17,6 +17,7 @@ import { useRoom } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import {
+  AbilityData,
   CharacterData,
   ItemData,
   SpellItemData,
@@ -162,12 +163,26 @@ export default function PlayerModule() {
     }
   }, [visibleCharacters, selectedId]);
 
-  // Sincronização em tempo real via SSE
+  // Sincronização em tempo real via SSE (Atualização cirúrgica in-place)
   useRealtimeSync((event) => {
+    if (event.type === 'CHARACTER_UPDATED' && event.data && event.data.id) {
+      setCharacters((prev) =>
+        prev.map((c) => (c.id === event.data.id ? { ...c, ...event.data } : c))
+      );
+      return;
+    }
+    if (event.type === 'CHARACTER_DELETED' && event.id) {
+      setCharacters((prev) => prev.filter((c) => c.id !== event.id));
+      return;
+    }
+    if (event.type === 'CHARACTER_CREATED' && event.data && event.data.id) {
+      setCharacters((prev) => {
+        if (prev.some((c) => c.id === event.data.id)) return prev;
+        return [...prev, event.data];
+      });
+      return;
+    }
     if (
-      event.type === 'CHARACTER_UPDATED' ||
-      event.type === 'CHARACTER_CREATED' ||
-      event.type === 'CHARACTER_DELETED' ||
       event.type === 'TABLE_REST' ||
       event.type === 'characters' ||
       event.type === 'character' ||
@@ -320,7 +335,11 @@ export default function PlayerModule() {
     );
   };
 
-  const handleToggleEquipItem = async (itemId: string) => {
+  const handleGoToInventory = useCallback(() => {
+    setActiveTab('inventory');
+  }, []);
+
+  const handleToggleEquipItem = useCallback(async (itemId: string) => {
     if (!selectedChar) return;
     const updatedItems = (selectedChar.items || []).map((i) =>
       i.id === itemId ? { ...i, isEquipped: !i.isEquipped } : i
@@ -331,9 +350,9 @@ export default function PlayerModule() {
     );
 
     safeUpdateCharacter(selectedChar.id, { items: updatedItems });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleUpdateProficientSkills = async (skillsStr: string) => {
+  const handleUpdateProficientSkills = useCallback(async (skillsStr: string) => {
     if (!selectedChar) return;
     setCharacters((prev) =>
       prev.map((c) =>
@@ -341,9 +360,9 @@ export default function PlayerModule() {
       )
     );
     safeUpdateCharacter(selectedChar.id, { proficientSkills: skillsStr });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleToggleSpellSlot = async (level: number, slotIndex: number) => {
+  const handleToggleSpellSlot = useCallback(async (level: number, slotIndex: number) => {
     if (!selectedChar) return;
     const slots = selectedChar.spellSlots || [];
     const currentSlot = slots.find((s) => s.level === level);
@@ -364,9 +383,9 @@ export default function PlayerModule() {
     );
 
     safeUpdateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleRestoreSlotsLevel = async (level: number) => {
+  const handleRestoreSlotsLevel = useCallback(async (level: number) => {
     if (!selectedChar) return;
     const updatedSlots = (selectedChar.spellSlots || []).map((s) =>
       s.level === level ? { ...s, used: 0 } : s
@@ -379,9 +398,9 @@ export default function PlayerModule() {
     );
 
     safeUpdateCharacter(selectedChar.id, { spellSlots: updatedSlots });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleToggleSpellPrepared = async (spellId: string) => {
+  const handleToggleSpellPrepared = useCallback(async (spellId: string) => {
     if (!selectedChar) return;
     const updatedSpells = (selectedChar.spells || []).map((s) =>
       s.id === spellId ? { ...s, isPrepared: !s.isPrepared } : s
@@ -394,13 +413,13 @@ export default function PlayerModule() {
     );
 
     safeUpdateCharacter(selectedChar.id, { spells: updatedSpells });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleSetConcentration = (spellName: string) => {
+  const handleSetConcentration = useCallback((spellName: string) => {
     setConcentratingSpell((prev) => (prev === spellName ? null : spellName));
-  };
+  }, []);
 
-  const handleAdjustAbilityUses = async (abilityId: string, delta: number) => {
+  const handleAdjustAbilityUses = useCallback(async (abilityId: string, delta: number) => {
     if (!selectedChar) return;
     const updatedAbilities = (selectedChar.abilities || []).map((a) => {
       if (a.id !== abilityId) return a;
@@ -417,9 +436,9 @@ export default function PlayerModule() {
     safeUpdateCharacter(selectedChar.id, {
       abilities: updatedAbilities,
     });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleResetAbilityUses = async (abilityId: string) => {
+  const handleResetAbilityUses = useCallback(async (abilityId: string) => {
     if (!selectedChar) return;
     const updatedAbilities = (selectedChar.abilities || []).map((a) =>
       a.id === abilityId ? { ...a, currentUses: a.maxUses } : a
@@ -434,17 +453,17 @@ export default function PlayerModule() {
     safeUpdateCharacter(selectedChar.id, {
       abilities: updatedAbilities,
     });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleUpdateKiPoints = async (val: number) => {
+  const handleUpdateKiPoints = useCallback(async (val: number) => {
     if (!selectedChar) return;
     setCharacters((prev) =>
       prev.map((c) => (c.id === selectedChar.id ? { ...c, kiPoints: val } : c))
     );
     safeUpdateCharacter(selectedChar.id, { kiPoints: val });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleUpdateSorceryPoints = async (val: number) => {
+  const handleUpdateSorceryPoints = useCallback(async (val: number) => {
     if (!selectedChar) return;
     setCharacters((prev) =>
       prev.map((c) =>
@@ -452,9 +471,9 @@ export default function PlayerModule() {
       )
     );
     safeUpdateCharacter(selectedChar.id, { sorceryPoints: val });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleUpdateCoins = async (gold: number, silver: number, copper: number) => {
+  const handleUpdateCoins = useCallback(async (gold: number, silver: number, copper: number) => {
     if (!selectedChar) return;
     setCharacters((prev) =>
       prev.map((c) =>
@@ -462,24 +481,104 @@ export default function PlayerModule() {
       )
     );
     safeUpdateCharacter(selectedChar.id, { gold, silver, copper });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleSaveLore = async (newLore: string, extraUpdates?: Partial<CharacterData>) => {
+  const handleSaveLore = useCallback(async (newLore: string, extraUpdates?: Partial<CharacterData>) => {
     if (!selectedChar) return;
     const mergedUpdates = { ...extraUpdates, lore: newLore };
     setCharacters((prev) =>
       prev.map((c) => (c.id === selectedChar.id ? { ...c, ...mergedUpdates } : c))
     );
     safeUpdateCharacter(selectedChar.id, mergedUpdates);
-  };
+  }, [selectedChar, safeUpdateCharacter]);
 
-  const handleSaveCompanion = async (serialized: string) => {
+  const handleSaveCompanion = useCallback(async (serialized: string) => {
     if (!selectedChar) return;
     setCharacters((prev) =>
       prev.map((c) => (c.id === selectedChar.id ? { ...c, companion: serialized } : c))
     );
     safeUpdateCharacter(selectedChar.id, { companion: serialized });
-  };
+  }, [selectedChar, safeUpdateCharacter]);
+
+  const handleOpenAddSpellModal = useCallback((lvl?: number) => {
+    setSrdModalType('spell');
+    setEntityToEdit({ level: lvl || 1 });
+    setEditEntityType('spell');
+    setEditEntityVisible(true);
+  }, []);
+
+  const handleOpenSrdSearch = useCallback(() => {
+    setSrdModalType('spell');
+    setSrdModalVisible(true);
+  }, []);
+
+  const handleEditSpell = useCallback((spell: SpellItemData) => {
+    setEntityToEdit(spell);
+    setEditEntityType('spell');
+    setEditEntityVisible(true);
+  }, []);
+
+  const handleDeleteSpell = useCallback(async (spellId: string) => {
+    if (!selectedChar) return;
+    const updated = (selectedChar.spells || []).filter((s) => s.id !== spellId);
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, spells: updated } : c
+      )
+    );
+    safeUpdateCharacter(selectedChar.id, { spells: updated });
+  }, [selectedChar, safeUpdateCharacter]);
+
+  const handleOpenAddAbilityModal = useCallback(() => {
+    setEntityToEdit({ maxUses: 1, currentUses: 1, resetType: 'SHORT_REST' });
+    setEditEntityType('ability');
+    setEditEntityVisible(true);
+  }, []);
+
+  const handleEditAbility = useCallback((ab: AbilityData) => {
+    setEntityToEdit(ab);
+    setEditEntityType('ability');
+    setEditEntityVisible(true);
+  }, []);
+
+  const handleDeleteAbility = useCallback(async (abilityId: string) => {
+    if (!selectedChar) return;
+    const updated = (selectedChar.abilities || []).filter((a) => a.id !== abilityId);
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, abilities: updated } : c
+      )
+    );
+    safeUpdateCharacter(selectedChar.id, { abilities: updated });
+  }, [selectedChar, safeUpdateCharacter]);
+
+  const handleOpenAddItemModal = useCallback(() => {
+    setItemToEdit({
+      id: generateId(),
+      name: '',
+      description: '',
+      weight: 1.0,
+      quantity: 1,
+      isWeapon: false,
+    });
+    setEditItemModalVisible(true);
+  }, []);
+
+  const handleEditItem = useCallback((item: ItemData) => {
+    setItemToEdit(item);
+    setEditItemModalVisible(true);
+  }, []);
+
+  const handleDeleteItem = useCallback(async (itemId: string) => {
+    if (!selectedChar) return;
+    const updated = (selectedChar.items || []).filter((i) => i.id !== itemId);
+    setCharacters((prev) =>
+      prev.map((c) =>
+        c.id === selectedChar.id ? { ...c, items: updated } : c
+      )
+    );
+    safeUpdateCharacter(selectedChar.id, { items: updated });
+  }, [selectedChar, safeUpdateCharacter]);
 
   const handleSaveEditedEntity = async (updatedData: any) => {
     if (!selectedChar) return;
@@ -550,7 +649,7 @@ export default function PlayerModule() {
     setSpeedModalVisible(false);
   };
 
-  const handleDelete = async (charId: string) => {
+  const handleDelete = useCallback(async (charId: string) => {
     if (!isElevatedUser) {
       const target = characters.find((c) => c.id === charId);
       const loggedUser = (user?.username || '').trim().toLowerCase();
@@ -571,12 +670,33 @@ export default function PlayerModule() {
       },
       'Excluir Personagem'
     );
-  };
+  }, [isElevatedUser, characters, user]);
 
-  const handleExportJson = () => {
+  const handleExportJson = useCallback(() => {
     if (!selectedChar) return;
     ExportService.exportCharacterToJson(selectedChar);
-  };
+  }, [selectedChar]);
+
+  const handleOpenSpeedModal = useCallback(() => {
+    if (!selectedChar) return;
+    setQuickSpeed(selectedChar.speed || '9m');
+    setSpeedModalVisible(true);
+  }, [selectedChar]);
+
+  const handleEditChar = useCallback(() => {
+    if (!selectedChar) return;
+    setEditingChar(selectedChar);
+    setModalVisible(true);
+  }, [selectedChar]);
+
+  const handleDeleteCurrentChar = useCallback(() => {
+    if (!selectedChar) return;
+    handleDelete(selectedChar.id);
+  }, [selectedChar, handleDelete]);
+
+  const handleClearConcentration = useCallback(() => {
+    setConcentratingSpell(null);
+  }, []);
 
   const handleExportAllJson = () => {
     ExportService.exportAllCharactersToJson(visibleCharacters);
@@ -743,16 +863,10 @@ export default function PlayerModule() {
               totalAc={totalAc}
               themeColor={themeColor}
               isMobile={isMobile}
-              onOpenSpeedModal={() => {
-                setQuickSpeed(selectedChar.speed || '9m');
-                setSpeedModalVisible(true);
-              }}
+              onOpenSpeedModal={handleOpenSpeedModal}
               onExportJson={handleExportJson}
-              onEditChar={() => {
-                setEditingChar(selectedChar);
-                setModalVisible(true);
-              }}
-              onDeleteChar={() => handleDelete(selectedChar.id)}
+              onEditChar={handleEditChar}
+              onDeleteChar={handleDeleteCurrentChar}
             />
 
             {/* 2. Sinais Vitais, Barra de Vida, Descansos e Concentração */}
@@ -761,7 +875,7 @@ export default function PlayerModule() {
               themeColor={themeColor}
               isMobile={isMobile}
               concentratingSpell={concentratingSpell}
-              onClearConcentration={() => setConcentratingSpell(null)}
+              onClearConcentration={handleClearConcentration}
               onApplyHpDelta={handleApplyHpDelta}
               onTriggerShortRest={handleTriggerShortRest}
               onTriggerLongRest={handleTriggerLongRest}
@@ -829,7 +943,7 @@ export default function PlayerModule() {
                 <CombatAttacksTab
                   char={selectedChar}
                   onToggleEquipWeapon={handleToggleEquipItem}
-                  onGoToInventory={() => setActiveTab('inventory')}
+                  onGoToInventory={handleGoToInventory}
                   themeColor={themeColor}
                   isMobile={isMobile}
                 />
@@ -843,30 +957,10 @@ export default function PlayerModule() {
                   onToggleSpellPrepared={handleToggleSpellPrepared}
                   onSetConcentration={handleSetConcentration}
                   activeConcentration={concentratingSpell}
-                  onOpenAddSpellModal={(lvl) => {
-                    setSrdModalType('spell');
-                    setEntityToEdit({ level: lvl || 1 });
-                    setEditEntityType('spell');
-                    setEditEntityVisible(true);
-                  }}
-                  onOpenSrdSearch={() => {
-                    setSrdModalType('spell');
-                    setSrdModalVisible(true);
-                  }}
-                  onEditSpell={(spell) => {
-                    setEntityToEdit(spell);
-                    setEditEntityType('spell');
-                    setEditEntityVisible(true);
-                  }}
-                  onDeleteSpell={async (spellId) => {
-                    const updated = (selectedChar.spells || []).filter((s) => s.id !== spellId);
-                    setCharacters((prev) =>
-                      prev.map((c) =>
-                        c.id === selectedChar.id ? { ...c, spells: updated } : c
-                      )
-                    );
-                    safeUpdateCharacter(selectedChar.id, { spells: updated });
-                  }}
+                  onOpenAddSpellModal={handleOpenAddSpellModal}
+                  onOpenSrdSearch={handleOpenSrdSearch}
+                  onEditSpell={handleEditSpell}
+                  onDeleteSpell={handleDeleteSpell}
                   themeColor={themeColor}
                   isMobile={isMobile}
                 />
@@ -877,29 +971,9 @@ export default function PlayerModule() {
                   char={selectedChar}
                   onAdjustAbilityUses={handleAdjustAbilityUses}
                   onResetAbilityUses={handleResetAbilityUses}
-                  onOpenAddAbilityModal={() => {
-                    setEntityToEdit({ maxUses: 1, currentUses: 1, resetType: 'SHORT_REST' });
-                    setEditEntityType('ability');
-                    setEditEntityVisible(true);
-                  }}
-                  onEditAbility={(ab) => {
-                    setEntityToEdit(ab);
-                    setEditEntityType('ability');
-                    setEditEntityVisible(true);
-                  }}
-                  onDeleteAbility={async (abilityId) => {
-                    const updated = (selectedChar.abilities || []).filter(
-                      (a) => a.id !== abilityId
-                    );
-                    setCharacters((prev) =>
-                      prev.map((c) =>
-                        c.id === selectedChar.id ? { ...c, abilities: updated } : c
-                      )
-                    );
-                    safeUpdateCharacter(selectedChar.id, {
-                      abilities: updated,
-                    });
-                  }}
+                  onOpenAddAbilityModal={handleOpenAddAbilityModal}
+                  onEditAbility={handleEditAbility}
+                  onDeleteAbility={handleDeleteAbility}
                   onUpdateKiPoints={handleUpdateKiPoints}
                   onUpdateSorceryPoints={handleUpdateSorceryPoints}
                   themeColor={themeColor}
@@ -921,30 +995,9 @@ export default function PlayerModule() {
                   char={selectedChar}
                   onUpdateCoins={handleUpdateCoins}
                   onToggleEquipItem={handleToggleEquipItem}
-                  onOpenAddItemModal={() => {
-                    setItemToEdit({
-                      id: generateId(),
-                      name: '',
-                      description: '',
-                      weight: 1.0,
-                      quantity: 1,
-                      isWeapon: false,
-                    });
-                    setEditItemModalVisible(true);
-                  }}
-                  onEditItem={(item) => {
-                    setItemToEdit(item);
-                    setEditItemModalVisible(true);
-                  }}
-                  onDeleteItem={async (itemId) => {
-                    const updated = (selectedChar.items || []).filter((i) => i.id !== itemId);
-                    setCharacters((prev) =>
-                      prev.map((c) =>
-                        c.id === selectedChar.id ? { ...c, items: updated } : c
-                      )
-                    );
-                    safeUpdateCharacter(selectedChar.id, { items: updated });
-                  }}
+                  onOpenAddItemModal={handleOpenAddItemModal}
+                  onEditItem={handleEditItem}
+                  onDeleteItem={handleDeleteItem}
                   themeColor={themeColor}
                   isMobile={isMobile}
                 />

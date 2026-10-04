@@ -27,7 +27,7 @@ interface CompanionTabProps {
   isMobile?: boolean;
 }
 
-export const CompanionTab: React.FC<CompanionTabProps> = ({
+export const CompanionTab: React.FC<CompanionTabProps> = React.memo(({
   companionRaw,
   onSaveCompanion,
   themeColor = '#C5A059',
@@ -312,7 +312,7 @@ export const CompanionTab: React.FC<CompanionTabProps> = ({
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

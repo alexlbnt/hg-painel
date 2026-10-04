@@ -234,6 +234,22 @@ export default function HomeScreen() {
       ApiService.getScheduledSession(activeRoom?.id).then(setScheduleData).catch(() => {});
     } else if (event.type === 'TASK_CREATED' || event.type === 'TASK_UPDATED' || event.type === 'TASK_DELETED') {
       ApiService.getTasks().then(setTasks).catch(() => {});
+    } else if (event.type === 'CHARACTER_UPDATED' && event.data && event.data.id) {
+      setCharacters((prev) => prev.map((c) => (c.id === event.data.id ? { ...c, ...event.data } : c)));
+      setAllCharacters((prev) => prev.map((c) => (c.id === event.data.id ? { ...c, ...event.data } : c)));
+    } else if (event.type === 'CHARACTER_DELETED' && event.id) {
+      setCharacters((prev) => prev.filter((c) => c.id !== event.id));
+      setAllCharacters((prev) => prev.filter((c) => c.id !== event.id));
+    } else if (event.type === 'CHARACTER_CREATED' && event.data && event.data.id) {
+      setCharacters((prev) => {
+        if (prev.some((c) => c.id === event.data.id)) return prev;
+        if (!activeRoom || event.data.roomId === activeRoom.id) return [...prev, event.data];
+        return prev;
+      });
+      setAllCharacters((prev) => {
+        if (prev.some((c) => c.id === event.data.id)) return prev;
+        return [...prev, event.data];
+      });
     } else if (event.type === 'CHARACTER_UPDATED' || event.type === 'CHARACTER_CREATED' || event.type === 'CHARACTER_DELETED' || event.type === 'USER_UPDATED') {
       ApiService.getCharacters({ roomId: activeRoom?.id }).then(setCharacters).catch(() => {});
       ApiService.getCharacters().then(setAllCharacters).catch(() => {});

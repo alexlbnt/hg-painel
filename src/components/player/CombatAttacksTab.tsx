@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import {
@@ -24,35 +24,46 @@ interface CombatAttacksTabProps {
   isMobile?: boolean;
 }
 
-export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = ({
+export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = React.memo(({
   char,
   onToggleEquipWeapon,
   onGoToInventory,
   themeColor = '#C5A059',
   isMobile = false,
 }) => {
-  const prof = getProfBonus(char.level);
+  const prof = useMemo(() => getProfBonus(char.level), [char.level]);
 
   // Armas do inventário
-  const weapons = (char.items || []).filter((i) => i.isWeapon);
+  const weapons = useMemo(() => (char.items || []).filter((i) => i.isWeapon), [char.items]);
 
   // Truques e magias de ataque
-  const spellcastingAttr =
-    char.class.toLowerCase().includes('mago')
-      ? 'int'
-      : char.class.toLowerCase().includes('clérigo') ||
-        char.class.toLowerCase().includes('clerigo') ||
-        char.class.toLowerCase().includes('druida') ||
-        char.class.toLowerCase().includes('patrulheiro')
-      ? 'wis'
-      : 'cha';
+  const spellcastingAttr = useMemo(() => {
+    const cls = (char.class || '').toLowerCase();
+    if (cls.includes('mago')) return 'int';
+    if (
+      cls.includes('clérigo') ||
+      cls.includes('clerigo') ||
+      cls.includes('druida') ||
+      cls.includes('patrulheiro')
+    ) {
+      return 'wis';
+    }
+    return 'cha';
+  }, [char.class]);
 
-  const spellMod = getMod((char as any)[spellcastingAttr] || 10);
-  const spellAttackBonus = spellMod + prof;
-  const spellSaveDc = 8 + prof + spellMod;
+  const { spellAttackBonus, spellSaveDc } = useMemo(() => {
+    const spellMod = getMod((char as any)[spellcastingAttr] || 10);
+    return {
+      spellAttackBonus: spellMod + prof,
+      spellSaveDc: 8 + prof + spellMod,
+    };
+  }, [spellcastingAttr, (char as any)[spellcastingAttr], prof]);
 
   // Filtra estritamente apenas truques e magias de ataque/dano (D&D 5e)
-  const combatSpells = (char.spells || []).filter((s) => isCombatOffensiveSpell(s));
+  const combatSpells = useMemo(
+    () => (char.spells || []).filter((s) => isCombatOffensiveSpell(s)),
+    [char.spells]
+  );
 
   return (
     <View style={styles.container}>
@@ -234,7 +245,7 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

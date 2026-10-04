@@ -15,7 +15,7 @@ interface VitalsCombatPanelProps {
   onToggleDeathSave: (type: 'success' | 'fail', index: number) => void;
 }
 
-export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = ({
+export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
   char,
   themeColor = '#C5A059',
   isMobile = false,
@@ -214,7 +214,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

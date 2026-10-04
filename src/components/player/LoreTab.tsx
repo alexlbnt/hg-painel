@@ -22,7 +22,7 @@ interface LoreTabProps {
 
 type MobileTab = 'roleplay' | 'bio' | 'appearance';
 
-export const LoreTab: React.FC<LoreTabProps> = ({
+export const LoreTab: React.FC<LoreTabProps> = React.memo(({
   char,
   onSaveLore,
   themeColor = '#C5A059',
@@ -247,7 +247,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

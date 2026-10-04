@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CharacterData, ItemData } from '@/lib/mockData';
 import {
@@ -24,7 +24,7 @@ interface InventoryTabProps {
   isMobile?: boolean;
 }
 
-export const InventoryTab: React.FC<InventoryTabProps> = ({
+export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
   char,
   onUpdateCoins,
   onToggleEquipItem,
@@ -36,20 +36,22 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
 }) => {
   const [filterType, setFilterType] = useState<'ALL' | 'WEAPONS' | 'ARMOR' | 'ITEMS'>('ALL');
 
-  const items = char.items || [];
-  const maxWeight = (char.str || 10) * 7.5; // D&D 5e: 15 lbs por ponto de FOR (~7.5 kg)
-  const totalWeight = items.reduce(
-    (acc, i) => acc + (Number(i.weight) || 0) * (Number(i.quantity) || 1),
-    0
+  const items = useMemo(() => char.items || [], [char.items]);
+  const maxWeight = useMemo(() => (char.str || 10) * 7.5, [char.str]); // D&D 5e: 15 lbs por ponto de FOR (~7.5 kg)
+  const totalWeight = useMemo(
+    () => items.reduce((acc, i) => acc + (Number(i.weight) || 0) * (Number(i.quantity) || 1), 0),
+    [items]
   );
   const isOverloaded = totalWeight > maxWeight;
 
-  const filteredItems = items.filter((item) => {
-    if (filterType === 'WEAPONS') return item.isWeapon;
-    if (filterType === 'ARMOR') return item.isArmor;
-    if (filterType === 'ITEMS') return !item.isWeapon && !item.isArmor;
-    return true;
-  });
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (filterType === 'WEAPONS') return item.isWeapon;
+      if (filterType === 'ARMOR') return item.isArmor;
+      if (filterType === 'ITEMS') return !item.isWeapon && !item.isArmor;
+      return true;
+    });
+  }, [items, filterType]);
 
   return (
     <View style={styles.container}>
@@ -353,7 +355,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

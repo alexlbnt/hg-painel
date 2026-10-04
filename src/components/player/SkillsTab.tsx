@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import { formatMod, getMod, getProfBonus, SKILLS_LIST } from '@/utils/dnd5e';
@@ -11,20 +11,22 @@ interface SkillsTabProps {
   isMobile?: boolean;
 }
 
-export const SkillsTab: React.FC<SkillsTabProps> = ({
+export const SkillsTab: React.FC<SkillsTabProps> = React.memo(({
   char,
   onUpdateProficientSkills,
   themeColor = '#C5A059',
   isMobile = false,
 }) => {
   const [isEditMode, setIsEditMode] = useState(false);
-  const prof = getProfBonus(char.level);
+  const prof = useMemo(() => getProfBonus(char.level), [char.level]);
 
   // Armazena proficiências como string (ex: "Acrobacia,Furtividade:EXP")
-  const currentSkills = (char.proficientSkills || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const currentSkills = useMemo(() => {
+    return (char.proficientSkills || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [char.proficientSkills]);
 
   const getSkillStatus = (skillName: string): 'none' | 'prof' | 'exp' => {
     const found = currentSkills.find((s) => s.startsWith(skillName));
@@ -197,7 +199,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
