@@ -105,39 +105,71 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
   return (
     <View style={styles.container}>
       {/* 🥋 PONTOS DE QI / KI (MONGE) */}
-      {/* 🥋 PONTOS DE QI / KI (MONGE) */}
       {(isMonk || (char.maxKiPoints || 0) > 0) && (
-        <View style={styles.specialResourceCard}>
-          <View style={styles.specialHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-              <Zap size={15} color="#D4883A" />
-              <Text style={[styles.specialTitle, isMobile && { fontSize: 11.5 }]}>
-                PONTOS DE QI / KI (MONGE)
-              </Text>
+        <View style={styles.compactResourceCard}>
+          <View style={styles.compactHeaderRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' }}>
+              <Zap size={14} color="#D4883A" />
+              <Text style={styles.compactTitle}>PONTOS DE QI (MONGE)</Text>
             </View>
-            <View style={styles.specialResetPill}>
-              <Sun size={11} color="#C5A059" />
-              <Text style={styles.specialResetText}>Recarrega em Descanso Curto</Text>
-            </View>
+            {(char.kiPoints || 0) < (char.maxKiPoints || char.level) ? (
+              <TouchableOpacity
+                style={[styles.compactRestoreBtn, { borderColor: '#D4883A', backgroundColor: 'rgba(212, 136, 58, 0.1)' }]}
+                onPress={() => onUpdateKiPoints(char.maxKiPoints || char.level)}
+                activeOpacity={0.7}
+              >
+                <RotateCcw size={11} color="#D4883A" />
+                <Text style={[styles.compactRestoreText, { color: '#D4883A' }]}>Restaurar</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.compactRestPill}>
+                <Sun size={10} color="#C5A059" />
+                <Text style={styles.compactRestText}>Descanso Curto</Text>
+              </View>
+            )}
           </View>
 
-          <View style={[styles.specialControlsRow, isMobile && styles.specialControlsRowMobile]}>
-            <View style={[styles.specialStatsGroup, isMobile && styles.specialStatsGroupMobile]}>
-              <Text style={styles.specialCurrentVal}>{char.kiPoints || 0}</Text>
-              <Text style={styles.specialMaxVal}>/ {char.maxKiPoints || char.level}</Text>
+          <View style={styles.compactTrayRow}>
+            <View style={styles.compactCounterGroup}>
+              <TouchableOpacity
+                style={styles.compactMiniStepBtn}
+                onPress={() => onUpdateKiPoints(Math.max(0, (char.kiPoints || 0) - 1))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Minus size={11} color="#BAAFA0" />
+              </TouchableOpacity>
+              <View style={{ alignItems: 'baseline', flexDirection: 'row', gap: 2 }}>
+                <Text style={[styles.compactCurrentVal, { color: '#E6C280' }]}>
+                  {char.kiPoints || 0}
+                </Text>
+                <Text style={styles.compactMaxVal}>/{char.maxKiPoints || char.level}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.compactMiniStepBtn}
+                onPress={() =>
+                  onUpdateKiPoints(
+                    Math.min(char.maxKiPoints || char.level, (char.kiPoints || 0) + 1)
+                  )
+                }
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Plus size={11} color="#BAAFA0" />
+              </TouchableOpacity>
             </View>
 
-            <View style={[styles.quickStepBtnRow, isMobile && styles.quickStepBtnRowMobile]}>
+            <View style={{ flexDirection: 'row', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
               <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile]}
+                style={styles.compactQuickBtn}
                 onPress={() => onUpdateKiPoints(Math.max(0, (char.kiPoints || 0) - 1))}
                 activeOpacity={0.7}
               >
-                <Minus size={13} color="#BAAFA0" />
-                <Text style={styles.quickStepText}>1 Qi</Text>
+                <Minus size={11} color="#BAAFA0" />
+                <Text style={styles.compactQuickText}>1 Qi</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile]}
+                style={styles.compactQuickBtn}
                 onPress={() =>
                   onUpdateKiPoints(
                     Math.min(char.maxKiPoints || char.level, (char.kiPoints || 0) + 1)
@@ -145,16 +177,8 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
                 }
                 activeOpacity={0.7}
               >
-                <Plus size={13} color="#BAAFA0" />
-                <Text style={styles.quickStepText}>1 Qi</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile, { borderColor: '#D4883A' }]}
-                onPress={() => onUpdateKiPoints(char.maxKiPoints || char.level)}
-                activeOpacity={0.7}
-              >
-                <RotateCcw size={12} color="#D4883A" />
-                <Text style={[styles.quickStepText, { color: '#D4883A' }]}>Restaurar</Text>
+                <Plus size={11} color="#BAAFA0" />
+                <Text style={styles.compactQuickText}>1 Qi</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -163,67 +187,79 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
 
       {/* 🔮 PONTOS DE FEITIÇARIA (FEITICEIRO) */}
       {(isSorcerer || (char.maxSorceryPoints || 0) > 0) && (
-        <View style={styles.specialResourceCard}>
-          <View style={styles.specialHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-              <Sparkles size={15} color="#C084FC" />
-              <Text style={[styles.specialTitle, isMobile && { fontSize: 11.5 }]}>
-                PONTOS DE FEITIÇARIA (FEITICEIRO)
-              </Text>
+        <View style={styles.compactResourceCard}>
+          <View style={styles.compactHeaderRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' }}>
+              <Sparkles size={14} color="#C084FC" />
+              <Text style={styles.compactTitle}>PONTOS DE FEITIÇARIA (FEITICEIRO)</Text>
             </View>
-            <View style={styles.specialResetPill}>
-              <Moon size={11} color="#C084FC" />
-              <Text style={[styles.specialResetText, { color: '#C084FC' }]}>
-                Recarrega em Descanso Longo
-              </Text>
-            </View>
-          </View>
-
-          <View style={[styles.specialControlsRow, isMobile && styles.specialControlsRowMobile]}>
-            <View style={[styles.specialStatsGroup, isMobile && styles.specialStatsGroupMobile]}>
-              <Text style={[styles.specialCurrentVal, { color: '#C084FC' }]}>
-                {char.sorceryPoints || 0}
-              </Text>
-              <Text style={styles.specialMaxVal}>
-                / {char.maxSorceryPoints || char.level}
-              </Text>
-            </View>
-
-            <View style={[styles.quickStepBtnRow, isMobile && styles.quickStepBtnRowMobile]}>
+            {(char.sorceryPoints || 0) < (char.maxSorceryPoints || char.level) ? (
               <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile]}
-                onPress={() =>
-                  onUpdateSorceryPoints(Math.max(0, (char.sorceryPoints || 0) - 1))
-                }
+                style={[styles.compactRestoreBtn, { borderColor: '#C084FC', backgroundColor: 'rgba(192, 132, 252, 0.1)' }]}
+                onPress={() => onUpdateSorceryPoints(char.maxSorceryPoints || char.level)}
                 activeOpacity={0.7}
               >
-                <Minus size={13} color="#BAAFA0" />
-                <Text style={styles.quickStepText}>1 PF</Text>
+                <RotateCcw size={11} color="#C084FC" />
+                <Text style={[styles.compactRestoreText, { color: '#C084FC' }]}>Restaurar</Text>
               </TouchableOpacity>
+            ) : (
+              <View style={styles.compactRestPill}>
+                <Moon size={10} color="#C084FC" />
+                <Text style={[styles.compactRestText, { color: '#C084FC' }]}>Descanso Longo</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.compactTrayRow}>
+            <View style={styles.compactCounterGroup}>
               <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile]}
+                style={styles.compactMiniStepBtn}
+                onPress={() => onUpdateSorceryPoints(Math.max(0, (char.sorceryPoints || 0) - 1))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Minus size={11} color="#BAAFA0" />
+              </TouchableOpacity>
+              <View style={{ alignItems: 'baseline', flexDirection: 'row', gap: 2 }}>
+                <Text style={[styles.compactCurrentVal, { color: '#C084FC' }]}>
+                  {char.sorceryPoints || 0}
+                </Text>
+                <Text style={styles.compactMaxVal}>/{char.maxSorceryPoints || char.level}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.compactMiniStepBtn}
                 onPress={() =>
                   onUpdateSorceryPoints(
-                    Math.min(
-                      char.maxSorceryPoints || char.level,
-                      (char.sorceryPoints || 0) + 1
-                    )
+                    Math.min(char.maxSorceryPoints || char.level, (char.sorceryPoints || 0) + 1)
+                  )
+                }
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Plus size={11} color="#BAAFA0" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
+              <TouchableOpacity
+                style={styles.compactQuickBtn}
+                onPress={() => onUpdateSorceryPoints(Math.max(0, (char.sorceryPoints || 0) - 1))}
+                activeOpacity={0.7}
+              >
+                <Minus size={11} color="#BAAFA0" />
+                <Text style={styles.compactQuickText}>1 PF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.compactQuickBtn}
+                onPress={() =>
+                  onUpdateSorceryPoints(
+                    Math.min(char.maxSorceryPoints || char.level, (char.sorceryPoints || 0) + 1)
                   )
                 }
                 activeOpacity={0.7}
               >
-                <Plus size={13} color="#BAAFA0" />
-                <Text style={styles.quickStepText}>1 PF</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile, { borderColor: '#C084FC' }]}
-                onPress={() =>
-                  onUpdateSorceryPoints(char.maxSorceryPoints || char.level)
-                }
-                activeOpacity={0.7}
-              >
-                <RotateCcw size={12} color="#C084FC" />
-                <Text style={[styles.quickStepText, { color: '#C084FC' }]}>Restaurar</Text>
+                <Plus size={11} color="#BAAFA0" />
+                <Text style={styles.compactQuickText}>1 PF</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -232,108 +268,96 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
 
       {/* ⚔️ DADOS DE SUPERIORIDADE (GUERREIRO MESTRE DE BATALHA) */}
       {isBattleMaster && (
-        <View style={styles.specialResourceCard}>
-          <View style={styles.specialHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-              <Crosshair size={15} color="#E05252" />
-              <Text style={[styles.specialTitle, isMobile && { fontSize: 11.5 }]}>
-                DADOS DE SUPERIORIDADE (MESTRE DE BATALHA)
-              </Text>
-            </View>
-            <View style={[styles.specialResetPill, { borderColor: '#E0525244' }]}>
-              <Sun size={11} color="#C5A059" />
-              <Moon size={11} color="#C084FC" />
-              <Text style={[styles.specialResetText, { color: '#E2D8C3' }]}>
-                Recarrega em Descanso Curto/Longo
-              </Text>
-            </View>
-          </View>
-
-          <View style={[styles.specialControlsRow, isMobile && styles.specialControlsRowMobile]}>
-            <View style={[styles.bmStatsGroup, isMobile && styles.bmStatsGroupMobile]}>
-              <View style={{ alignItems: 'baseline', flexDirection: 'row', gap: 4 }}>
-                <Text style={[styles.specialCurrentVal, { color: '#E05252' }]}>
-                  {bmStats.currentDice}
-                </Text>
-                <Text style={styles.specialMaxVal}>
-                  / {bmStats.maxDice} ({bmStats.dieType})
-                </Text>
-              </View>
-
-              {/* Badge da CD de Resistência da Manobra */}
-              <View style={styles.bmDcBadge}>
-                <Text style={styles.bmDcLabel}>CD MANOBRA</Text>
-                <Text style={styles.bmDcVal}>{bmStats.saveDc}</Text>
-                <Text style={styles.bmDcAttr}>({bmStats.bestPhysicalAttr})</Text>
+        <View style={styles.compactResourceCard}>
+          {/* Linha 1: Título, CD de Resistência da Manobra e Ação de Restaurar / Info */}
+          <View style={styles.compactHeaderRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' }}>
+              <Crosshair size={14} color="#E05252" />
+              <Text style={styles.compactTitle}>DADOS DE SUPERIORIDADE</Text>
+              <View style={styles.compactDcBadge}>
+                <Text style={styles.compactDcLabel}>CD</Text>
+                <Text style={styles.compactDcVal}>{bmStats.saveDc}</Text>
+                <Text style={styles.compactDcAttr}>({bmStats.bestPhysicalAttr})</Text>
               </View>
             </View>
 
-            <View style={[styles.quickStepBtnRow, isMobile && styles.quickStepBtnRowMobile]}>
+            {bmStats.currentDice < bmStats.maxDice ? (
               <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile]}
-                onPress={() =>
-                  onUpdateSuperiorityDice?.(Math.max(0, bmStats.currentDice - 1))
-                }
-                activeOpacity={0.7}
-              >
-                <Minus size={13} color="#BAAFA0" />
-                <Text style={styles.quickStepText}>1 Dado</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile]}
-                onPress={() =>
-                  onUpdateSuperiorityDice?.(
-                    Math.min(bmStats.maxDice, bmStats.currentDice + 1)
-                  )
-                }
-                activeOpacity={0.7}
-              >
-                <Plus size={13} color="#BAAFA0" />
-                <Text style={styles.quickStepText}>1 Dado</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.quickStepBtn, isMobile && styles.quickStepBtnMobile, { borderColor: '#E05252' }]}
+                style={styles.compactRestoreBtn}
                 onPress={() => onUpdateSuperiorityDice?.(bmStats.maxDice)}
                 activeOpacity={0.7}
               >
-                <RotateCcw size={12} color="#E05252" />
-                <Text style={[styles.quickStepText, { color: '#E05252' }]}>Restaurar</Text>
+                <RotateCcw size={11} color="#E05252" />
+                <Text style={styles.compactRestoreText}>Restaurar</Text>
               </TouchableOpacity>
-            </View>
+            ) : (
+              <View style={styles.compactRestPill}>
+                <Sun size={10} color="#C5A059" />
+                <Text style={styles.compactRestText}>Descanso Curto</Text>
+              </View>
+            )}
           </View>
 
-          {/* Slots visuais táteis dos dados de superioridade */}
-          <View style={[styles.bmDicePipsRow, isMobile && styles.bmDicePipsRowMobile]}>
-            {Array.from({ length: bmStats.maxDice }).map((_, idx) => {
-              const isAvailable = idx < bmStats.currentDice;
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    if (isAvailable) {
-                      onUpdateSuperiorityDice?.(idx);
-                    } else {
-                      onUpdateSuperiorityDice?.(idx + 1);
-                    }
-                  }}
-                  style={[
-                    styles.bmDiePip,
-                    isMobile && styles.bmDiePipMobile,
-                    isAvailable ? styles.bmDiePipActive : styles.bmDiePipSpent,
-                  ]}
-                >
-                  <Text
+          {/* Linha 2: Contador Numérico Compacto + Bandeja de Dados Clicáveis */}
+          <View style={styles.compactTrayRow}>
+            <View style={styles.compactCounterGroup}>
+              <TouchableOpacity
+                style={styles.compactMiniStepBtn}
+                onPress={() => onUpdateSuperiorityDice?.(Math.max(0, bmStats.currentDice - 1))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Minus size={11} color="#BAAFA0" />
+              </TouchableOpacity>
+              <View style={{ alignItems: 'baseline', flexDirection: 'row', gap: 2 }}>
+                <Text style={[styles.compactCurrentVal, { color: bmStats.currentDice > 0 ? '#E05252' : '#80776C' }]}>
+                  {bmStats.currentDice}
+                </Text>
+                <Text style={styles.compactMaxVal}>/{bmStats.maxDice}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.compactMiniStepBtn}
+                onPress={() => onUpdateSuperiorityDice?.(Math.min(bmStats.maxDice, bmStats.currentDice + 1))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Plus size={11} color="#BAAFA0" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Slots táteis dos dados de superioridade */}
+            <View style={styles.compactDiceGrid}>
+              {Array.from({ length: bmStats.maxDice }).map((_, idx) => {
+                const isAvailable = idx < bmStats.currentDice;
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      if (isAvailable) {
+                        onUpdateSuperiorityDice?.(idx);
+                      } else {
+                        onUpdateSuperiorityDice?.(idx + 1);
+                      }
+                    }}
                     style={[
-                      styles.bmDiePipText,
-                      isAvailable ? styles.bmDiePipTextActive : styles.bmDiePipTextSpent,
+                      styles.compactDiePip,
+                      isAvailable ? styles.compactDiePipActive : styles.compactDiePipSpent,
                     ]}
                   >
-                    🎲 {isAvailable ? bmStats.dieType : 'Gasto'}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+                    <Text
+                      style={[
+                        styles.compactDieText,
+                        isAvailable ? styles.compactDieTextActive : styles.compactDieTextSpent,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      🎲 {isAvailable ? bmStats.dieType : 'Gasto'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
       )}
@@ -536,113 +560,164 @@ const styles = StyleSheet.create({
   container: {
     gap: 14,
   },
-  specialResourceCard: {
-    backgroundColor: '#1E1A16',
+  compactResourceCard: {
+    backgroundColor: '#1A1714',
     borderWidth: 1,
-    borderColor: '#3D342C',
+    borderColor: '#332B23',
     borderRadius: 8,
-    padding: 12,
-    gap: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    gap: 6,
   },
-  specialHeader: {
+  compactHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
   },
-  specialTitle: {
+  compactTitle: {
     color: '#E2D8C3',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
-  specialResetPill: {
+  compactDcBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#12100E',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+  },
+  compactDcLabel: {
+    color: '#80776C',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  compactDcVal: {
+    color: '#E05252',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  compactDcAttr: {
+    color: '#BAAFA0',
+    fontSize: 9,
+  },
+  compactRestoreBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#14120F',
+    backgroundColor: 'rgba(224, 82, 82, 0.1)',
     borderWidth: 1,
-    borderColor: '#2D251E',
+    borderColor: '#E05252',
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 4,
   },
-  specialResetText: {
-    color: '#C5A059',
+  compactRestoreText: {
+    color: '#E05252',
     fontSize: 10,
+    fontWeight: 'bold',
+  },
+  compactRestPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#14120F',
+    borderWidth: 1,
+    borderColor: '#2D251E',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  compactRestText: {
+    color: '#C5A059',
+    fontSize: 9.5,
     fontWeight: '600',
   },
-  specialControlsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 10,
-  },
-  specialControlsRowMobile: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    gap: 10,
-  },
-  specialStatsGroup: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  specialStatsGroupMobile: {
+  compactTrayRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  bmStatsGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  bmStatsGroupMobile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  quickStepBtnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  quickStepBtnRowMobile: {
-    width: '100%',
-    justifyContent: 'space-between',
     gap: 8,
   },
-  specialCurrentVal: {
-    color: '#E6C280',
-    fontSize: 26,
+  compactCounterGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#12100E',
+    borderWidth: 1,
+    borderColor: '#26201A',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+  },
+  compactMiniStepBtn: {
+    padding: 3,
+    borderRadius: 3,
+    backgroundColor: '#1D1915',
+  },
+  compactCurrentVal: {
+    fontSize: 13.5,
     fontWeight: 'bold',
   },
-  specialMaxVal: {
+  compactMaxVal: {
     color: '#80776C',
-    fontSize: 15,
-    fontWeight: 'bold',
+    fontSize: 10.5,
+    fontWeight: '600',
   },
-  quickStepBtn: {
+  compactDiceGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flex: 1,
+  },
+  compactDiePip: {
+    flex: 1,
+    height: 26,
+    borderRadius: 5,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    paddingHorizontal: 2,
+  },
+  compactDiePipActive: {
+    backgroundColor: 'rgba(224, 82, 82, 0.12)',
+    borderColor: '#E05252',
+  },
+  compactDiePipSpent: {
+    backgroundColor: '#14120F',
+    borderColor: '#26201A',
+    opacity: 0.45,
+  },
+  compactDieText: {
+    fontSize: 10.5,
+    fontWeight: 'bold',
+  },
+  compactDieTextActive: {
+    color: '#FF7B7B',
+  },
+  compactDieTextSpent: {
+    color: '#706558',
+  },
+  compactQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     backgroundColor: '#161310',
     borderWidth: 1,
-    borderColor: '#332B23',
+    borderColor: '#2D251E',
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 3.5,
     borderRadius: 5,
   },
-  quickStepBtnMobile: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+  compactQuickText: {
+    color: '#BAAFA0',
+    fontSize: 10.5,
+    fontWeight: '600',
   },
   quickStepText: {
     color: '#BAAFA0',
@@ -822,77 +897,5 @@ const styles = StyleSheet.create({
     color: '#BAAFA0',
     fontSize: 10.5,
     fontWeight: 'bold',
-  },
-  bmDcBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#161310',
-    borderWidth: 1,
-    borderColor: '#3D342C',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  bmDcLabel: {
-    color: '#80776C',
-    fontSize: 9.5,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  bmDcVal: {
-    color: '#E05252',
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  bmDcAttr: {
-    color: '#BAAFA0',
-    fontSize: 9.5,
-  },
-  bmDicePipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#2D251E',
-  },
-  bmDicePipsRowMobile: {
-    gap: 6,
-  },
-  bmDiePip: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bmDiePipMobile: {
-    flex: 1,
-    minWidth: '22%',
-    paddingHorizontal: 6,
-    paddingVertical: 8,
-  },
-  bmDiePipActive: {
-    backgroundColor: 'rgba(224, 82, 82, 0.15)',
-    borderColor: '#E05252',
-  },
-  bmDiePipSpent: {
-    backgroundColor: '#161310',
-    borderColor: '#2D251E',
-    opacity: 0.45,
-  },
-  bmDiePipText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  bmDiePipTextActive: {
-    color: '#FF6B6B',
-  },
-  bmDiePipTextSpent: {
-    color: '#80776C',
   },
 });

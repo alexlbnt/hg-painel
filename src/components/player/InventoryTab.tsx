@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Coins,
   Edit2,
+  Minus,
   Package,
   Plus,
   Scale,
@@ -105,20 +106,22 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
       </View>
 
       {/* 💰 TESOURO DA GUILDA / MOEDAS */}
-      <View style={styles.coinsCard}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-          <Coins size={14} color="#E6C280" />
-          <Text style={styles.coinsCardTitle}>BOLSA DE MOEDAS</Text>
+      {/* 💰 TESOURO DA GUILDA / BOLSA DE MOEDAS COMPACTA */}
+      <View style={[styles.coinsBar, isMobile && styles.coinsBarMobile]}>
+        <View style={styles.coinsTitleRow}>
+          <Coins size={13} color="#C5A059" />
+          <Text style={styles.coinsTitle}>MOEDAS</Text>
         </View>
 
-        <View style={[styles.coinsGrid, isMobile && { flexDirection: 'column', gap: 8 }]}>
+        <View style={styles.coinsPillsContainer}>
           {/* Peças de Ouro (PO) */}
-          <View style={[styles.coinCol, { borderColor: '#E6C280' }]}>
-            <Text style={[styles.coinColLabel, { color: '#E6C280' }]}>OURO (PO)</Text>
-            <Text style={[styles.coinAmount, { color: '#E6C280' }]}>{char.gold || 0}</Text>
+          <View style={[styles.coinPill, { borderColor: 'rgba(230, 194, 128, 0.25)' }]}>
+            <View style={[styles.coinDot, { backgroundColor: '#E6C280' }]} />
+            <Text style={[styles.coinVal, { color: '#E6C280' }]}>{char.gold || 0}</Text>
+            <Text style={[styles.coinUnit, { color: '#C5A059' }]}>PO</Text>
             <View style={styles.coinStepper}>
               <TouchableOpacity
-                style={styles.coinBtn}
+                style={styles.coinStepBtn}
                 onPress={() =>
                   onUpdateCoins(
                     Math.max(0, (char.gold || 0) - 1),
@@ -126,11 +129,12 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
                     char.copper || 0
                   )
                 }
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               >
-                <Text style={styles.coinBtnText}>-1</Text>
+                <Minus size={9} color="#BAAFA0" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.coinBtn}
+                style={styles.coinStepBtn}
                 onPress={() =>
                   onUpdateCoins(
                     (char.gold || 0) + 1,
@@ -138,19 +142,21 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
                     char.copper || 0
                   )
                 }
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               >
-                <Text style={styles.coinBtnText}>+1</Text>
+                <Plus size={9} color="#BAAFA0" />
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Peças de Prata (PP) */}
-          <View style={[styles.coinCol, { borderColor: '#BAAFA0' }]}>
-            <Text style={[styles.coinColLabel, { color: '#BAAFA0' }]}>PRATA (PP)</Text>
-            <Text style={[styles.coinAmount, { color: '#BAAFA0' }]}>{char.silver || 0}</Text>
+          <View style={[styles.coinPill, { borderColor: 'rgba(186, 175, 160, 0.25)' }]}>
+            <View style={[styles.coinDot, { backgroundColor: '#BAAFA0' }]} />
+            <Text style={[styles.coinVal, { color: '#BAAFA0' }]}>{char.silver || 0}</Text>
+            <Text style={[styles.coinUnit, { color: '#80776C' }]}>PP</Text>
             <View style={styles.coinStepper}>
               <TouchableOpacity
-                style={styles.coinBtn}
+                style={styles.coinStepBtn}
                 onPress={() =>
                   onUpdateCoins(
                     char.gold || 0,
@@ -158,11 +164,12 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
                     char.copper || 0
                   )
                 }
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               >
-                <Text style={styles.coinBtnText}>-1</Text>
+                <Minus size={9} color="#BAAFA0" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.coinBtn}
+                style={styles.coinStepBtn}
                 onPress={() =>
                   onUpdateCoins(
                     char.gold || 0,
@@ -170,19 +177,21 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
                     char.copper || 0
                   )
                 }
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               >
-                <Text style={styles.coinBtnText}>+1</Text>
+                <Plus size={9} color="#BAAFA0" />
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Peças de Cobre (PC) */}
-          <View style={[styles.coinCol, { borderColor: '#B87333' }]}>
-            <Text style={[styles.coinColLabel, { color: '#D4883A' }]}>COBRE (PC)</Text>
-            <Text style={[styles.coinAmount, { color: '#D4883A' }]}>{char.copper || 0}</Text>
+          <View style={[styles.coinPill, { borderColor: 'rgba(212, 136, 58, 0.25)' }]}>
+            <View style={[styles.coinDot, { backgroundColor: '#D4883A' }]} />
+            <Text style={[styles.coinVal, { color: '#D4883A' }]}>{char.copper || 0}</Text>
+            <Text style={[styles.coinUnit, { color: '#A06428' }]}>PC</Text>
             <View style={styles.coinStepper}>
               <TouchableOpacity
-                style={styles.coinBtn}
+                style={styles.coinStepBtn}
                 onPress={() =>
                   onUpdateCoins(
                     char.gold || 0,
@@ -190,11 +199,12 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
                     Math.max(0, (char.copper || 0) - 1)
                   )
                 }
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               >
-                <Text style={styles.coinBtnText}>-1</Text>
+                <Minus size={9} color="#BAAFA0" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.coinBtn}
+                style={styles.coinStepBtn}
                 onPress={() =>
                   onUpdateCoins(
                     char.gold || 0,
@@ -202,8 +212,9 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
                     (char.copper || 0) + 1
                   )
                 }
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               >
-                <Text style={styles.coinBtnText}>+1</Text>
+                <Plus size={9} color="#BAAFA0" />
               </TouchableOpacity>
             </View>
           </View>
@@ -415,59 +426,80 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
-  coinsCard: {
-    backgroundColor: '#191613',
+  coinsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#181512',
     borderWidth: 1,
-    borderColor: '#302821',
+    borderColor: '#2D251E',
     borderRadius: 8,
-    padding: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    gap: 10,
   },
-  coinsCardTitle: {
-    color: '#E2D8C3',
+  coinsBarMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+  },
+  coinsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  coinsTitle: {
+    color: '#BAAFA0',
     fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
-  coinsGrid: {
+  coinsPillsContainer: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    gap: 8,
   },
-  coinCol: {
+  coinPill: {
     flex: 1,
-    backgroundColor: '#14120F',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: '#13110E',
     borderWidth: 1,
     borderRadius: 6,
-    padding: 8,
-    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  coinColLabel: {
-    fontSize: 9.5,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-    marginBottom: 2,
+  coinDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  coinAmount: {
-    fontSize: 20,
+  coinVal: {
+    fontSize: 13,
     fontWeight: 'bold',
-    marginVertical: 2,
+  },
+  coinUnit: {
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   coinStepper: {
     flexDirection: 'row',
-    gap: 6,
-    marginTop: 4,
+    gap: 3,
+    marginLeft: 3,
   },
-  coinBtn: {
+  coinStepBtn: {
+    width: 18,
+    height: 18,
+    borderRadius: 3,
     backgroundColor: '#1E1A16',
     borderWidth: 1,
     borderColor: '#332B23',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  coinBtnText: {
-    color: '#BAAFA0',
-    fontSize: 10.5,
-    fontWeight: 'bold',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   toolbar: {
     flexDirection: 'row',
