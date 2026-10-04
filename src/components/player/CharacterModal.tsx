@@ -214,6 +214,30 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
       speed: speed.trim() || '9m',
       kiPoints: initialData?.kiPoints !== undefined ? initialData.kiPoints : (className.toLowerCase().includes('monge') || className.toLowerCase().includes('monk') ? (parseInt(level, 10) >= 2 ? parseInt(level, 10) : 0) : 0),
       maxKiPoints: initialData?.maxKiPoints !== undefined ? initialData.maxKiPoints : (className.toLowerCase().includes('monge') || className.toLowerCase().includes('monk') ? (parseInt(level, 10) >= 2 ? parseInt(level, 10) : 0) : 0),
+      superiorityDice: (() => {
+        const isBM = (className.toLowerCase().includes('guerreiro') || className.toLowerCase().includes('fighter')) &&
+          (archetype.toLowerCase().includes('mestre de batalha') || archetype.toLowerCase().includes('mestre da batalha') || archetype.toLowerCase().includes('battle master') || className.toLowerCase().includes('mestre de batalha'));
+        if (!isBM) return 0;
+        if (initialData?.superiorityDice !== undefined && initialData.superiorityDice > 0) return initialData.superiorityDice;
+        const lvl = parseInt(level, 10) || 1;
+        return lvl >= 15 ? 6 : lvl >= 7 ? 5 : 4;
+      })(),
+      maxSuperiorityDice: (() => {
+        const isBM = (className.toLowerCase().includes('guerreiro') || className.toLowerCase().includes('fighter')) &&
+          (archetype.toLowerCase().includes('mestre de batalha') || archetype.toLowerCase().includes('mestre da batalha') || archetype.toLowerCase().includes('battle master') || className.toLowerCase().includes('mestre de batalha'));
+        if (!isBM) return 0;
+        if (initialData?.maxSuperiorityDice !== undefined && initialData.maxSuperiorityDice > 0) return initialData.maxSuperiorityDice;
+        const lvl = parseInt(level, 10) || 1;
+        return lvl >= 15 ? 6 : lvl >= 7 ? 5 : 4;
+      })(),
+      superiorityDieType: (() => {
+        const isBM = (className.toLowerCase().includes('guerreiro') || className.toLowerCase().includes('fighter')) &&
+          (archetype.toLowerCase().includes('mestre de batalha') || archetype.toLowerCase().includes('mestre da batalha') || archetype.toLowerCase().includes('battle master') || className.toLowerCase().includes('mestre de batalha'));
+        if (!isBM) return 'd8';
+        if (initialData?.superiorityDieType) return initialData.superiorityDieType;
+        const lvl = parseInt(level, 10) || 1;
+        return lvl >= 18 ? 'd12' : lvl >= 10 ? 'd10' : 'd8';
+      })(),
       spellSlots: formattedSlots,
     });
     onClose();
@@ -337,6 +361,37 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
                 />
               </View>
             </View>
+
+            {(className.toLowerCase().includes('guerreiro') || className.toLowerCase().includes('fighter')) && (
+              <View style={styles.archetypeChipsContainer}>
+                <Text style={styles.archetypeChipsLabel}>Sugestões para Guerreiro:</Text>
+                <View style={styles.archetypeChipsRow}>
+                  {['Mestre de Batalha', 'Campeão', 'Cavaleiro Arcano'].map((archName) => {
+                    const isSelected = archetype.trim().toLowerCase() === archName.toLowerCase();
+                    return (
+                      <TouchableOpacity
+                        key={archName}
+                        style={[
+                          styles.archetypeChip,
+                          isSelected && styles.archetypeChipSelected,
+                        ]}
+                        onPress={() => setArchetype(archName)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.archetypeChipText,
+                            isSelected && styles.archetypeChipTextSelected,
+                          ]}
+                        >
+                          {archName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             <View style={styles.row}>
               <View style={styles.inputGroup}>
@@ -844,5 +899,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#BAAFA0',
     fontWeight: '500',
+  },
+  archetypeChipsContainer: {
+    marginBottom: 12,
+    marginTop: -4,
+    paddingHorizontal: 2,
+  },
+  archetypeChipsLabel: {
+    fontSize: 11,
+    color: '#80776C',
+    fontWeight: '600',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  archetypeChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  archetypeChip: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: '#1E1B18',
+    borderWidth: 1,
+    borderColor: '#3D342C',
+  },
+  archetypeChipSelected: {
+    backgroundColor: 'rgba(197, 160, 89, 0.15)',
+    borderColor: '#C5A059',
+  },
+  archetypeChipText: {
+    fontSize: 12,
+    color: '#A89E91',
+    fontWeight: '500',
+  },
+  archetypeChipTextSelected: {
+    color: '#F4E7D3',
+    fontWeight: '700',
   },
 });

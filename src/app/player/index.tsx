@@ -473,6 +473,14 @@ export default function PlayerModule() {
     safeUpdateCharacter(selectedChar.id, { sorceryPoints: val });
   }, [selectedChar, safeUpdateCharacter]);
 
+  const handleUpdateSuperiorityDice = useCallback(async (val: number) => {
+    if (!selectedChar) return;
+    setCharacters((prev) =>
+      prev.map((c) => (c.id === selectedChar.id ? { ...c, superiorityDice: val } : c))
+    );
+    safeUpdateCharacter(selectedChar.id, { superiorityDice: val });
+  }, [selectedChar, safeUpdateCharacter]);
+
   const handleUpdateCoins = useCallback(async (gold: number, silver: number, copper: number) => {
     if (!selectedChar) return;
     setCharacters((prev) =>
@@ -795,21 +803,14 @@ export default function PlayerModule() {
                   activeOpacity={0.7}
                 >
                   <Shield color={isSelected ? chipColor : '#80776C'} size={15} />
-                  <View>
-                    <Text
-                      style={[
-                        styles.chipName,
-                        isSelected && [styles.chipNameSelected, { color: chipColor }],
-                      ]}
-                    >
-                      {char.name}
-                    </Text>
-                    <Text style={styles.chipClass}>
-                      {char.class}{char.archetype ? ` (${char.archetype})` : ''} • Nvl {char.level}
-                      {char.room?.name ? ` • ${char.room.name}` : ''}
-                      {isElevatedUser && char.playerName ? ` (${char.playerName})` : ''}
-                    </Text>
-                  </View>
+                  <Text
+                    style={[
+                      styles.chipName,
+                      isSelected && [styles.chipNameSelected, { color: chipColor }],
+                    ]}
+                  >
+                    {char.name}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -893,7 +894,7 @@ export default function PlayerModule() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tabsNav}
+              contentContainerStyle={[styles.tabsNav, isMobile && styles.tabsNavMobile]}
             >
               {[
                 { id: 'combat', label: 'Combate & Ataques', icon: Sword },
@@ -912,6 +913,7 @@ export default function PlayerModule() {
                     key={tab.id}
                     style={[
                       styles.tabBtn,
+                      isMobile && styles.tabBtnMobile,
                       isActive && [
                         styles.tabBtnActive,
                         { borderColor: themeColor, backgroundColor: `${themeColor}18` },
@@ -922,11 +924,12 @@ export default function PlayerModule() {
                   >
                     <Icon
                       color={isActive ? themeColor : '#80776C'}
-                      size={16}
+                      size={isMobile ? 15 : 16}
                     />
                     <Text
                       style={[
                         styles.tabBtnText,
+                        isMobile && styles.tabBtnTextMobile,
                         isActive && [styles.tabBtnTextActive, { color: '#FFF' }],
                       ]}
                     >
@@ -976,6 +979,7 @@ export default function PlayerModule() {
                   onDeleteAbility={handleDeleteAbility}
                   onUpdateKiPoints={handleUpdateKiPoints}
                   onUpdateSorceryPoints={handleUpdateSorceryPoints}
+                  onUpdateSuperiorityDice={handleUpdateSuperiorityDice}
                   themeColor={themeColor}
                   isMobile={isMobile}
                 />
@@ -1429,6 +1433,10 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 4,
   },
+  tabsNavMobile: {
+    gap: 6,
+    paddingRight: 16,
+  },
   tabBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1440,6 +1448,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
+  tabBtnMobile: {
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 7,
+    gap: 5,
+  },
   tabBtnActive: {
     backgroundColor: 'rgba(197, 160, 89, 0.18)',
     borderColor: '#C5A059',
@@ -1448,6 +1462,9 @@ const styles = StyleSheet.create({
     color: '#80776C',
     fontSize: 12.5,
     fontWeight: '600',
+  },
+  tabBtnTextMobile: {
+    fontSize: 12,
   },
   tabBtnTextActive: {
     fontWeight: 'bold',

@@ -607,6 +607,19 @@ export const ApiService = {
       updates.kiPoints = char.maxKiPoints;
     }
 
+    // Restauração de Dados de Superioridade (Guerreiro Mestre de Batalha recupera em Descanso Curto)
+    const isBattleMaster = (char.class || '').toLowerCase().includes('guerreiro') &&
+      ((char.archetype || '').toLowerCase().includes('mestre de batalha') ||
+       (char.archetype || '').toLowerCase().includes('battle master') ||
+       (char.class || '').toLowerCase().includes('mestre de batalha'));
+    const defaultMaxBmDice = char.level >= 15 ? 6 : (char.level >= 7 ? 5 : 4);
+    const maxBmDice = (char.maxSuperiorityDice && char.maxSuperiorityDice > 0)
+      ? char.maxSuperiorityDice
+      : (isBattleMaster ? defaultMaxBmDice : 0);
+    if (maxBmDice > 0) {
+      updates.superiorityDice = maxBmDice;
+    }
+
     return this.updateCharacter(id, updates);
   },
 
@@ -647,6 +660,19 @@ export const ApiService = {
     }
     if (char.maxSorceryPoints && char.maxSorceryPoints > 0) {
       updates.sorceryPoints = char.maxSorceryPoints;
+    }
+
+    // Restauração de Dados de Superioridade (Descanso Longo)
+    const isBattleMasterLong = (char.class || '').toLowerCase().includes('guerreiro') &&
+      ((char.archetype || '').toLowerCase().includes('mestre de batalha') ||
+       (char.archetype || '').toLowerCase().includes('battle master') ||
+       (char.class || '').toLowerCase().includes('mestre de batalha'));
+    const defaultMaxBmDiceLong = char.level >= 15 ? 6 : (char.level >= 7 ? 5 : 4);
+    const maxBmDiceLong = (char.maxSuperiorityDice && char.maxSuperiorityDice > 0)
+      ? char.maxSuperiorityDice
+      : (isBattleMasterLong ? defaultMaxBmDiceLong : 0);
+    if (maxBmDiceLong > 0) {
+      updates.superiorityDice = maxBmDiceLong;
     }
 
     return this.updateCharacter(id, updates);

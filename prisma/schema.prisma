@@ -114,6 +114,9 @@ model Character {
   maxSorceryPoints   Int         @default(0)
   kiPoints           Int         @default(0) // Pontos de Qi / Ki (Monge)
   maxKiPoints        Int         @default(0)
+  superiorityDice    Int         @default(0) // Dados de Superioridade atuais (Guerreiro Mestre de Batalha)
+  maxSuperiorityDice Int         @default(0) // Quantidade máxima de dados
+  superiorityDieType String      @default("d8") // Tipo do dado de superioridade (d8, d10, d12)
 
   // Relations
   roomId             String?

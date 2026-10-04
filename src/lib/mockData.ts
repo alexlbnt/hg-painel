@@ -128,6 +128,9 @@ export interface CharacterData {
   maxSorceryPoints?: number;
   kiPoints?: number;
   maxKiPoints?: number;
+  superiorityDice?: number;
+  maxSuperiorityDice?: number;
+  superiorityDieType?: string;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
