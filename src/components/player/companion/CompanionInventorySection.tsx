@@ -34,7 +34,7 @@ export const CompanionInventorySection: React.FC<CompanionInventorySectionProps>
 
   React.useEffect(() => {
     setInventory(companion.inventory || '');
-  }, [companion]);
+  }, [companion.id, isEditing]);
 
   // Cálculo automático da capacidade de carga baseada na Força e Porte da criatura (D&D 5e)
   const { maxKg, pushDragKg } = calcCarryCapacityKg(

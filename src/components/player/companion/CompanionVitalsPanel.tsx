@@ -35,22 +35,22 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
 }) => {
   const [customHp, setCustomHp] = useState('');
 
-  // Estados locais para edição
-  const [ac, setAc] = useState(String(companion.armorClass || 10));
-  const [maxHp, setMaxHp] = useState(String(companion.maxHp || 10));
-  const [tempHp, setTempHp] = useState(String(companion.tempHp || 0));
-  const [speed, setSpeed] = useState(companion.speed || 'Terrestre 12m');
-  const [init, setInit] = useState(String(companion.initiativeBonus || 0));
-  const [pb, setPb] = useState(String(companion.proficiencyBonus || 2));
+  // Estados locais para edição: iniciam em branco se forem os padrões vazios
+  const [ac, setAc] = useState(companion.armorClass > 0 ? String(companion.armorClass) : '');
+  const [maxHp, setMaxHp] = useState(companion.maxHp > 0 ? String(companion.maxHp) : '');
+  const [tempHp, setTempHp] = useState(companion.tempHp > 0 ? String(companion.tempHp) : '');
+  const [speed, setSpeed] = useState(companion.speed || '');
+  const [init, setInit] = useState(companion.initiativeBonus !== 0 ? String(companion.initiativeBonus) : '');
+  const [pb, setPb] = useState(companion.proficiencyBonus > 0 ? String(companion.proficiencyBonus) : '');
 
   React.useEffect(() => {
-    setAc(String(companion.armorClass || 10));
-    setMaxHp(String(companion.maxHp || 10));
-    setTempHp(String(companion.tempHp || 0));
-    setSpeed(companion.speed || 'Terrestre 12m');
-    setInit(String(companion.initiativeBonus || 0));
-    setPb(String(companion.proficiencyBonus || 2));
-  }, [companion]);
+    setAc(companion.armorClass > 0 ? String(companion.armorClass) : '');
+    setMaxHp(companion.maxHp > 0 ? String(companion.maxHp) : '');
+    setTempHp(companion.tempHp > 0 ? String(companion.tempHp) : '');
+    setSpeed(companion.speed || '');
+    setInit(companion.initiativeBonus !== 0 ? String(companion.initiativeBonus) : '');
+    setPb(companion.proficiencyBonus > 0 ? String(companion.proficiencyBonus) : '');
+  }, [companion.id, isEditing]);
 
   // Aplica dano ou cura rápida
   const handleApplyHpDelta = (isDamage: boolean) => {
@@ -111,15 +111,19 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
             <Text style={styles.statLabel}>CLASSE ARM.</Text>
           </View>
           {!isEditing ? (
-            <Text style={[styles.statValue, { color: '#7895C2' }]}>{companion.armorClass}</Text>
+            <Text style={[styles.statValue, { color: '#7895C2' }]}>
+              {companion.armorClass || 10}
+            </Text>
           ) : (
             <TextInput
               style={styles.statInput}
               value={ac}
               onChangeText={(v) => {
                 setAc(v);
-                handleSaveForm('armorClass', parseInt(v, 10) || 10);
+                handleSaveForm('armorClass', parseInt(v, 10) || 0);
               }}
+              placeholder="10"
+              placeholderTextColor="#5C5449"
               keyboardType="numeric"
             />
           )}
@@ -145,6 +149,8 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
                 setInit(v);
                 handleSaveForm('initiativeBonus', parseInt(v, 10) || 0);
               }}
+              placeholder="0"
+              placeholderTextColor="#5C5449"
               keyboardType="numbers-and-punctuation"
             />
           )}
@@ -158,7 +164,7 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
           </View>
           {!isEditing ? (
             <Text style={[styles.statValue, { color: '#D8B4FE' }]}>
-              +{companion.proficiencyBonus}
+              +{companion.proficiencyBonus || 0}
             </Text>
           ) : (
             <TextInput
@@ -166,8 +172,10 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
               value={pb}
               onChangeText={(v) => {
                 setPb(v);
-                handleSaveForm('proficiencyBonus', parseInt(v, 10) || 2);
+                handleSaveForm('proficiencyBonus', parseInt(v, 10) || 0);
               }}
+              placeholder="2"
+              placeholderTextColor="#5C5449"
               keyboardType="numeric"
             />
           )}
@@ -186,7 +194,7 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
           </View>
           {!isEditing ? (
             <Text style={[styles.statValueSmall, { color: '#78C288' }]} numberOfLines={1}>
-              {companion.speed || 'Terrestre 9m'}
+              {companion.speed || '—'}
             </Text>
           ) : (
             <TextInput
@@ -196,8 +204,8 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
                 setSpeed(v);
                 handleSaveForm('speed', v);
               }}
-              placeholder="Ex: Terrestre 12m, Voo 18m"
-              placeholderTextColor="#6B6257"
+              placeholder="Ex: Terrestre 9m, Voo 18m"
+              placeholderTextColor="#5C5449"
             />
           )}
         </View>
@@ -221,8 +229,8 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
 
           {!isEditing ? (
             <View style={styles.hpNumbersWrap}>
-              <Text style={styles.hpCurrentVal}>{companion.currentHp}</Text>
-              <Text style={styles.hpMaxVal}>/ {companion.maxHp}</Text>
+              <Text style={styles.hpCurrentVal}>{companion.currentHp || 0}</Text>
+              <Text style={styles.hpMaxVal}>/ {companion.maxHp || 10}</Text>
               <TouchableOpacity
                 style={styles.restoreBtn}
                 onPress={handleFullHeal}
@@ -241,8 +249,10 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
                   value={maxHp}
                   onChangeText={(v) => {
                     setMaxHp(v);
-                    handleSaveForm('maxHp', Math.max(1, parseInt(v, 10) || 1));
+                    handleSaveForm('maxHp', parseInt(v, 10) || 0);
                   }}
+                  placeholder="10"
+                  placeholderTextColor="#5C5449"
                   keyboardType="numeric"
                 />
               </View>
@@ -253,8 +263,10 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
                   value={tempHp}
                   onChangeText={(v) => {
                     setTempHp(v);
-                    handleSaveForm('tempHp', Math.max(0, parseInt(v, 10) || 0));
+                    handleSaveForm('tempHp', parseInt(v, 10) || 0);
                   }}
+                  placeholder="0"
+                  placeholderTextColor="#5C5449"
                   keyboardType="numeric"
                 />
               </View>

@@ -49,23 +49,25 @@ export const CompanionAttributesGrid: React.FC<CompanionAttributesGridProps> = (
                 <>
                   <Text style={[styles.attrMod, isMobile && { fontSize: 20 }]}>{modText}</Text>
                   <View style={styles.scorePill}>
-                    <Text style={styles.attrScore}>{attr.score}</Text>
+                    <Text style={styles.attrScore}>{attr.score || 10}</Text>
                   </View>
                 </>
               ) : (
                 <View style={styles.editWrap}>
                   <TextInput
                     style={styles.scoreInput}
-                    value={String(attr.score || 10)}
+                    value={attr.score > 0 ? String(attr.score) : ''}
                     onChangeText={(v) => {
-                      const num = Math.max(1, Math.min(30, parseInt(v, 10) || 10));
+                      const num = v.trim() ? Math.max(1, Math.min(30, parseInt(v, 10) || 10)) : 0;
                       onUpdateAttributes({ [attr.key]: num });
                     }}
+                    placeholder="10"
+                    placeholderTextColor="#5C5449"
                     keyboardType="numeric"
                     maxLength={2}
                   />
                   <Text style={[styles.editModPreview, { color: themeColor }]}>
-                    {modText}
+                    {formatCompanionMod(attr.score || 10)}
                   </Text>
                 </View>
               )}

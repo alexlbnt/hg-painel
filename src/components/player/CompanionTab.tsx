@@ -18,7 +18,7 @@ import { CompanionSkillsSenses } from './companion/CompanionSkillsSenses';
 import { CompanionActionsSection } from './companion/CompanionActionsSection';
 import { CompanionInventorySection } from './companion/CompanionInventorySection';
 import { CompanionNotesSection } from './companion/CompanionNotesSection';
-import { HeartHandshake, PawPrint, Plus } from 'lucide-react-native';
+import { PawPrint, Plus } from 'lucide-react-native';
 
 interface CompanionTabProps {
   companionRaw?: string | null;
@@ -34,10 +34,12 @@ export const CompanionTab: React.FC<CompanionTabProps> = ({
   isMobile = false,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isNew, setIsNew] = useState(false);
+  const [editingCompanion, setEditingCompanion] = useState<CompanionData | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
-  // Parse do companion salvo
+  // Parse do companion salvo no banco de dados
   const companionList = useMemo(() => {
     return parseCompanionList(companionRaw);
   }, [companionRaw]);
@@ -49,48 +51,113 @@ export const CompanionTab: React.FC<CompanionTabProps> = ({
   );
   const currentCompanion: CompanionData | undefined = companionList[safeIndex];
 
-  const triggerFeedback = (msg: string = 'Companheiro atualizado') => {
+  // Companheiro ativo na tela: se em edição, usa o rascunho em memória; senão, o salvo
+  const activeCompanion: CompanionData =
+    editingCompanion ||
+    currentCompanion ||
+    createEmptyCompanion();
+
+  const triggerFeedback = (msg: string = 'Companheiro salvo') => {
     setSaveFeedback(msg);
     setTimeout(() => {
       setSaveFeedback(null);
     }, 2500);
   };
 
-  // Salva a lista inteira serializada
+  // Salva a lista inteira serializada no backend
   const persistList = (newList: CompanionData[], feedbackMsg?: string) => {
     onSaveCompanion(serializeCompanionList(newList));
-    triggerFeedback(feedbackMsg);
+    if (feedbackMsg) {
+      triggerFeedback(feedbackMsg);
+    }
   };
 
-  // Cria um primeiro companheiro
+  // Inicia o cadastro do primeiro companheiro (totalmente em branco)
   const handleCreateFirst = () => {
     const fresh = createEmptyCompanion();
-    const updatedList = [fresh];
-    setSelectedIndex(0);
+    setEditingCompanion(fresh);
+    setIsNew(true);
     setIsEditing(true);
-    persistList(updatedList, 'Novo companheiro vinculado');
   };
 
-  // Adiciona mais um companheiro à lista
+  // Adiciona mais um companheiro à lista (totalmente em branco)
   const handleAddNew = () => {
     const fresh = createEmptyCompanion();
-    fresh.name = `Companheiro ${companionList.length + 1}`;
-    fresh.species = 'Montaria';
-    fresh.bondType = 'Montaria';
-    const updatedList = [...companionList, fresh];
-    setSelectedIndex(updatedList.length - 1);
+    setEditingCompanion(fresh);
+    setIsNew(true);
     setIsEditing(true);
-    persistList(updatedList, 'Nova criatura adicionada');
+  };
+
+  // Inicia edição do companheiro selecionado
+  const handleStartEdit = () => {
+    if (!currentCompanion) return;
+    setEditingCompanion({ ...currentCompanion });
+    setIsNew(false);
+    setIsEditing(true);
+  };
+
+  // Cancela a edição e descarta alterações não salvas
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setIsNew(false);
+    setEditingCompanion(null);
+  };
+
+  // Atualiza o rascunho em memória enquanto o usuário digita (SEM enviar requisição ao backend)
+  const handleDraftUpdate = (partial: Partial<CompanionData>) => {
+    if (isEditing) {
+      setEditingCompanion((prev) => {
+        const base = prev || currentCompanion || createEmptyCompanion();
+        return { ...base, ...partial };
+      });
+    } else {
+      updateCurrentCompanion(partial, true);
+    }
+  };
+
+  // Salva definitivamente todas as alterações no banco de dados
+  const handleSaveHeader = (updatedFromHeader: Partial<CompanionData>) => {
+    const base = editingCompanion || currentCompanion || createEmptyCompanion();
+    const finalCompanion: CompanionData = {
+      ...base,
+      ...updatedFromHeader,
+      name: (updatedFromHeader.name !== undefined ? updatedFromHeader.name : base.name || '').trim() || 'Companheiro',
+      species: (updatedFromHeader.species !== undefined ? updatedFromHeader.species : base.species || '').trim(),
+      bondType: updatedFromHeader.bondType || base.bondType || 'Companheiro Animal',
+      size: updatedFromHeader.size || base.size || 'Médio',
+    };
+
+    let updatedList: CompanionData[];
+    if (isNew) {
+      updatedList = [...companionList, finalCompanion];
+      setSelectedIndex(updatedList.length - 1);
+    } else {
+      updatedList = [...companionList];
+      if (updatedList.length === 0) {
+        updatedList = [finalCompanion];
+        setSelectedIndex(0);
+      } else {
+        updatedList[safeIndex] = finalCompanion;
+      }
+    }
+
+    persistList(updatedList, 'Companheiro salvo com sucesso');
+    setIsEditing(false);
+    setIsNew(false);
+    setEditingCompanion(null);
   };
 
   // Exclui uma criatura
   const handleDeleteCompanion = (id: string) => {
     const updatedList = companionList.filter((c) => c.id !== id);
     setSelectedIndex(0);
+    setIsEditing(false);
+    setIsNew(false);
+    setEditingCompanion(null);
     persistList(updatedList, 'Criatura desvinculada');
   };
 
-  // Atualiza a criatura atualmente selecionada
+  // Atualiza a criatura atualmente selecionada (usado para ações imediatas como dano/cura)
   const updateCurrentCompanion = (partial: Partial<CompanionData>, autoSave: boolean = true) => {
     if (!currentCompanion) return;
     const updatedCompanion = { ...currentCompanion, ...partial };
@@ -102,22 +169,23 @@ export const CompanionTab: React.FC<CompanionTabProps> = ({
     }
   };
 
-  // Atualiza pontos de vida
+  // Atualiza pontos de vida (ações rápidas de combate)
   const handleUpdateHp = (currentHp: number, tempHp?: number) => {
-    updateCurrentCompanion({
-      currentHp,
-      ...(tempHp !== undefined ? { tempHp } : {}),
-    });
+    if (isEditing) {
+      handleDraftUpdate({
+        currentHp,
+        ...(tempHp !== undefined ? { tempHp } : {}),
+      });
+    } else {
+      updateCurrentCompanion({
+        currentHp,
+        ...(tempHp !== undefined ? { tempHp } : {}),
+      }, true);
+    }
   };
 
-  // Salva no fechamento do modo de edição
-  const handleSaveHeader = (updated: Partial<CompanionData>) => {
-    updateCurrentCompanion(updated);
-    setIsEditing(false);
-  };
-
-  // Se não houver nenhum companheiro cadastrado: Empty State
-  if (companionList.length === 0) {
+  // Se não houver nenhum companheiro cadastrado e NÃO estiver criando um novo: Empty State
+  if (companionList.length === 0 && !isEditing) {
     return (
       <View style={styles.emptyContainer}>
         <View style={[styles.emptyCard, { borderColor: themeColor + '40' }]}>
@@ -147,6 +215,17 @@ export const CompanionTab: React.FC<CompanionTabProps> = ({
     );
   }
 
+  // Lista de companheiros para exibir nas abas do cabeçalho
+  const allCompanionsForHeader = isNew && editingCompanion
+    ? [...companionList, editingCompanion]
+    : companionList.length > 0
+    ? companionList
+    : [activeCompanion];
+
+  const selectedIndexForHeader = isNew
+    ? allCompanionsForHeader.length - 1
+    : safeIndex;
+
   return (
     <View style={styles.container}>
       {/* Indicador de feedback rápido */}
@@ -158,18 +237,20 @@ export const CompanionTab: React.FC<CompanionTabProps> = ({
 
       {/* 1. CABEÇALHO DE IDENTIFICAÇÃO E FOTO */}
       <CompanionHeader
-        companion={currentCompanion}
-        allCompanions={companionList}
-        selectedIndex={safeIndex}
+        companion={activeCompanion}
+        allCompanions={allCompanionsForHeader}
+        selectedIndex={selectedIndexForHeader}
         onSelectIndex={(idx) => {
           setSelectedIndex(idx);
           setIsEditing(false);
+          setIsNew(false);
+          setEditingCompanion(null);
         }}
         onAddNewCompanion={handleAddNew}
         onDeleteCompanion={handleDeleteCompanion}
         isEditing={isEditing}
-        onStartEdit={() => setIsEditing(true)}
-        onCancelEdit={() => setIsEditing(false)}
+        onStartEdit={handleStartEdit}
+        onCancelEdit={handleCancelEdit}
         onSaveEdit={handleSaveHeader}
         themeColor={themeColor}
         isMobile={isMobile}
@@ -177,55 +258,55 @@ export const CompanionTab: React.FC<CompanionTabProps> = ({
 
       {/* 2. STATUS DE COMBATE (CA, PV, DANO/CURA, DESL., INIC., PB) */}
       <CompanionVitalsPanel
-        companion={currentCompanion}
+        companion={activeCompanion}
         isEditing={isEditing}
         onUpdateHp={handleUpdateHp}
-        onUpdateVitals={(updated) => updateCurrentCompanion(updated)}
+        onUpdateVitals={handleDraftUpdate}
         themeColor={themeColor}
         isMobile={isMobile}
       />
 
       {/* 3. ATRIBUTOS BASE (FOR, DES, CON, INT, SAB, CAR COM MODIFICADORES) */}
       <CompanionAttributesGrid
-        companion={currentCompanion}
+        companion={activeCompanion}
         isEditing={isEditing}
-        onUpdateAttributes={(attrs) => updateCurrentCompanion(attrs)}
+        onUpdateAttributes={handleDraftUpdate}
         themeColor={themeColor}
         isMobile={isMobile}
       />
 
-      {/* 4. PERÍCIAS, SENTIDOS E CONDIÇÕES */}
+      {/* 4. PERÍCIAS & SENTIDOS */}
       <CompanionSkillsSenses
-        companion={currentCompanion}
+        companion={activeCompanion}
         isEditing={isEditing}
-        onUpdate={(updated) => updateCurrentCompanion(updated)}
+        onUpdate={handleDraftUpdate}
         themeColor={themeColor}
         isMobile={isMobile}
       />
 
       {/* 5. AÇÕES & HABILIDADES ESPECIAIS (ATAQUES E TRAÇOS DINÂMICOS) */}
       <CompanionActionsSection
-        companion={currentCompanion}
+        companion={activeCompanion}
         isEditing={isEditing}
-        onUpdate={(updated) => updateCurrentCompanion(updated)}
+        onUpdate={handleDraftUpdate}
         themeColor={themeColor}
         isMobile={isMobile}
       />
 
       {/* 6. EQUIPAMENTOS, SELAS, BARDING & CAPACIDADE DE CARGA */}
       <CompanionInventorySection
-        companion={currentCompanion}
+        companion={activeCompanion}
         isEditing={isEditing}
-        onUpdate={(updated) => updateCurrentCompanion(updated)}
+        onUpdate={handleDraftUpdate}
         themeColor={themeColor}
         isMobile={isMobile}
       />
 
       {/* 7. NOTAS, COMPORTAMENTO & HISTÓRICO */}
       <CompanionNotesSection
-        companion={currentCompanion}
+        companion={activeCompanion}
         isEditing={isEditing}
-        onUpdate={(updated) => updateCurrentCompanion(updated)}
+        onUpdate={handleDraftUpdate}
         themeColor={themeColor}
         isMobile={isMobile}
       />

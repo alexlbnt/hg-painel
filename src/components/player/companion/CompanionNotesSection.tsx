@@ -27,7 +27,7 @@ export const CompanionNotesSection: React.FC<CompanionNotesSectionProps> = ({
 
   React.useEffect(() => {
     setNotes(companion.notes || '');
-  }, [companion]);
+  }, [companion.id, isEditing]);
 
   return (
     <View style={styles.card}>

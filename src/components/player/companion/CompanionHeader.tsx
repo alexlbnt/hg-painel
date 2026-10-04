@@ -68,14 +68,14 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Sincroniza form quando o companheiro ativo mudar
+  // Sincroniza form quando o companheiro ativo mudar ou entrar/sair de edição
   React.useEffect(() => {
-    setFormName(companion.name);
-    setFormSpecies(companion.species);
-    setFormBond(companion.bondType);
-    setFormSize(companion.size);
+    setFormName(companion.name || '');
+    setFormSpecies(companion.species || '');
+    setFormBond(companion.bondType || 'Companheiro Animal');
+    setFormSize(companion.size || 'Médio');
     setFormAvatar(companion.avatarUrl || '');
-  }, [companion]);
+  }, [companion.id, isEditing]);
 
   const handlePickAvatar = async () => {
     try {
@@ -234,12 +234,14 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
               <View style={[styles.bondBadge, { borderColor: themeColor + '60', backgroundColor: themeColor + '18' }]}>
                 <HeartHandshake size={11} color={themeColor} />
                 <Text style={[styles.bondBadgeText, { color: themeColor }]}>
-                  {companion.bondType.toUpperCase()}
+                  {(companion.bondType || 'COMPANHEIRO ANIMAL').toUpperCase()}
                 </Text>
               </View>
 
               <View style={styles.sizeBadge}>
-                <Text style={styles.sizeBadgeText}>PORTE {companion.size.toUpperCase()}</Text>
+                <Text style={styles.sizeBadgeText}>
+                  PORTE {(companion.size || 'MÉDIO').toUpperCase()}
+                </Text>
               </View>
             </View>
 
@@ -251,11 +253,11 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
               ]}
               numberOfLines={2}
             >
-              {companion.name}
+              {companion.name || 'Companheiro Sem Nome'}
             </Text>
 
             <Text style={styles.companionSpecies}>
-              Espécie / Raça: <Text style={{ color: '#E2D8C3', fontWeight: 'bold' }}>{companion.species}</Text>
+              Espécie / Raça: <Text style={{ color: '#E2D8C3', fontWeight: 'bold' }}>{companion.species || '—'}</Text>
             </Text>
           </View>
         </View>
