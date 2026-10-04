@@ -88,6 +88,7 @@ export interface CharacterData {
   background: string;
   deity?: string;
   lore?: string;
+  companion?: string;
   description?: string;
   avatarUrl?: string;
   currentHp: number;

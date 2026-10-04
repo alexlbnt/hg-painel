@@ -36,6 +36,7 @@ import { AbilitiesTab } from '@/components/player/AbilitiesTab';
 import { SkillsTab } from '@/components/player/SkillsTab';
 import { InventoryTab } from '@/components/player/InventoryTab';
 import { LoreTab } from '@/components/player/LoreTab';
+import { CompanionTab } from '@/components/player/CompanionTab';
 
 // Modais
 import CharacterModal from '@/components/player/CharacterModal';
@@ -51,6 +52,7 @@ import {
   Download,
   FastForward,
   Package,
+  PawPrint,
   Plus,
   Scroll,
   Shield,
@@ -78,7 +80,7 @@ export default function PlayerModule() {
 
   // Aba ativa: inicia em 'combat' para acesso instantâneo na mesa
   const [activeTab, setActiveTab] = useState<
-    'combat' | 'spells' | 'abilities' | 'skills' | 'inventory' | 'lore'
+    'combat' | 'spells' | 'abilities' | 'skills' | 'inventory' | 'lore' | 'companion'
   >('combat');
 
   // Estado de Concentração da Magia Ativa
@@ -471,6 +473,14 @@ export default function PlayerModule() {
     safeUpdateCharacter(selectedChar.id, mergedUpdates);
   };
 
+  const handleSaveCompanion = async (serialized: string) => {
+    if (!selectedChar) return;
+    setCharacters((prev) =>
+      prev.map((c) => (c.id === selectedChar.id ? { ...c, companion: serialized } : c))
+    );
+    safeUpdateCharacter(selectedChar.id, { companion: serialized });
+  };
+
   const handleSaveEditedEntity = async (updatedData: any) => {
     if (!selectedChar) return;
     if (editEntityType === 'spell') {
@@ -778,6 +788,7 @@ export default function PlayerModule() {
                 { id: 'skills', label: 'Perícias', icon: Award },
                 { id: 'inventory', label: 'Mochila', icon: Package },
                 { id: 'lore', label: 'História', icon: BookOpen },
+                { id: 'companion', label: 'Companheiro', icon: PawPrint },
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -943,6 +954,15 @@ export default function PlayerModule() {
                 <LoreTab
                   char={selectedChar}
                   onSaveLore={handleSaveLore}
+                  themeColor={themeColor}
+                  isMobile={isMobile}
+                />
+              )}
+
+              {activeTab === 'companion' && (
+                <CompanionTab
+                  companionRaw={selectedChar.companion}
+                  onSaveCompanion={handleSaveCompanion}
                   themeColor={themeColor}
                   isMobile={isMobile}
                 />

@@ -105,6 +105,7 @@ export async function POST(request: Request) {
         background: String(body.background || 'Herói do Povo'),
         deity: String(body.deity || 'Nenhum'),
         lore: String(body.lore || ''),
+        companion: String(body.companion || ''),
         description: String(body.description || ''),
         avatarUrl: String(body.avatarUrl || ''),
         roomId: assignedRoomId,

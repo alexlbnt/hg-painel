@@ -63,6 +63,7 @@ model Character {
   background         String      @default("Herói do Povo")
   username           String      @default("")
   lore               String      @default("")
+  companion          String      @default("")
   description        String      @default("")
   avatarUrl          String      @default("")
   deity              String      @default("Nenhum")

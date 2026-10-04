@@ -390,6 +390,7 @@ export async function PUT(request: Request, context: any) {
           background: body.background !== undefined ? String(body.background) : undefined,
           deity: body.deity !== undefined ? String(body.deity) : undefined,
           lore: body.lore !== undefined ? String(body.lore) : undefined,
+          companion: body.companion !== undefined ? String(body.companion) : undefined,
           description: body.description !== undefined ? String(body.description).trim() : undefined,
           avatarUrl: body.avatarUrl !== undefined ? String(body.avatarUrl).trim() : undefined,
           gold: toOptionalNumber(body.gold),
