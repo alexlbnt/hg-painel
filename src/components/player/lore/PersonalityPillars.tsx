@@ -105,7 +105,7 @@ export const PersonalityPillars: React.FC<PersonalityPillarsProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={styles.titleWrap}>
           <Sparkles size={14} color={themeColor} />
           <Text style={styles.sectionTitle}>PILARES DE INTERPRETAÇÃO (D&D 5e)</Text>
         </View>
@@ -145,7 +145,7 @@ export const PersonalityPillars: React.FC<PersonalityPillarsProps> = ({
               ]}
             >
               <View style={styles.cardHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={styles.cardTitleWrap}>
                   <Icon size={13} color={pillar.color} />
                   <Text style={[styles.cardTitle, { color: pillar.color }]}>{pillar.title}</Text>
                 </View>
@@ -227,13 +227,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
     paddingHorizontal: 2,
+  },
+  titleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
   },
   sectionTitle: {
     color: '#E2D8C3',
     fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.8,
+    flexShrink: 1,
   },
   hintToggle: {
     flexDirection: 'row',
@@ -241,6 +251,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 2,
     paddingHorizontal: 6,
+    flexShrink: 0,
   },
   hintToggleText: {
     color: '#7A7265',
@@ -262,14 +273,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#241F1A',
     paddingBottom: 6,
+  },
+  cardTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
   },
   cardTitle: {
     fontSize: 10.5,
     fontWeight: 'bold',
     letterSpacing: 0.6,
+    flexShrink: 1,
   },
   cardEditBtn: {
     flexDirection: 'row',
@@ -281,6 +302,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 4,
+    flexShrink: 0,
   },
   cancelBtn: {
     borderColor: '#4A2A2A',
@@ -316,6 +338,7 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     textAlignVertical: 'top',
     lineHeight: 18,
+    minWidth: 0,
   },
   cardContent: {
     color: '#DDD2BE',

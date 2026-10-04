@@ -350,6 +350,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#25201A',
     paddingBottom: 8,
@@ -358,12 +360,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", Georgia, serif' : undefined,
+    flexShrink: 1,
   },
   editBtn: {
     flexDirection: 'row',
@@ -375,6 +380,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#3D342C',
     backgroundColor: '#1A1714',
+    flexShrink: 0,
   },
   editBtnText: {
     fontSize: 10.5,
@@ -384,6 +390,8 @@ const styles = StyleSheet.create({
   editActions: {
     flexDirection: 'row',
     gap: 6,
+    flexWrap: 'wrap',
+    flexShrink: 0,
   },
   actionBtn: {
     flexDirection: 'row',
@@ -459,6 +467,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
   },
   quoteTagRow: {
     flexDirection: 'row',

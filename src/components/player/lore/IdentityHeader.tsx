@@ -171,6 +171,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#25201A',
     paddingBottom: 8,
@@ -179,12 +181,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
     color: '#E2D8C3',
     fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.8,
+    flexShrink: 1,
   },
   actionBtn: {
     flexDirection: 'row',
@@ -196,6 +201,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3.5,
     borderRadius: 5,
+    flexShrink: 0,
   },
   actionBtnText: {
     color: '#BAAFA0',
@@ -209,6 +215,8 @@ const styles = StyleSheet.create({
   editActions: {
     flexDirection: 'row',
     gap: 6,
+    flexWrap: 'wrap',
+    flexShrink: 0,
   },
   grid: {
     flexDirection: 'row',
@@ -268,5 +276,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     fontSize: 12,
+    minWidth: 0,
   },
 });

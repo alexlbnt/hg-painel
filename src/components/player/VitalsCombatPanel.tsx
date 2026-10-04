@@ -118,9 +118,9 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = ({
           </Text>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={[{ flexDirection: 'row', gap: 8 }, isMobile && { width: '100%' }]}>
           <TouchableOpacity
-            style={[styles.restBtn, { borderColor: '#C5A059' }]}
+            style={[styles.restBtn, { borderColor: '#C5A059' }, isMobile && { flex: 1, justifyContent: 'center' }]}
             onPress={onTriggerShortRest}
             activeOpacity={0.7}
           >
@@ -129,7 +129,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.restBtn, { borderColor: '#6B4A70' }]}
+            style={[styles.restBtn, { borderColor: '#6B4A70' }, isMobile && { flex: 1, justifyContent: 'center' }]}
             onPress={onTriggerLongRest}
             activeOpacity={0.7}
           >
@@ -193,19 +193,19 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = ({
           style={styles.customHpInput}
           value={customHp}
           onChangeText={setCustomHp}
-          placeholder="Valor de dano ou cura"
+          placeholder={isMobile ? "Qtd. dano/cura" : "Valor de dano ou cura"}
           placeholderTextColor="#6B6257"
           keyboardType="numeric"
         />
         <TouchableOpacity
-          style={[styles.hpActionBtn, styles.dmgBtn]}
+          style={[styles.hpActionBtn, styles.dmgBtn, isMobile && styles.hpActionBtnMobile]}
           onPress={() => handleAction(true)}
           activeOpacity={0.7}
         >
           <Text style={styles.dmgBtnText}>- Dano</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.hpActionBtn, styles.healBtn]}
+          style={[styles.hpActionBtn, styles.healBtn, isMobile && styles.hpActionBtnMobile]}
           onPress={() => handleAction(false)}
           activeOpacity={0.7}
         >
@@ -366,9 +366,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
+    width: '100%',
   },
   customHpInput: {
     flex: 1,
+    minWidth: 0,
     backgroundColor: '#14120F',
     borderWidth: 1,
     borderColor: '#3D342C',
@@ -379,11 +381,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   hpActionBtn: {
+    flexShrink: 0,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  hpActionBtnMobile: {
+    paddingHorizontal: 9,
+    paddingVertical: 7,
   },
   dmgBtn: {
     backgroundColor: 'rgba(184, 40, 40, 0.25)',

@@ -59,7 +59,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={styles.titleWrap}>
           <User size={14} color={themeColor} />
           <Text style={styles.headerTitle}>APARÊNCIA & CARACTERÍSTICAS FÍSICAS</Text>
         </View>
@@ -249,15 +249,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#25201A',
     paddingBottom: 8,
+  },
+  titleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
     color: '#E2D8C3',
     fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.8,
+    flexShrink: 1,
   },
   actionBtn: {
     flexDirection: 'row',
@@ -269,6 +279,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3.5,
     borderRadius: 5,
+    flexShrink: 0,
   },
   actionBtnText: {
     color: '#BAAFA0',
@@ -282,6 +293,8 @@ const styles = StyleSheet.create({
   editActions: {
     flexDirection: 'row',
     gap: 6,
+    flexWrap: 'wrap',
+    flexShrink: 0,
   },
   contentWrap: {
     gap: 8,
@@ -369,5 +382,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 5,
     fontSize: 12,
+    minWidth: 0,
   },
 });
