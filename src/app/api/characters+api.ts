@@ -140,6 +140,9 @@ export async function POST(request: Request) {
         maxSorceryPoints: toSafeNumber(body.maxSorceryPoints, 0),
         kiPoints: toSafeNumber(body.kiPoints, 0),
         maxKiPoints: toSafeNumber(body.maxKiPoints, 0),
+        superiorityDice: toSafeNumber(body.superiorityDice, 0),
+        maxSuperiorityDice: toSafeNumber(body.maxSuperiorityDice, 0),
+        superiorityDieType: String(body.superiorityDieType || 'd8'),
         spellSlots: {
           create: Array.isArray(body.spellSlots)
             ? body.spellSlots.map((s: any) => ({

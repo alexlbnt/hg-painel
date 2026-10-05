@@ -19,6 +19,61 @@ import {
   Zap,
 } from 'lucide-react-native';
 
+export type ActionCategory = 'ALL' | 'ACAO' | 'BONUS' | 'REACAO' | 'LIVRE';
+
+export const normalizeActionType = (act?: string): 'ACAO' | 'BONUS' | 'REACAO' | 'LIVRE' => {
+  if (!act) return 'LIVRE';
+  const clean = act
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // Remove acentos (ex: Ç -> C, Ã -> A, Ô -> O)
+
+  if (clean.includes('BONUS')) return 'BONUS';
+  if (clean.includes('REAC')) return 'REACAO';
+  if (clean.includes('LIVRE') || clean.includes('PASSIV') || clean.includes('FREE')) return 'LIVRE';
+  if (clean.includes('AC') || clean.includes('ACTION')) return 'ACAO';
+  return 'LIVRE';
+};
+
+export const formatActionType = (act?: string): string => {
+  const norm = normalizeActionType(act);
+  switch (norm) {
+    case 'ACAO':
+      return 'AÇÃO';
+    case 'BONUS':
+      return 'BÔNUS';
+    case 'REACAO':
+      return 'REAÇÃO';
+    case 'LIVRE':
+    default:
+      return 'LIVRE';
+  }
+};
+
+export const getActionBadgeColors = (act?: string) => {
+  const norm = normalizeActionType(act);
+  switch (norm) {
+    case 'ACAO':
+      return { bg: 'rgba(224, 82, 82, 0.18)', border: '#E0525288', text: '#FF8A8A' };
+    case 'BONUS':
+      return { bg: 'rgba(212, 136, 58, 0.18)', border: '#D4883A88', text: '#F0C070' };
+    case 'REACAO':
+      return { bg: 'rgba(56, 189, 248, 0.18)', border: '#38BDF888', text: '#7DD3FC' };
+    case 'LIVRE':
+    default:
+      return { bg: '#241F1A', border: '#3A322A', text: '#BAAFA0' };
+  }
+};
+
+const ACTION_FILTERS: { id: ActionCategory; label: string }[] = [
+  { id: 'ALL', label: 'Todas' },
+  { id: 'ACAO', label: 'Ação' },
+  { id: 'BONUS', label: 'Bônus' },
+  { id: 'REACAO', label: 'Reação' },
+  { id: 'LIVRE', label: 'Livre' },
+];
+
 interface AbilitiesTabProps {
   char: CharacterData;
   onAdjustAbilityUses: (abilityId: string, delta: number) => void;
@@ -46,7 +101,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
   themeColor = '#C5A059',
   isMobile = false,
 }) => {
-  const [filterAction, setFilterAction] = useState<string>('ALL');
+  const [filterAction, setFilterAction] = useState<ActionCategory>('ALL');
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (id: string) => {
@@ -55,9 +110,8 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
 
   const abilities = useMemo(() => char.abilities || [], [char.abilities]);
   const filteredAbilities = useMemo(() => {
-    return filterAction === 'ALL'
-      ? abilities
-      : abilities.filter((a) => (a.actionType || 'LIVRE').toUpperCase() === filterAction);
+    if (filterAction === 'ALL') return abilities;
+    return abilities.filter((a) => normalizeActionType(a.actionType) === filterAction);
   }, [abilities, filterAction]);
 
   // Recursos Especiais (Monk Ki / Sorcerer Points / Battle Master Superiority Dice)
@@ -369,16 +423,16 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.actionFilterScroll}
         >
-          {['ALL', 'AÇÃO', 'BÔNUS', 'REAÇÃO', 'LIVRE'].map((act) => {
-            const isSelected = filterAction === act;
+          {ACTION_FILTERS.map((f) => {
+            const isSelected = filterAction === f.id;
             return (
               <TouchableOpacity
-                key={act}
+                key={f.id}
                 style={[
                   styles.filterPill,
                   isSelected && { backgroundColor: themeColor, borderColor: themeColor },
                 ]}
-                onPress={() => setFilterAction(act)}
+                onPress={() => setFilterAction(f.id)}
                 activeOpacity={0.7}
               >
                 <Text
@@ -387,7 +441,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
                     isSelected && { color: '#110F0D', fontWeight: 'bold' },
                   ]}
                 >
-                  {act === 'ALL' ? 'Todas' : act}
+                  {f.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -425,11 +479,21 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <Text style={styles.abilityName}>{ab.name}</Text>
-                      {ab.actionType && (
-                        <View style={styles.actionTypeBadge}>
-                          <Text style={styles.actionTypeText}>{ab.actionType.toUpperCase()}</Text>
-                        </View>
-                      )}
+                      {ab.actionType && (() => {
+                        const badgeColors = getActionBadgeColors(ab.actionType);
+                        return (
+                          <View
+                            style={[
+                              styles.actionTypeBadge,
+                              { backgroundColor: badgeColors.bg, borderColor: badgeColors.border, borderWidth: 1 },
+                            ]}
+                          >
+                            <Text style={[styles.actionTypeText, { color: badgeColors.text }]}>
+                              {formatActionType(ab.actionType)}
+                            </Text>
+                          </View>
+                        );
+                      })()}
                       {ab.resetType && ab.resetType !== 'NONE' && (
                         <View style={styles.resetBadge}>
                           {ab.resetType === 'SHORT_REST' ? (

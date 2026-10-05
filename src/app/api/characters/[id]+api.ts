@@ -415,6 +415,9 @@ export async function PUT(request: Request, context: any) {
           maxSorceryPoints: toOptionalNumber(body.maxSorceryPoints),
           kiPoints: toOptionalNumber(body.kiPoints),
           maxKiPoints: toOptionalNumber(body.maxKiPoints),
+          superiorityDice: toOptionalNumber(body.superiorityDice),
+          maxSuperiorityDice: toOptionalNumber(body.maxSuperiorityDice),
+          superiorityDieType: body.superiorityDieType !== undefined ? String(body.superiorityDieType) : undefined,
         },
         include: {
           spellSlots: { orderBy: { level: 'asc' } },
