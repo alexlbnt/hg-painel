@@ -74,7 +74,9 @@ export default function PlayerModule() {
     }
   }, [authLoading, user, router]);
 
-  const { isMobile, isTablet, isDesktop } = useResponsive();
+  const { isMobile, isTablet, isDesktop, width } = useResponsive();
+  // Ficha em duas colunas (vitais fixos à esquerda, abas à direita) em telas largas
+  const isWide = width >= 1180;
   const { activeRoom } = useRoom();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -183,6 +185,7 @@ export default function PlayerModule() {
       return;
     }
     if (
+      event.type === 'CHARACTER_UPDATED' ||
       event.type === 'TABLE_REST' ||
       event.type === 'characters' ||
       event.type === 'character' ||
@@ -685,6 +688,11 @@ export default function PlayerModule() {
     ExportService.exportCharacterToJson(selectedChar);
   }, [selectedChar]);
 
+  const handleExportPdf = useCallback(() => {
+    if (!selectedChar) return;
+    ExportService.exportCharacterToPdf(selectedChar);
+  }, [selectedChar]);
+
   const handleOpenSpeedModal = useCallback(() => {
     if (!selectedChar) return;
     setQuickSpeed(selectedChar.speed || '9m');
@@ -774,6 +782,7 @@ export default function PlayerModule() {
         style={[
           styles.container,
           isDesktop && styles.containerDesktop,
+          isWide && { maxWidth: 1360 },
           isTablet && styles.containerTablet,
           isMobile && styles.containerMobile,
         ]}
@@ -866,15 +875,18 @@ export default function PlayerModule() {
               isMobile={isMobile}
               onOpenSpeedModal={handleOpenSpeedModal}
               onExportJson={handleExportJson}
+              onExportPdf={handleExportPdf}
               onEditChar={handleEditChar}
               onDeleteChar={handleDeleteCurrentChar}
             />
 
+            <View style={isWide ? styles.twoCol : { gap: isMobile ? 14 : 16 }}>
+            <View style={isWide ? styles.leftCol : { gap: isMobile ? 14 : 16 }}>
             {/* 2. Sinais Vitais, Barra de Vida, Descansos e Concentração */}
             <VitalsCombatPanel
               char={selectedChar}
               themeColor={themeColor}
-              isMobile={isMobile}
+              isMobile={isMobile || isWide}
               concentratingSpell={concentratingSpell}
               onClearConcentration={handleClearConcentration}
               onApplyHpDelta={handleApplyHpDelta}
@@ -887,9 +899,11 @@ export default function PlayerModule() {
             <AttributesGrid
               char={selectedChar}
               themeColor={themeColor}
-              isMobile={isMobile}
+              isMobile={isMobile || isWide}
             />
 
+            </View>
+            <View style={isWide ? styles.rightCol : { gap: isMobile ? 14 : 16 }}>
             {/* 5. Navegador de Abas */}
             <ScrollView
               horizontal
@@ -1024,6 +1038,8 @@ export default function PlayerModule() {
                   isMobile={isMobile}
                 />
               )}
+            </View>
+            </View>
             </View>
           </View>
         ) : (
@@ -1421,6 +1437,25 @@ const styles = StyleSheet.create({
     color: '#C5A059',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  twoCol: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 20,
+  },
+  leftCol: {
+    width: 340,
+    gap: 16,
+    // Permanece visível enquanto as abas rolam; rola internamente se a tela for baixa
+    position: 'sticky' as any,
+    top: 12,
+    maxHeight: 'calc(100vh - 24px)' as any,
+    overflow: 'auto' as any,
+  },
+  rightCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: 16,
   },
   mainSheet: {
     backgroundColor: '#161311',

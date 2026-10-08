@@ -1,6 +1,7 @@
 import { CharacterData, ConditionData, INITIAL_CHARACTERS, TaskData, INITIAL_TASKS, RoomData, INITIAL_ROOMS } from '@/lib/mockData';
 import { Platform } from 'react-native';
 import { Role, authStorage, getApiBaseUrl } from '@/contexts/AuthContext';
+import { apiStatus } from '@/lib/apiStatus';
 
 export interface UserData {
   id: string;
@@ -213,6 +214,43 @@ function getAuthHeaders(extraHeaders: Record<string, string> = {}, requesterId?:
 }
 
 /**
+ * fetch com tratamento global de sessão expirada: se o servidor responder 401 a uma requisição
+ * autenticada, a sessão local é encerrada e o usuário volta à tela de login.
+ */
+async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(input, init);
+  if (res.status === 401 && authStorage.get()?.token) {
+    authStorage.set(null);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  }
+  return res;
+}
+
+export interface CharacterLogData {
+  id: string;
+  characterId: string;
+  kind: 'DAMAGE' | 'HEAL' | 'REST' | 'CONDITION' | 'NOTE';
+  delta: number;
+  message: string;
+  authorId?: string | null;
+  authorName: string;
+  createdAt: string;
+}
+
+async function postCharacterAction(id: string, action: string, body: unknown): Promise<CharacterData> {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/characters/${id}/${action}`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(body),
+  });
+  if (res.ok) return res.json();
+  const err = await res.json().catch(() => ({}));
+  throw new Error(err.error || `Falha na ação '${action}' (status ${res.status})`);
+}
+
+/**
  * Serviço de API Híbrido:
  * Tenta comunicar com as rotas serverless do Vercel/Expo (/api/...).
  * Caso não haja servidor ou o banco de dados Neon não esteja configurado, entra em modo fallback interativo em tempo real.
@@ -222,15 +260,19 @@ export const ApiService = {
   async getTasks(): Promise<TaskData[]> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/tasks?t=${Date.now()}`, {
+      const res = await apiFetch(`${baseUrl}/api/tasks?t=${Date.now()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) return data;
+        if (Array.isArray(data)) {
+          apiStatus.reportOk();
+          return data;
+        }
       }
+      apiStatus.reportFailure();
     } catch {
-      // Usar fallback
+      apiStatus.reportFailure();
     }
     return loadTasksFromStorage();
   },
@@ -248,7 +290,7 @@ export const ApiService = {
     };
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/tasks`, {
+      const res = await apiFetch(`${baseUrl}/api/tasks`, {
         method: 'POST',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(newTask),
@@ -268,7 +310,7 @@ export const ApiService = {
   async updateTask(id: string, updates: Partial<TaskData>): Promise<TaskData> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/tasks/${id}`, {
+      const res = await apiFetch(`${baseUrl}/api/tasks/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(updates),
@@ -292,7 +334,7 @@ export const ApiService = {
   async deleteTask(id: string): Promise<boolean> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/tasks/${id}`, {
+      const res = await apiFetch(`${baseUrl}/api/tasks/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -312,18 +354,20 @@ export const ApiService = {
   async getRooms(): Promise<RoomData[]> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/rooms?t=${Date.now()}`, {
+      const res = await apiFetch(`${baseUrl}/api/rooms?t=${Date.now()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
           saveRoomsToStorage(data);
+          apiStatus.reportOk();
           return data;
         }
       }
+      apiStatus.reportFailure();
     } catch {
-      // Usar fallback
+      apiStatus.reportFailure();
     }
     return loadRoomsFromStorage();
   },
@@ -339,7 +383,7 @@ export const ApiService = {
     };
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/rooms`, {
+      const res = await apiFetch(`${baseUrl}/api/rooms`, {
         method: 'POST',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(newRoom),
@@ -368,7 +412,7 @@ export const ApiService = {
       }
 
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/characters?${query.toString()}`, {
+      const res = await apiFetch(`${baseUrl}/api/characters?${query.toString()}`, {
         headers: getAuthHeaders({
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -381,11 +425,14 @@ export const ApiService = {
           if (!filter || (!filter.role && !filter.roomId)) {
             saveToStorage(data);
           }
+          apiStatus.reportOk();
           return data;
         }
       }
+      apiStatus.reportFailure();
     } catch (e) {
       console.warn('Erro ao buscar personagens da API, usando armazenamento local', e);
+      apiStatus.reportFailure();
     }
     const local = loadFromStorage();
     if (filter?.roomId && filter.roomId !== 'all') {
@@ -397,7 +444,7 @@ export const ApiService = {
   async getCharacter(id: string): Promise<CharacterData | null> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/characters/${id}`, {
+      const res = await apiFetch(`${baseUrl}/api/characters/${id}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -413,7 +460,7 @@ export const ApiService = {
   async getTask(id: string): Promise<TaskData | null> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/tasks/${id}`, {
+      const res = await apiFetch(`${baseUrl}/api/tasks/${id}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -429,7 +476,7 @@ export const ApiService = {
   async getUser(id: string): Promise<UserData | null> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/users/${id}`, {
+      const res = await apiFetch(`${baseUrl}/api/users/${id}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -502,7 +549,7 @@ export const ApiService = {
 
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/characters`, {
+      const res = await apiFetch(`${baseUrl}/api/characters`, {
         method: 'POST',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(newChar),
@@ -529,7 +576,7 @@ export const ApiService = {
   async updateCharacter(id: string, updates: Partial<CharacterData>, requesterId?: string): Promise<CharacterData> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/characters/${id}`, {
+      const res = await apiFetch(`${baseUrl}/api/characters/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }, requesterId),
         body: JSON.stringify(updates),
@@ -565,7 +612,7 @@ export const ApiService = {
   async deleteCharacter(id: string, requesterId?: string): Promise<boolean> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/characters/${id}`, {
+      const res = await apiFetch(`${baseUrl}/api/characters/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders({}, requesterId),
       });
@@ -582,103 +629,17 @@ export const ApiService = {
     return true;
   },
 
-  // Automação de Descanso Curto
+  // Descanso Curto: calculado e aplicado de forma atômica no servidor
   async takeShortRest(id: string, healHp: number = 0, hitDiceToSpend: number = 0): Promise<CharacterData> {
-    const char = await this.getCharacter(id);
-    if (!char) throw new Error('Personagem não encontrado');
-
-    const newHp = Math.min(char.maxHp, char.currentHp + healHp);
-    const newHitDiceSpent = Math.min(char.hitDiceTotal, char.hitDiceSpent + hitDiceToSpend);
-
-    // Resetar habilidades de Short Rest
-    const updatedAbilities = char.abilities.map(ab => {
-      if (ab.resetType === 'SHORT_REST') {
-        return { ...ab, currentUses: ab.maxUses };
-      }
-      return ab;
-    });
-
-    const updates: Partial<CharacterData> = {
-      currentHp: newHp,
-      hitDiceSpent: newHitDiceSpent,
-      abilities: updatedAbilities,
-    };
-    if (char.maxKiPoints && char.maxKiPoints > 0) {
-      updates.kiPoints = char.maxKiPoints;
-    }
-
-    // Restauração de Dados de Superioridade (Guerreiro Mestre de Batalha recupera em Descanso Curto)
-    const isBattleMaster = (char.class || '').toLowerCase().includes('guerreiro') &&
-      ((char.archetype || '').toLowerCase().includes('mestre de batalha') ||
-       (char.archetype || '').toLowerCase().includes('battle master') ||
-       (char.class || '').toLowerCase().includes('mestre de batalha'));
-    const defaultMaxBmDice = char.level >= 15 ? 6 : (char.level >= 7 ? 5 : 4);
-    const maxBmDice = (char.maxSuperiorityDice && char.maxSuperiorityDice > 0)
-      ? char.maxSuperiorityDice
-      : (isBattleMaster ? defaultMaxBmDice : 0);
-    if (maxBmDice > 0) {
-      updates.superiorityDice = maxBmDice;
-    }
-
-    return this.updateCharacter(id, updates);
+    return postCharacterAction(id, 'rest', { type: 'SHORT', healHp, hitDice: hitDiceToSpend });
   },
 
-  // Automação de Descanso Longo
+  // Descanso Longo: calculado e aplicado de forma atômica no servidor
   async takeLongRest(id: string): Promise<CharacterData> {
-    const char = await this.getCharacter(id);
-    if (!char) throw new Error('Personagem não encontrado');
-
-    // Recupera metade dos dados de vida (mínimo 1)
-    const recoveredHitDice = Math.max(1, Math.floor(char.hitDiceTotal / 2));
-    const newHitDiceSpent = Math.max(0, char.hitDiceSpent - recoveredHitDice);
-
-    // Resetar spell slots
-    const updatedSpellSlots = char.spellSlots.map(slot => ({
-      ...slot,
-      used: 0,
-    }));
-
-    // Resetar habilidades (Short e Long rest)
-    const updatedAbilities = char.abilities.map(ab => {
-      if (ab.resetType === 'SHORT_REST' || ab.resetType === 'LONG_REST') {
-        return { ...ab, currentUses: ab.maxUses };
-      }
-      return ab;
-    });
-
-    const updates: Partial<CharacterData> = {
-      currentHp: char.maxHp,
-      tempHp: 0,
-      hitDiceSpent: newHitDiceSpent,
-      deathSaveSuccesses: 0,
-      deathSaveFailures: 0,
-      spellSlots: updatedSpellSlots,
-      abilities: updatedAbilities,
-    };
-    if (char.maxKiPoints && char.maxKiPoints > 0) {
-      updates.kiPoints = char.maxKiPoints;
-    }
-    if (char.maxSorceryPoints && char.maxSorceryPoints > 0) {
-      updates.sorceryPoints = char.maxSorceryPoints;
-    }
-
-    // Restauração de Dados de Superioridade (Descanso Longo)
-    const isBattleMasterLong = (char.class || '').toLowerCase().includes('guerreiro') &&
-      ((char.archetype || '').toLowerCase().includes('mestre de batalha') ||
-       (char.archetype || '').toLowerCase().includes('battle master') ||
-       (char.class || '').toLowerCase().includes('mestre de batalha'));
-    const defaultMaxBmDiceLong = char.level >= 15 ? 6 : (char.level >= 7 ? 5 : 4);
-    const maxBmDiceLong = (char.maxSuperiorityDice && char.maxSuperiorityDice > 0)
-      ? char.maxSuperiorityDice
-      : (isBattleMasterLong ? defaultMaxBmDiceLong : 0);
-    if (maxBmDiceLong > 0) {
-      updates.superiorityDice = maxBmDiceLong;
-    }
-
-    return this.updateCharacter(id, updates);
+    return postCharacterAction(id, 'rest', { type: 'LONG' });
   },
 
-  // Intervenção Remota do Mestre (DM Intervention)
+  // Intervenção Remota do Mestre (DM Intervention) — aplicada no servidor, com registro no histórico
   async dmIntervene(
     characterId: string,
     action: {
@@ -688,53 +649,24 @@ export const ApiService = {
       conditionDesc?: string;
     }
   ): Promise<CharacterData> {
-    const char = await this.getCharacter(characterId);
-    if (!char) throw new Error('Personagem não encontrado');
-
-    if (action.type === 'DAMAGE') {
-      const dmg = action.value || 0;
-      // Dano consome Temp HP primeiro
-      let temp = char.tempHp;
-      let hp = char.currentHp;
-      if (temp >= dmg) {
-        temp -= dmg;
-      } else {
-        const remainingDmg = dmg - temp;
-        temp = 0;
-        hp = Math.max(0, hp - remainingDmg);
-      }
-      return this.updateCharacter(characterId, { currentHp: hp, tempHp: temp });
+    if (action.type === 'INSPIRATION') {
+      const char = await this.getCharacter(characterId);
+      if (!char) throw new Error('Personagem não encontrado');
+      return char;
     }
+    return postCharacterAction(characterId, 'intervene', action);
+  },
 
-    if (action.type === 'HEAL') {
-      const heal = action.value || 0;
-      const hp = Math.min(char.maxHp, char.currentHp + heal);
-      return this.updateCharacter(characterId, { currentHp: hp });
-    }
-
-    if (action.type === 'TEMP_HP') {
-      const temp = Math.max(char.tempHp, action.value || 0);
-      return this.updateCharacter(characterId, { tempHp: temp });
-    }
-
-    if (action.type === 'ADD_CONDITION') {
-      const newCond: ConditionData = {
-        id: `cond-${Date.now()}`,
-        name: action.conditionName || 'Condição',
-        description: action.conditionDesc || 'Aplicada pelo Mestre.',
-      };
-      return this.updateCharacter(characterId, {
-        conditions: [...char.conditions, newCond],
-      });
-    }
-
-    if (action.type === 'REMOVE_CONDITION') {
-      return this.updateCharacter(characterId, {
-        conditions: char.conditions.filter(c => c.name !== action.conditionName),
-      });
-    }
-
-    return char;
+  async getCharacterLogs(characterId: string, opts?: { kind?: string; limit?: number }): Promise<CharacterLogData[]> {
+    const query = new URLSearchParams();
+    if (opts?.kind) query.set('kind', opts.kind);
+    if (opts?.limit) query.set('limit', String(opts.limit));
+    const res = await apiFetch(`${getApiBaseUrl()}/api/characters/${characterId}/logs?${query.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   },
 
   async resetToDefaultData(): Promise<CharacterData[]> {
@@ -746,7 +678,7 @@ export const ApiService = {
   async getUsers(): Promise<UserData[]> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/users?t=${Date.now()}`, {
+      const res = await apiFetch(`${baseUrl}/api/users?t=${Date.now()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -761,7 +693,7 @@ export const ApiService = {
 
   async createUser(data: { name: string; username: string; password?: string; role: Role; roomId?: string }, requesterId?: string): Promise<UserData> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/users`, {
+    const res = await apiFetch(`${baseUrl}/api/users`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, requesterId),
       body: JSON.stringify(data),
@@ -788,7 +720,7 @@ export const ApiService = {
     requesterId?: string
   ): Promise<UserData> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/users/${id}`, {
+    const res = await apiFetch(`${baseUrl}/api/users/${id}`, {
       method: 'PATCH',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, requesterId || id),
       body: JSON.stringify(data),
@@ -803,7 +735,7 @@ export const ApiService = {
 
   async deleteUser(id: string, requesterId?: string): Promise<boolean> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/users/${id}`, {
+    const res = await apiFetch(`${baseUrl}/api/users/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders({}, requesterId),
     });
@@ -824,7 +756,7 @@ export const ApiService = {
       if (roomId && roomId !== 'all') {
         query.set('roomId', roomId);
       }
-      const res = await fetch(`${baseUrl}/api/journal/sessions?${query.toString()}`, {
+      const res = await apiFetch(`${baseUrl}/api/journal/sessions?${query.toString()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -839,7 +771,7 @@ export const ApiService = {
 
   async createSession(title: string, authorId: string, roomId?: string): Promise<CampaignSessionData> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/journal/sessions`, {
+    const res = await apiFetch(`${baseUrl}/api/journal/sessions`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, authorId),
       body: JSON.stringify({ title, authorId, roomId }),
@@ -853,7 +785,7 @@ export const ApiService = {
 
   async updateSession(sessionId: string, title: string, userId: string): Promise<CampaignSessionData> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/journal/sessions`, {
+    const res = await apiFetch(`${baseUrl}/api/journal/sessions`, {
       method: 'PUT',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
       body: JSON.stringify({ sessionId, title, userId }),
@@ -867,7 +799,7 @@ export const ApiService = {
 
   async deleteSession(sessionId: string, userId: string): Promise<boolean> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/journal/sessions`, {
+    const res = await apiFetch(`${baseUrl}/api/journal/sessions`, {
       method: 'DELETE',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
       body: JSON.stringify({ sessionId, userId }),
@@ -881,7 +813,7 @@ export const ApiService = {
 
   async createNote(sessionId: string, authorId: string, content: string): Promise<SessionNoteData> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/journal/notes`, {
+    const res = await apiFetch(`${baseUrl}/api/journal/notes`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, authorId),
       body: JSON.stringify({ sessionId, authorId, content }),
@@ -895,7 +827,7 @@ export const ApiService = {
 
   async updateNote(noteId: string, userId: string, content: string): Promise<SessionNoteData> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/journal/notes`, {
+    const res = await apiFetch(`${baseUrl}/api/journal/notes`, {
       method: 'PUT',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
       body: JSON.stringify({ noteId, userId, content }),
@@ -909,7 +841,7 @@ export const ApiService = {
 
   async deleteNote(noteId: string, userId: string): Promise<boolean> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/journal/notes`, {
+    const res = await apiFetch(`${baseUrl}/api/journal/notes`, {
       method: 'DELETE',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
       body: JSON.stringify({ noteId, userId }),
@@ -930,7 +862,7 @@ export const ApiService = {
       if (roomId && roomId !== 'all') {
         query.set('roomId', roomId);
       }
-      const res = await fetch(`${baseUrl}/api/schedule?${query.toString()}`, {
+      const res = await apiFetch(`${baseUrl}/api/schedule?${query.toString()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -952,7 +884,7 @@ export const ApiService = {
     resetRsvps?: boolean;
   }): Promise<ScheduledSessionData> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/schedule`, {
+    const res = await apiFetch(`${baseUrl}/api/schedule`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, payload.userId),
       body: JSON.stringify(payload),
@@ -972,7 +904,7 @@ export const ApiService = {
     note?: string;
   }): Promise<SessionRsvpData> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/schedule/rsvp`, {
+    const res = await apiFetch(`${baseUrl}/api/schedule/rsvp`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, payload.userId),
       body: JSON.stringify(payload),
@@ -989,7 +921,7 @@ export const ApiService = {
   async getAvailability(month: string): Promise<AvailabilityResponseData> {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/availability?month=${month}&t=${Date.now()}`, {
+      const res = await apiFetch(`${baseUrl}/api/availability?month=${month}&t=${Date.now()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -1008,7 +940,7 @@ export const ApiService = {
 
   async toggleAvailability(userId: string, date: string): Promise<{ success: boolean; status: 'ADDED' | 'REMOVED' }> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/availability`, {
+    const res = await apiFetch(`${baseUrl}/api/availability`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
       body: JSON.stringify({ action: 'TOGGLE', userId, date }),
@@ -1023,7 +955,7 @@ export const ApiService = {
 
   async batchSetAvailability(userId: string, month: string, dates: string[]): Promise<{ success: boolean; count: number }> {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/api/availability`, {
+    const res = await apiFetch(`${baseUrl}/api/availability`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }, userId),
       body: JSON.stringify({ action: 'BATCH_SET', userId, month, dates }),

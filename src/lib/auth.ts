@@ -4,7 +4,18 @@ import { prisma } from './prisma';
 
 declare const Buffer: any;
 
-const AUTH_SECRET = process.env.AUTH_SECRET || 'hg-painel-secret-salt-dnd5e-rpg-mesa-2026';
+const DEV_FALLBACK_SECRET = 'hg-painel-dev-only-secret-do-not-use-in-production';
+
+function resolveAuthSecret(): string {
+  const secret = process.env.AUTH_SECRET;
+  if (secret && secret.length >= 16) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('AUTH_SECRET não configurado (mínimo 16 caracteres) — defina a variável de ambiente em produção.');
+  }
+  return DEV_FALLBACK_SECRET;
+}
+
+const AUTH_SECRET = resolveAuthSecret();
 
 export interface AuthPayload {
   id: string;
@@ -84,43 +95,50 @@ export function verifyAuthToken(token: string): AuthPayload | null {
   }
 }
 
-/**
- * Extrai e valida o usuário autenticado a partir dos cabeçalhos da requisição.
- * Suporta tanto `Authorization: Bearer <token>` quanto fallback retrocompatível de `x-user-id` validado no banco.
- */
-export async function getAuthenticatedUser(req: Request): Promise<{
+export type AuthUser = {
   id: string;
   username: string;
   role: 'PLAYER' | 'MECHANIC' | 'DM';
-} | null> {
+};
+
+/**
+ * Extrai e valida o usuário autenticado a partir do cabeçalho `Authorization: Bearer <token>`.
+ * O cargo é sempre relido do banco, para que mudanças de permissão valham imediatamente
+ * (e usuários excluídos percam o acesso mesmo com token ainda válido).
+ */
+export async function getAuthenticatedUser(req: Request): Promise<AuthUser | null> {
   try {
     const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.slice(7).trim();
-      const verified = verifyAuthToken(token);
-      if (verified) {
-        return {
-          id: verified.id,
-          username: verified.username,
-          role: verified.role,
-        };
-      }
-    }
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
 
-    // Fallback: se forneceu x-user-id, valida se o usuário realmente existe no banco
-    const userId = req.headers.get('x-user-id');
-    if (userId) {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, username: true, role: true },
-      });
-      if (dbUser) {
-        return dbUser as { id: string; username: string; role: 'PLAYER' | 'MECHANIC' | 'DM' };
-      }
-    }
+    const verified = verifyAuthToken(authHeader.slice(7).trim());
+    if (!verified) return null;
 
-    return null;
+    const dbUser = await prisma.user.findUnique({
+      where: { id: verified.id },
+      select: { id: true, username: true, role: true },
+    });
+    return dbUser ? (dbUser as AuthUser) : null;
   } catch {
     return null;
   }
+}
+
+export function unauthorized(message = 'Autenticação necessária') {
+  return Response.json({ error: message }, { status: 401 });
+}
+
+export function forbidden(message = 'Sem permissão para esta ação') {
+  return Response.json({ error: message }, { status: 403 });
+}
+
+/**
+ * Garante que o id informado no corpo da requisição pertence ao usuário autenticado
+ * (impede agir em nome de outro usuário). Retorna uma Response de erro, ou null se válido.
+ */
+export async function assertSelf(req: Request, claimedId: unknown): Promise<Response | null> {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return unauthorized();
+  if (claimedId !== user.id) return forbidden('Identidade da requisição não confere com o usuário autenticado');
+  return null;
 }

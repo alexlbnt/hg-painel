@@ -27,6 +27,7 @@ model User {
   role      Role     @default(PLAYER)
   roomId    String?
   avatarUrl String   @default("")
+  isSuperDm Boolean  @default(false)
   bio       String   @default("")
   room      Room?    @relation("UserRoom", fields: [roomId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
@@ -118,6 +119,9 @@ model Character {
   maxSuperiorityDice Int         @default(0) // Quantidade máxima de dados
   superiorityDieType String      @default("d8") // Tipo do dado de superioridade (d8, d10, d12)
 
+  // Eixo moral do cenário: -100 (Egoísmo) a +100 (Honra)
+  honor              Int         @default(0)
+
   // Relations
   roomId             String?
   room               Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
@@ -128,6 +132,7 @@ model Character {
   conditions         Condition[]
   items              Item[]
   spells             Spell[]
+  logs               CharacterLog[]
   
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
@@ -304,3 +309,18 @@ model PlayerAvailability {
   @@index([date])
 }
 
+
+// Histórico de eventos da ficha: combate, descansos, intervenções do Mestre e mudanças de Honra/Egoísmo
+model CharacterLog {
+  id          String    @id @default(uuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  kind        String    // HONOR | DAMAGE | HEAL | REST | CONDITION | NOTE
+  delta       Int       @default(0)
+  message     String    @default("")
+  authorId    String?
+  authorName  String    @default("")
+  createdAt   DateTime  @default(now())
+
+  @@index([characterId, createdAt])
+}

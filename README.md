@@ -12,6 +12,9 @@ Construído com as melhores práticas de desenvolvimento web/mobile usando o eco
 - **Equipamentos e Inventário:** Rastreamento de peso, armas e armaduras, além de bônus na Classe de Armadura.
 - **Condições e Habilidades:** Rastreamento completo das condições do personagem e gerenciamento de habilidades por descanso curto/longo.
 
+### 📄 Exportação
+- Ficha em JSON (backup/importação validada) e em PDF.
+
 ### 🗺️ Mesa e Diário de Campanha
 - **Sistema de Sessões:** Criação de anotações (Journal Notes) segmentadas por sessão e por autor.
 - **Multi-usuários (DM vs Player):** Permissões distintas para jogadores e para o Mestre da Campanha.
@@ -60,6 +63,13 @@ Para rodar diretamente na versão Web (recomendado):
 npm run web
 ```
 *(Você também pode usar `npm start` para abrir o menu do Expo e escolher outras plataformas).*
+
+## 🔐 Segurança e Operação
+- Autenticação por token assinado (`Authorization: Bearer`). Defina `AUTH_SECRET` em produção (Vercel) — sem ela a API recusa subir.
+- Descansos, intervenções do Mestre são aplicados no servidor (`/api/characters/:id/rest|intervene`).
+- Tempo real: SSE + polling inteligente em `/api/sync` (funciona em serverless).
+- Super-Mestre: `node scripts/setSuperDm.js <username>` (acesso a todas as mesas).
+- Testes e tipos: `npm test` e `npm run typecheck` (também rodam no CI).
 
 ## 📖 Estrutura do Banco de Dados
 Abaixo estão os principais models encontrados no banco (Veja `prisma/schema.prisma` para detalhes):

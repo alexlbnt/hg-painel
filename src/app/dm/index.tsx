@@ -2,6 +2,7 @@ import InitiativeTracker from '@/components/dm/InitiativeTracker';
 import InterventionModal from '@/components/dm/InterventionModal';
 import WhispersModal from '@/components/dm/WhispersModal';
 import UserManagement from '@/components/dm/UserManagement';
+import RoomManager from '@/components/dm/RoomManager';
 import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp, Key } from 'lucide-react-native';
@@ -12,6 +13,7 @@ import { useRoom } from '@/contexts/RoomContext';
 import { useRouter } from 'expo-router';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { confirmAction } from '@/utils/confirm';
+import { AnimatedBar } from '@/components/ui/AnimatedBar';
 
 export default function DmModule() {
   const { user, isLoading: authLoading } = useAuth();
@@ -354,17 +356,15 @@ export default function DmModule() {
                       {char.currentHp} / {char.maxHp} {char.tempHp > 0 && `(+${char.tempHp} Temp)`}
                     </Text>
                   </View>
-                  <View style={styles.hpBg}>
-                    <View
-                      style={[
-                        styles.hpFill,
-                        {
-                          width: `${Math.min(100, Math.max(0, hpPercent * 100))}%`,
-                          backgroundColor: hpPercent > 0.5 ? '#38783C' : hpPercent > 0.25 ? '#C5A059' : '#B82828',
-                        },
-                      ]}
-                    />
-                  </View>
+                  <AnimatedBar
+                    value={char.currentHp}
+                    max={char.maxHp || 1}
+                    color={hpPercent > 0.5 ? '#38783C' : hpPercent > 0.25 ? '#C5A059' : '#B82828'}
+                    height={10}
+                    overlayValue={char.tempHp}
+                    flashOnDecrease
+                    accessibilityLabel={`Pontos de vida de ${char.name}: ${char.currentHp} de ${char.maxHp}`}
+                  />
                 </View>
 
                 {/* Testes contra a Morte se estiver Inconsciente / 0 HP */}
@@ -483,6 +483,8 @@ export default function DmModule() {
       {/* SEÇÃO 3: GESTÃO DE USUÁRIOS E PERMISSÕES (Exclusivo Super-DM Alex) */}
       {isSuperDm && (
         <View style={{ display: activeTab === 'users' ? 'flex' : 'none', width: '100%' }}>
+          <RoomManager />
+          <View style={{ height: 16 }} />
           <UserManagement />
         </View>
       )}

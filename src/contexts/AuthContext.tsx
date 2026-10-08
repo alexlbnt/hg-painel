@@ -12,6 +12,7 @@ export interface User {
   token?: string;
   avatarUrl?: string;
   bio?: string;
+  isSuperDm?: boolean;
 }
 
 interface AuthContextData {
@@ -75,14 +76,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try {
       const stored = authStorage.get();
-      if (stored) {
+      if (stored && !stored.token) {
+        // Sessão antiga (sem token): exige novo login para obter credencial assinada
+        authStorage.set(null);
+      } else if (stored) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser(stored);
 
         // Atualiza dados atualizados do usuário (como roomId) em background
         const baseUrl = getApiBaseUrl();
-        fetch(`${baseUrl}/api/users?t=${Date.now()}`)
-          .then((res) => res.json())
+        fetch(`${baseUrl}/api/users?t=${Date.now()}`, {
+          headers: { Authorization: `Bearer ${stored.token}` },
+        })
+          .then((res) => {
+            if (res.status === 401) {
+              authStorage.set(null);
+              setUser(null);
+              return null;
+            }
+            return res.json();
+          })
           .then((allUsers: any[]) => {
             if (Array.isArray(allUsers)) {
               const fresh = allUsers.find((u) => u.id === stored.id || u.username === stored.username);
@@ -92,7 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   fresh.role !== stored.role ||
                   fresh.name !== stored.name ||
                   fresh.avatarUrl !== stored.avatarUrl ||
-                  fresh.bio !== stored.bio)
+                  fresh.bio !== stored.bio ||
+                  !!fresh.isSuperDm !== !!stored.isSuperDm)
               ) {
                 const updatedUser: User = {
                   ...stored,
@@ -101,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   name: fresh.name,
                   avatarUrl: fresh.avatarUrl || '',
                   bio: fresh.bio || '',
+                  isSuperDm: !!fresh.isSuperDm,
                 };
                 setUser(updatedUser);
                 authStorage.set(updatedUser);

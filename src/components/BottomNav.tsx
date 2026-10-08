@@ -39,6 +39,9 @@ export default function BottomNav() {
             <TouchableOpacity
               key={item.path}
               style={[styles.tabBtn, isActive && styles.tabBtnActive]}
+              accessibilityRole="tab"
+              accessibilityLabel={item.name}
+              accessibilityState={{ selected: isActive }}
               activeOpacity={0.7}
               onPress={() => router.push(item.path as any)}
             >
