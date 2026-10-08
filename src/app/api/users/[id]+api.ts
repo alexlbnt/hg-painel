@@ -1,5 +1,6 @@
 import { prisma } from '../../../lib/prisma';
 import { broadcastEvent } from '../../../lib/eventBus';
+import { getAuthenticatedUser, unauthorized } from '../../../lib/auth';
 import bcrypt from 'bcryptjs';
 
 function extractId(context: any): string {
@@ -25,6 +26,7 @@ export async function GET(req: Request, context: any) {
         roomId: true,
         avatarUrl: true,
         bio: true,
+        isSuperDm: true,
         room: {
           select: {
             id: true,
@@ -61,11 +63,8 @@ export async function PATCH(req: Request, context: any) {
     }
 
     const body = await req.json();
-    const requesterId = req.headers.get('x-user-id') || body.requesterId;
-
-    const requester = requesterId
-      ? await prisma.user.findUnique({ where: { id: requesterId } })
-      : null;
+    const requester = await getAuthenticatedUser(req);
+    if (!requester) return unauthorized();
 
     // Apenas o Mestre pode alterar permissões (role)
     if (body.role !== undefined) {
@@ -186,13 +185,9 @@ export async function DELETE(req: Request, context: any) {
       return Response.json({ error: 'Missing user ID' }, { status: 400 });
     }
 
-    const requesterId = req.headers.get('x-user-id');
-    if (!requesterId) {
-      return Response.json({ error: 'Identificação necessária para excluir usuários' }, { status: 401 });
-    }
-
-    const requester = await prisma.user.findUnique({ where: { id: requesterId } });
-    if (!requester || requester.role !== 'DM') {
+    const requester = await getAuthenticatedUser(req);
+    if (!requester) return unauthorized('Identificação necessária para excluir usuários');
+    if (requester.role !== 'DM') {
       return Response.json({ error: 'Apenas o Mestre pode excluir usuários' }, { status: 403 });
     }
 

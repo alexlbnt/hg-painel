@@ -1,8 +1,10 @@
 import { prisma } from '../../lib/prisma';
+import { getAuthenticatedUser, unauthorized, forbidden } from '../../lib/auth';
 import bcrypt from 'bcryptjs';
 
 export async function GET(req: Request) {
   try {
+    if (!(await getAuthenticatedUser(req))) return unauthorized();
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -12,6 +14,7 @@ export async function GET(req: Request) {
         roomId: true,
         avatarUrl: true,
         bio: true,
+        isSuperDm: true,
         room: {
           select: {
             id: true,
@@ -51,7 +54,7 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Nome de usuário já existe' }, { status: 409 });
     }
 
-    const requesterId = req.headers.get('x-user-id');
+    const requester = await getAuthenticatedUser(req);
     let validRole: 'PLAYER' | 'MECHANIC' | 'DM' = 'PLAYER';
 
     if (role === 'DM' || role === 'MECHANIC') {
@@ -60,18 +63,8 @@ export async function POST(req: Request) {
         // Permite primeiro usuário do sistema ser configurado como DM
         validRole = role;
       } else {
-        if (!requesterId) {
-          return Response.json(
-            { error: 'Apenas o Mestre da Campanha pode criar usuários com cargo especial' },
-            { status: 403 }
-          );
-        }
-        const requester = await prisma.user.findUnique({ where: { id: requesterId } });
         if (!requester || requester.role !== 'DM') {
-          return Response.json(
-            { error: 'Apenas o Mestre da Campanha pode criar usuários com cargo especial' },
-            { status: 403 }
-          );
+          return forbidden('Apenas o Mestre da Campanha pode criar usuários com cargo especial');
         }
         validRole = role;
       }

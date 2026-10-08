@@ -1,3 +1,4 @@
+import { assertSelf } from '../../lib/auth';
 import { prisma } from '@/lib/prisma';
 import { broadcastEvent } from '@/lib/eventBus';
 
@@ -55,7 +56,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { action, userId, date, dates, month } = body;
-
+    const denied = await assertSelf(req, userId);
+    if (denied) return denied;
     if (!userId) {
       return Response.json({ error: 'Usuário não informado' }, { status: 400 });
     }

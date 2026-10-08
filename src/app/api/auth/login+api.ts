@@ -38,6 +38,7 @@ export async function POST(req: Request) {
       roomId: user.roomId,
       avatarUrl: user.avatarUrl || '',
       bio: user.bio || '',
+      isSuperDm: user.isSuperDm,
       token,
     }, { status: 200 });
 

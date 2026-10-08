@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { broadcastEvent } from '@/lib/eventBus';
+import { getAuthenticatedUser, unauthorized, forbidden } from '@/lib/auth';
 
 const DEFAULT_ROOMS = [
   {
@@ -59,6 +60,10 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) return unauthorized();
+    if (authUser.role !== 'DM') return forbidden('Apenas Mestres podem criar mesas');
+
     const body = await req.json();
     const { name, code, dmName, dmUsername } = body;
 

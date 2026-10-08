@@ -20,6 +20,7 @@ interface CharacterHeaderProps {
   isMobile?: boolean;
   onOpenSpeedModal: () => void;
   onExportJson: () => void;
+  onExportPdf?: () => void;
   onEditChar: () => void;
   onDeleteChar: () => void;
 }
@@ -32,6 +33,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
   isMobile = false,
   onOpenSpeedModal,
   onExportJson,
+  onExportPdf,
   onEditChar,
   onDeleteChar,
 }) => {
@@ -199,6 +201,18 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
           <Download color="#78C288" size={14} />
           <Text style={[styles.actionBtnText, { color: '#78C288' }]}>JSON</Text>
         </TouchableOpacity>
+
+        {onExportPdf && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]}
+            onPress={onExportPdf}
+            accessibilityRole="button"
+            accessibilityLabel="Exportar Ficha em PDF"
+          >
+            <Download color="#78C288" size={14} />
+            <Text style={[styles.actionBtnText, { color: '#78C288' }]}>PDF</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={[

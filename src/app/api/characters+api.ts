@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import { broadcastEvent } from '@/lib/eventBus';
+import { getAuthenticatedUser, unauthorized } from '@/lib/auth';
 
 export async function GET(request?: Request) {
   try {
+    if (!request || !(await getAuthenticatedUser(request))) return unauthorized();
     let where: any = {};
     if (request && request.url) {
       try {
@@ -69,8 +71,13 @@ function toSafeNumber(val: any, fallback: number = 0): number {
 
 export async function POST(request: Request) {
   try {
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser) return unauthorized();
     const body = await request.json();
-    const requesterId = request.headers.get('x-user-id') || body.userId;
+    const isElevated = authUser.role === 'DM' || authUser.role === 'MECHANIC';
+    // Jogador comum só cria fichas para si mesmo; Mestre/Mecânico podem criar para outro usuário
+    const requesterId = isElevated && body.userId ? String(body.userId) : authUser.id;
+    if (!isElevated) body.username = authUser.username;
     let userIdToSet: string | undefined = undefined;
     let fallbackRoomId: string | undefined = undefined;
 

@@ -1,3 +1,4 @@
+import { assertSelf } from '../../../lib/auth';
 import { prisma } from '../../../lib/prisma';
 import { broadcastEvent } from '../../../lib/eventBus';
 
@@ -35,7 +36,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const { title, authorId, roomId } = await req.json();
-
+    const denied = await assertSelf(req, authorId);
+    if (denied) return denied;
     if (!title || !authorId) {
       return Response.json({ error: 'Missing fields' }, { status: 400 });
     }
@@ -66,7 +68,8 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const { sessionId, title, userId } = await req.json();
-
+    const denied = await assertSelf(req, userId);
+    if (denied) return denied;
     if (!sessionId || !title || !userId) {
       return Response.json({ error: 'Missing fields' }, { status: 400 });
     }
@@ -92,7 +95,8 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const { sessionId, userId } = await req.json();
-
+    const denied = await assertSelf(req, userId);
+    if (denied) return denied;
     if (!sessionId || !userId) {
       return Response.json({ error: 'Missing fields' }, { status: 400 });
     }

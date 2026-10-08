@@ -34,12 +34,8 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeRoom, setActiveRoomState] = useState<RoomData | null>(null);
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
 
-  // Usuário Alex é o Super-DM com visão e controle global sobre todas as mesas
-  const isSuperDm = useMemo(() => {
-    if (!user) return false;
-    const username = (user.username || '').toLowerCase().trim();
-    return username === 'alex.g' || (user.role === 'DM' && user.name.toLowerCase().includes('alex'));
-  }, [user]);
+  // Super-DM (flag `isSuperDm` no banco) tem visão e controle global sobre todas as mesas
+  const isSuperDm = useMemo(() => !!user?.isSuperDm, [user]);
 
   // Mesas acessíveis pelo usuário atual:
   // - Super-DM Alex: todas as mesas
@@ -112,25 +108,22 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
         chosenRoom = loaded.find(r => r.id === savedId || r.code === savedId) || null;
       }
 
-      // 2. Se o usuário logado for um dos mestres específicos ou se a mesa escolhida não for válida:
+      // 2. Regras por papel, baseadas em dados do banco (sem usernames fixos no código):
       if (user) {
         const u = (user.username || '').toLowerCase().trim();
-        if (u === 'alex.g') {
-          if (!chosenRoom) {
-            chosenRoom = loaded.find(r => r.dmUsername === 'alex.g' || r.code === 'MESA-ALEX') || loaded[0];
-          }
-        } else if (u === 'joao.c') {
-          if (!chosenRoom || (chosenRoom.code !== 'MESA-JOAO' && chosenRoom.code !== 'MESA-LOBO')) {
-            chosenRoom = loaded.find(r => r.dmUsername === 'joao.c' || r.code === 'MESA-JOAO') || loaded[0];
-          }
-        } else if (u === 'lobo.l') {
-          if (!chosenRoom || (chosenRoom.code !== 'MESA-LOBO' && chosenRoom.code !== 'MESA-ALEX')) {
-            chosenRoom = loaded.find(r => r.dmUsername === 'lobo.l' || r.code === 'MESA-LOBO') || loaded[0];
-          }
-        } else if (user.roomId) {
-          // Jogador comum: deve ir diretamente para a mesa vinculada a ele
-          const bound = loaded.find(r => r.id === user.roomId || r.code === user.roomId);
-          if (bound) chosenRoom = bound;
+        const dmRooms = loaded.filter(r => (r.dmUsername || '').toLowerCase().trim() === u);
+        const bound = user.roomId ? loaded.find(r => r.id === user.roomId || r.code === user.roomId) : undefined;
+        const accessibleIds = new Set<string>([...dmRooms, ...(bound ? [bound] : [])].map(r => r.id));
+
+        if (user.isSuperDm) {
+          // Super-DM: mantém a preferência salva; senão, a mesa que mestra
+          if (!chosenRoom) chosenRoom = dmRooms[0] || bound || loaded[0];
+        } else if (dmRooms.length > 0) {
+          // Mestre de mesa: só pode estar em mesa que mestra ou onde joga
+          if (!chosenRoom || !accessibleIds.has(chosenRoom.id)) chosenRoom = dmRooms[0];
+        } else if (bound) {
+          // Jogador comum: vai direto para a mesa vinculada a ele
+          chosenRoom = bound;
         }
       }
 

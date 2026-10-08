@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 const DarkFantasyPalette = {
   text: '#E2D8C3',               // Pergaminho Claro (Aged Parchment)
   textSecondary: '#BAAFA0',      // Papiro Envelhecido
-  textMuted: '#80776C',          // Cinza Pedra Medieval
+  textMuted: '#9A8F82',          // Cinza Pedra Medieval (contraste AA sobre o fundo escuro)
   background: '#110F0D',         // Pedra Obsidiana / Abismo
   backgroundSecondary: '#1A1714',// Couro Negro / Madeira de Taverna
   backgroundElement: '#24201C',  // Bloco de Pedra / Aço Antigo
@@ -69,3 +69,26 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 1200;
+
+/** Raios de borda padronizados */
+export const Radius = {
+  sm: 6,
+  md: 10,
+  lg: 14,
+  pill: 999,
+} as const;
+
+/** Cores semânticas (estado) reaproveitadas por barras, badges e alertas */
+export const Semantic = {
+  success: '#38783C',
+  warning: '#C5A059',
+  danger: '#B82828',
+  info: '#6B4A70',
+} as const;
+
+/** Cor da barra de vida conforme a fração de PV restante */
+export function hpColorFor(ratio: number): string {
+  if (ratio > 0.5) return Semantic.success;
+  if (ratio > 0.25) return Semantic.warning;
+  return Semantic.danger;
+}

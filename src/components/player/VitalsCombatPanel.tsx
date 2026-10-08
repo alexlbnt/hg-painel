@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import { Heart, Moon, Shield, Skull, Sparkles, Sun, X } from 'lucide-react-native';
+import { AnimatedBar } from '@/components/ui/AnimatedBar';
+import { hpColorFor } from '@/constants/theme';
 
 interface VitalsCombatPanelProps {
   char: CharacterData;
@@ -28,17 +30,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
 }) => {
   const [customHp, setCustomHp] = useState('');
 
-  const hpPercent = Math.min(
-    100,
-    Math.max(0, (char.currentHp / (char.maxHp || 1)) * 100)
-  );
-
-  const hpColor =
-    char.currentHp / (char.maxHp || 1) > 0.5
-      ? '#38783C'
-      : char.currentHp / (char.maxHp || 1) > 0.25
-      ? '#C5A059'
-      : '#B82828';
+  const hpColor = hpColorFor(char.currentHp / (char.maxHp || 1));
 
   const handleAction = (isDamage: boolean) => {
     const val = parseInt(customHp, 10);
@@ -64,6 +56,8 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
           <TouchableOpacity
             style={styles.clearConcentrationBtn}
             onPress={onClearConcentration}
+            accessibilityRole="button"
+            accessibilityLabel="Encerrar concentração da magia"
             activeOpacity={0.7}
           >
             <X size={12} color="#D8B4FE" />
@@ -96,17 +90,15 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
       </View>
 
       {/* BARRA DE VIDA */}
-      <View style={styles.hpBarTrack}>
-        <View
-          style={[
-            styles.hpBarFill,
-            {
-              width: `${hpPercent}%`,
-              backgroundColor: hpColor,
-            },
-          ]}
-        />
-      </View>
+      <AnimatedBar
+        value={char.currentHp}
+        max={char.maxHp || 1}
+        color={hpColor}
+        height={12}
+        overlayValue={char.tempHp}
+        flashOnDecrease
+        accessibilityLabel={`Pontos de vida: ${char.currentHp} de ${char.maxHp}${char.tempHp > 0 ? `, mais ${char.tempHp} temporários` : ''}`}
+      />
 
       {/* DADOS DE VIDA & DESCANSOS */}
       <View style={[styles.restRow, isMobile && { flexDirection: 'column', gap: 8 }]}>
@@ -122,6 +114,8 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
           <TouchableOpacity
             style={[styles.restBtn, { borderColor: '#C5A059' }, isMobile && { flex: 1, justifyContent: 'center' }]}
             onPress={onTriggerShortRest}
+            accessibilityRole="button"
+            accessibilityLabel="Realizar descanso curto"
             activeOpacity={0.7}
           >
             <Sun size={13} color="#C5A059" />
@@ -131,6 +125,8 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
           <TouchableOpacity
             style={[styles.restBtn, { borderColor: '#6B4A70' }, isMobile && { flex: 1, justifyContent: 'center' }]}
             onPress={onTriggerLongRest}
+            accessibilityRole="button"
+            accessibilityLabel="Realizar descanso longo"
             activeOpacity={0.7}
           >
             <Moon size={13} color="#D8B4FE" />
@@ -156,6 +152,10 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
                   <TouchableOpacity
                     key={`succ-${i}`}
                     onPress={() => onToggleDeathSave('success', i)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Sucesso ${i + 1} contra a morte`}
+                    accessibilityState={{ selected: char.deathSaveSuccesses > i }}
+                    hitSlop={8}
                     style={[
                       styles.deathDot,
                       { borderColor: '#78C288' },
@@ -174,6 +174,10 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
                   <TouchableOpacity
                     key={`fail-${i}`}
                     onPress={() => onToggleDeathSave('fail', i)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Falha ${i + 1} contra a morte`}
+                    accessibilityState={{ selected: char.deathSaveFailures > i }}
+                    hitSlop={8}
                     style={[
                       styles.deathDot,
                       { borderColor: '#B82828' },
@@ -191,6 +195,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
       <View style={styles.customHpRow}>
         <TextInput
           style={styles.customHpInput}
+          accessibilityLabel="Valor de dano ou cura"
           value={customHp}
           onChangeText={setCustomHp}
           placeholder={isMobile ? "Qtd. dano/cura" : "Valor de dano ou cura"}
@@ -200,6 +205,8 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
         <TouchableOpacity
           style={[styles.hpActionBtn, styles.dmgBtn, isMobile && styles.hpActionBtnMobile]}
           onPress={() => handleAction(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Aplicar dano"
           activeOpacity={0.7}
         >
           <Text style={styles.dmgBtnText}>- Dano</Text>
@@ -207,6 +214,8 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
         <TouchableOpacity
           style={[styles.hpActionBtn, styles.healBtn, isMobile && styles.hpActionBtnMobile]}
           onPress={() => handleAction(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Aplicar cura"
           activeOpacity={0.7}
         >
           <Text style={styles.healBtnText}>+ Cura</Text>

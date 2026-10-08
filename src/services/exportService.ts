@@ -1,6 +1,9 @@
 import { Platform, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { CharacterData } from '@/lib/mockData';
+import { buildCharacterSheetHtml, sanitizeImportedCharacter } from '@/utils/characterImport';
 
 export const ExportService = {
   /**
@@ -58,6 +61,49 @@ export const ExportService = {
   },
 
   /**
+   * Exporta a ficha em PDF. Web: abre a ficha numa janela e aciona a impressão (salvar como PDF).
+   * Nativo: gera o arquivo com expo-print e abre o compartilhamento.
+   */
+  async exportCharacterToPdf(char: CharacterData): Promise<void> {
+    const html = buildCharacterSheetHtml(char);
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const win = window.open('', '_blank');
+      if (!win) {
+        Alert.alert('Pop-up bloqueado', 'Permita pop-ups para este site para gerar o PDF da ficha.');
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      win.onload = () => win.print();
+      setTimeout(() => {
+        try {
+          win.print();
+        } catch {}
+      }, 400);
+      return;
+    }
+
+    try {
+      const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          UTI: 'com.adobe.pdf',
+          dialogTitle: `Ficha de ${char.name}`,
+        });
+      } else {
+        Alert.alert('PDF gerado', uri);
+      }
+    } catch (e) {
+      console.error('Erro ao gerar PDF', e);
+      Alert.alert('Erro', 'Não foi possível gerar o PDF da ficha.');
+    }
+  },
+
+  /**
    * Parse e valida string JSON para importação de fichas.
    */
   parseImportJson(jsonString: string): { success: boolean; characters: Partial<CharacterData>[]; error?: string } {
@@ -67,15 +113,16 @@ export const ExportService = {
       if (arr.length === 0) {
         return { success: false, characters: [], error: 'O arquivo JSON está vazio.' };
       }
+      if (arr.length > 50) {
+        return { success: false, characters: [], error: 'O arquivo tem fichas demais (máximo de 50 por importação).' };
+      }
       const validChars: Partial<CharacterData>[] = [];
       for (const item of arr) {
-        if (item && typeof item === 'object' && (item.name || item.class)) {
+        const clean = sanitizeImportedCharacter(item);
+        if (clean) {
           validChars.push({
-            ...item,
+            ...clean,
             id: `char-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            name: item.name || 'Herói Importado',
-            class: item.class || 'Aventureiro',
-            level: Number(item.level) || 1,
           });
         }
       }

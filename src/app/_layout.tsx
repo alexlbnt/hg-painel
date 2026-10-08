@@ -9,12 +9,15 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import FantasyLoadingScreen from '@/components/ui/FantasyLoadingScreen';
 import LoginGateScreen from '@/components/auth/LoginGateScreen';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { useApiOffline } from '@/lib/apiStatus';
 
 SplashScreen.preventAutoHideAsync();
 
 function MainContentGate() {
   const { isMobile } = useResponsive();
   const { user, isLoading } = useAuth();
+  const offline = useApiOffline();
 
   if (isLoading) {
     return <FantasyLoadingScreen />;
@@ -27,6 +30,11 @@ function MainContentGate() {
   return (
     <View style={styles.container}>
       <HeaderNav />
+      {offline && (
+        <View style={styles.offlineBanner}>
+          <ErrorBanner message="Sem conexão com o servidor: exibindo dados salvos neste dispositivo, que podem estar desatualizados." />
+        </View>
+      )}
       <View style={[styles.mainContent, isMobile && { paddingBottom: 70 }]}>
         <Slot />
       </View>
@@ -63,6 +71,10 @@ const styles = StyleSheet.create({
         overflow: 'hidden' as any,
       },
     }),
+  },
+  offlineBanner: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
   },
   mainContent: {
     flex: 1,
