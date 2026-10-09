@@ -38,6 +38,7 @@ import { SkillsTab } from '@/components/player/SkillsTab';
 import { InventoryTab } from '@/components/player/InventoryTab';
 import { LoreTab } from '@/components/player/LoreTab';
 import { CompanionTab } from '@/components/player/CompanionTab';
+import { StickyStatusBar } from '@/components/player/StickyStatusBar';
 
 // Modais
 import CharacterModal from '@/components/player/CharacterModal';
@@ -111,6 +112,12 @@ export default function PlayerModule() {
   const [itemToEdit, setItemToEdit] = useState<ItemData | null>(null);
 
   const lastDataHash = useRef<string>('');
+
+  // Barra de status fixa (celular): aparece quando o painel de vida sai da tela
+  const pageScrollRef = useRef<ScrollView>(null);
+  const [vitalsEl, setVitalsEl] = useState<Element | null>(null); // nó DOM do painel de vida (web)
+  const [vitalsPassed, setVitalsPassed] = useState(false); // web: medido por IntersectionObserver
+  const [scrollY, setScrollY] = useState(0); // nativo: aproximação por posição de rolagem
 
   // Usuários com acesso total à mesa (Mestre e Mecânico)
   const isElevatedUser = user?.role === 'DM' || user?.role === 'MECHANIC';
@@ -194,6 +201,19 @@ export default function PlayerModule() {
       loadCharacters(true);
     }
   });
+
+  // Web: o painel de vida "passou" quando saiu da tela pelo topo
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isMobile) return;
+    const el = vitalsEl;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setVitalsPassed(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isMobile, vitalsEl]);
 
   const selectedChar = useMemo(
     () => visibleCharacters.find((c) => c.id === selectedId) || null,
@@ -767,8 +787,25 @@ export default function PlayerModule() {
     );
   }
 
+  const showStickyBar =
+    isMobile && !!selectedChar && (Platform.OS === 'web' ? vitalsPassed : scrollY > 380);
+
   return (
+    <View style={{ flex: 1, width: '100%' }}>
+    {isMobile && selectedChar && (
+      <StickyStatusBar
+        char={selectedChar}
+        totalAc={totalAc}
+        concentratingSpell={concentratingSpell}
+        themeColor={themeColor}
+        visible={showStickyBar}
+        onScrollToTop={() => pageScrollRef.current?.scrollTo({ y: 0, animated: true })}
+      />
+    )}
     <ScrollView
+      ref={pageScrollRef}
+      onScroll={Platform.OS === 'web' ? undefined : (e) => setScrollY(e.nativeEvent.contentOffset.y)}
+      scrollEventThrottle={64}
       style={{ flex: 1, width: '100%' }}
       contentContainerStyle={[
         styles.scrollContent,
@@ -883,6 +920,7 @@ export default function PlayerModule() {
             <View style={isWide ? styles.twoCol : { gap: isMobile ? 14 : 16 }}>
             <View style={isWide ? styles.leftCol : { gap: isMobile ? 14 : 16 }}>
             {/* 2. Sinais Vitais, Barra de Vida, Descansos e Concentração */}
+            <View ref={(node) => setVitalsEl(node as unknown as Element | null)} collapsable={false}>
             <VitalsCombatPanel
               char={selectedChar}
               themeColor={themeColor}
@@ -894,6 +932,7 @@ export default function PlayerModule() {
               onTriggerLongRest={handleTriggerLongRest}
               onToggleDeathSave={handleToggleDeathSave}
             />
+            </View>
 
             {/* 4. Grid de Atributos com Modificador Canônico Correto e Saves */}
             <AttributesGrid
@@ -1347,6 +1386,7 @@ export default function PlayerModule() {
         </Modal>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
