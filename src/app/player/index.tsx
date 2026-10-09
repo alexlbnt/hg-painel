@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRoom } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -42,6 +42,8 @@ import { StickyStatusBar } from '@/components/player/StickyStatusBar';
 
 // Modais
 import CharacterModal from '@/components/player/CharacterModal';
+import CharacterWizard from '@/components/player/wizard/CharacterWizard';
+import { FirstCharacterInvite } from '@/components/player/wizard/FirstCharacterInvite';
 import { EditAbilitySpellModal } from '@/components/player/EditAbilitySpellModal';
 import { EditItemModal } from '@/components/player/EditItemModal';
 import { SrdSearchModal } from '@/components/player/SrdSearchModal';
@@ -78,7 +80,7 @@ export default function PlayerModule() {
   const { isMobile, isTablet, isDesktop, width } = useResponsive();
   // Ficha em duas colunas (vitais fixos à esquerda, abas à direita) em telas largas
   const isWide = width >= 1180;
-  const { activeRoom } = useRoom();
+  const { activeRoom, rooms, userAccessibleRooms, isSuperDm } = useRoom();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -93,6 +95,16 @@ export default function PlayerModule() {
   // Modais de Criação e Edição Geral
   const [modalVisible, setModalVisible] = useState(false);
   const [editingChar, setEditingChar] = useState<CharacterData | null>(null);
+
+  // Assistente de criação de personagem (a edição continua no CharacterModal)
+  const [wizardVisible, setWizardVisible] = useState(false);
+  const { new: newParam } = useLocalSearchParams<{ new?: string }>();
+  useEffect(() => {
+    if (newParam === '1' && user && !authLoading) {
+      setWizardVisible(true);
+      router.replace('/player');
+    }
+  }, [newParam, user, authLoading, router]);
 
   // Modal de Deslocamento
   const [speedModalVisible, setSpeedModalVisible] = useState(false);
@@ -864,8 +876,7 @@ export default function PlayerModule() {
             <TouchableOpacity
               style={styles.newCharChip}
               onPress={() => {
-                setEditingChar(null);
-                setModalVisible(true);
+                setWizardVisible(true);
               }}
               activeOpacity={0.7}
             >
@@ -1081,6 +1092,13 @@ export default function PlayerModule() {
             </View>
             </View>
           </View>
+        ) : user && !isElevatedUser && visibleCharacters.length === 0 ? (
+          <FirstCharacterInvite
+            name={user.name}
+            roomName={activeRoom?.name}
+            username={user.username}
+            onStart={() => setWizardVisible(true)}
+          />
         ) : (
           <View style={styles.emptyContainer}>
             <Shield color="#C5A059" size={48} style={{ marginBottom: 12 }} />
@@ -1105,8 +1123,7 @@ export default function PlayerModule() {
                   router.push('/');
                   return;
                 }
-                setEditingChar(null);
-                setModalVisible(true);
+                setWizardVisible(true);
               }}
               activeOpacity={0.8}
             >
@@ -1122,7 +1139,31 @@ export default function PlayerModule() {
           </View>
         )}
 
-        {/* MODAL DE CRIAÇÃO / EDIÇÃO BÁSICA DO PERSONAGEM */}
+        {/* ASSISTENTE DE CRIAÇÃO DE PERSONAGEM (5 passos) */}
+        <CharacterWizard
+          visible={wizardVisible}
+          onClose={() => setWizardVisible(false)}
+          isElevated={isElevatedUser}
+          userName={user?.name}
+          username={user?.username}
+          rooms={isSuperDm ? rooms : userAccessibleRooms?.length ? userAccessibleRooms : rooms}
+          defaultRoomId={
+            activeRoom?.id ||
+            rooms.find((r) => r.id === user?.roomId || r.code === user?.roomId)?.id ||
+            userAccessibleRooms?.[0]?.id
+          }
+          onCreate={async (payload) => {
+            const created = await ApiService.createCharacter({
+              ...payload,
+              roomId: payload.roomId || user?.roomId || activeRoom?.id,
+            });
+            setCharacters((prev) => (prev.some((c) => c.id === created.id) ? prev : [...prev, created]));
+            setSelectedId(created.id);
+            loadCharacters();
+          }}
+        />
+
+        {/* MODAL DE EDIÇÃO BÁSICA DO PERSONAGEM */}
         {modalVisible && (
           <CharacterModal
             visible={modalVisible}

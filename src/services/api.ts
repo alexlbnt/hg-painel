@@ -545,6 +545,14 @@ export const ApiService = {
         { id: `item-${Date.now()}-2`, name: 'Mochila de Aventureiro', description: 'Kit de sobrevivência básico', weight: 5.0, quantity: 1, isWeapon: false },
       ],
       themeColor: data.themeColor || '#C5A059',
+      deity: data.deity || 'Nenhum',
+      kiPoints: data.kiPoints ?? 0,
+      maxKiPoints: data.maxKiPoints ?? 0,
+      sorceryPoints: data.sorceryPoints ?? 0,
+      maxSorceryPoints: data.maxSorceryPoints ?? 0,
+      superiorityDice: data.superiorityDice ?? 0,
+      maxSuperiorityDice: data.maxSuperiorityDice ?? 0,
+      superiorityDieType: data.superiorityDieType || 'd8',
     };
 
     try {

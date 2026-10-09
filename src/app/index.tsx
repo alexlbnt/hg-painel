@@ -15,6 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { CreateCharacterBanner } from '@/components/player/wizard/FirstCharacterInvite';
 import {
   BookOpen,
   Crown,
@@ -534,6 +535,17 @@ export default function HomeScreen() {
       </View>
 
 
+
+      {/* Convite para quem ainda não tem personagem (jogador comum) */}
+      {!loadingData &&
+        user?.role === 'PLAYER' &&
+        !allCharacters.concat(characters).some(
+          (c) => c.userId === user.id || (c.username || '').toLowerCase() === (user.username || '').toLowerCase()
+        ) && (
+          <View style={{ marginBottom: 12 }}>
+            <CreateCharacterBanner onStart={() => router.push('/player?new=1' as any)} />
+          </View>
+        )}
 
       {/* ============================================================ */}
       {/* 1.2 COMITIVA DOS HERÓIS (SHOWCASE INTERATIVO DARK FANTASY)  */}
