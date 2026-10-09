@@ -12,6 +12,10 @@ Construído com as melhores práticas de desenvolvimento web/mobile usando o eco
 - **Equipamentos e Inventário:** Rastreamento de peso, armas e armaduras, além de bônus na Classe de Armadura.
 - **Condições e Habilidades:** Rastreamento completo das condições do personagem e gerenciamento de habilidades por descanso curto/longo.
 
+### 📲 App instalável (PWA)
+- Instale pelo navegador (Android/Chrome: botão "Instalar"; iPhone: Compartilhar → Adicionar à Tela de Início): ícone na tela inicial e abertura em tela cheia.
+- Manifesto e ícones em `public/`; service worker `public/sw.js` (não guarda dados da API; sem internet mostra `offline.html`). Para regenerar os ícones: `scripts/generatePwaIcons.ps1`.
+
 ### 📄 Exportação
 - Ficha em JSON (backup/importação validada) e em PDF.
 

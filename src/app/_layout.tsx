@@ -10,6 +10,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import FantasyLoadingScreen from '@/components/ui/FantasyLoadingScreen';
 import LoginGateScreen from '@/components/auth/LoginGateScreen';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { InstallPrompt } from '@/components/ui/InstallPrompt';
 import { apiStatus, useApiOffline } from '@/lib/apiStatus';
 import { getApiBaseUrl } from '@/contexts/AuthContext';
 
@@ -31,6 +32,11 @@ function MainContentGate() {
   return (
     <View style={styles.container}>
       <HeaderNav />
+      {Platform.OS === 'web' && (
+        <View style={styles.installWrap}>
+          <InstallPrompt />
+        </View>
+      )}
       {offline && (
         <View style={styles.offlineBanner}>
           <ErrorBanner
@@ -44,7 +50,7 @@ function MainContentGate() {
           />
         </View>
       )}
-      <View style={[styles.mainContent, isMobile && { paddingBottom: 70 }]}>
+      <View style={[styles.mainContent, isMobile && styles.mainContentMobile]}>
         <Slot />
       </View>
       <BottomNav />
@@ -78,8 +84,18 @@ const styles = StyleSheet.create({
         height: '100dvh' as any,
         maxHeight: '100dvh' as any,
         overflow: 'hidden' as any,
+        paddingTop: 'env(safe-area-inset-top)' as any,
+        paddingLeft: 'env(safe-area-inset-left)' as any,
+        paddingRight: 'env(safe-area-inset-right)' as any,
       },
     }),
+  },
+  installWrap: {
+    paddingHorizontal: 12,
+  },
+  mainContentMobile: {
+    // Espaço da barra inferior + área segura (barra de gestos do celular)
+    paddingBottom: Platform.OS === 'web' ? ('calc(70px + env(safe-area-inset-bottom))' as any) : 70,
   },
   offlineBanner: {
     paddingHorizontal: 12,

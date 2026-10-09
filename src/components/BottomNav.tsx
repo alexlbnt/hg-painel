@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#3D342C',
     paddingTop: 6,
-    paddingBottom: Platform.OS === 'ios' ? 22 : 8,
+    paddingBottom: Platform.OS === 'ios' ? 22 : Platform.OS === 'web' ? ('calc(8px + env(safe-area-inset-bottom))' as any) : 8,
     paddingHorizontal: 8,
     minHeight: 58,
     ...Platform.select({
