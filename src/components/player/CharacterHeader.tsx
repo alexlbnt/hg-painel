@@ -115,6 +115,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
       <View
         style={[
           styles.headerStatsRibbon,
+          !isMobile && styles.headerStatsRibbonDesktop,
           isMobile && {
             width: '100%',
             maxWidth: '100%',
@@ -132,7 +133,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
           </Text>
         </View>
 
-        <View style={styles.headerStatDivider} />
+        {isMobile && <View style={styles.headerStatDivider} />}
 
         <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
           <Text style={styles.headerStatLabel}>CA</Text>
@@ -141,7 +142,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
           </Text>
         </View>
 
-        <View style={styles.headerStatDivider} />
+        {isMobile && <View style={styles.headerStatDivider} />}
 
         <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
           <Text style={styles.headerStatLabel}>INIC.</Text>
@@ -150,7 +151,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
           </Text>
         </View>
 
-        <View style={styles.headerStatDivider} />
+        {isMobile && <View style={styles.headerStatDivider} />}
 
         <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
           <Text style={styles.headerStatLabel}>PERC.</Text>
@@ -159,7 +160,7 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
           </Text>
         </View>
 
-        <View style={styles.headerStatDivider} />
+        {isMobile && <View style={styles.headerStatDivider} />}
 
         <TouchableOpacity
           style={[
@@ -314,6 +315,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 12,
+  },
+  // Desktop: sem moldura nem traços divisórios; as informações ficam soltas, com mais espaço entre si
+  headerStatsRibbonDesktop: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    gap: 28,
   },
   headerStatItem: {
     alignItems: 'center',
