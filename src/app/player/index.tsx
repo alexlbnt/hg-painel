@@ -938,7 +938,7 @@ export default function PlayerModule() {
             <AttributesGrid
               char={selectedChar}
               themeColor={themeColor}
-              isMobile={isMobile || isWide}
+              isMobile={isMobile}
             />
 
             </View>
