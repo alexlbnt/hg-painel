@@ -7,7 +7,7 @@
  *  - ícones: cache com revalidação em segundo plano.
  * Para forçar a renovação de tudo, aumente CACHE_VERSION.
  */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `hg-static-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
