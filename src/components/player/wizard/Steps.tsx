@@ -72,7 +72,7 @@ export function StepIdentity({
 
       {isElevated && (
         <View style={ui.row}>
-          <Field label="Nome do jogador" value={state.playerName} onChangeText={(playerName) => update({ playerName })} />
+          <Field label="Nome do jogador" hint="Quem joga este personagem" value={state.playerName} onChangeText={(playerName) => update({ playerName })} />
           <Field
             label="Usuário vinculado"
             hint="Login do dono da ficha"
