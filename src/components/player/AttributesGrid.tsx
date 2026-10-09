@@ -1,6 +1,5 @@
 import { CharacterData } from '@/lib/mockData';
 import { formatMod, getMod, getProfBonus } from '@/utils/dnd5e';
-import { Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -10,6 +9,11 @@ interface AttributesGridProps {
   isMobile?: boolean;
 }
 
+/**
+ * Atributos em uma única linha compacta (6 cards). O modificador é o destaque;
+ * o valor base fica pequeno. Atributos com salvaguarda proficiente ganham a cor do tema
+ * e o modificador já inclui o bônus de proficiência.
+ */
 export const AttributesGrid: React.FC<AttributesGridProps> = React.memo(({
   char,
   themeColor = '#C5A059',
@@ -18,21 +22,19 @@ export const AttributesGrid: React.FC<AttributesGridProps> = React.memo(({
   const prof = React.useMemo(() => getProfBonus(char.level), [char.level]);
 
   const attributes = React.useMemo(() => [
-    { name: 'FORÇA', abbr: 'FOR', score: char.str, prof: char.strProf },
-    { name: 'DESTREZA', abbr: 'DES', score: char.dex, prof: char.dexProf },
-    { name: 'CONSTITUIÇÃO', abbr: 'CON', score: char.con, prof: char.conProf },
-    { name: 'INTELIGÊNCIA', abbr: 'INT', score: char.int, prof: char.intProf },
-    { name: 'SABEDORIA', abbr: 'SAB', score: char.wis, prof: char.wisProf },
-    { name: 'CARISMA', abbr: 'CAR', score: char.cha, prof: char.chaProf },
+    { name: 'Força', abbr: 'FOR', score: char.str, prof: char.strProf },
+    { name: 'Destreza', abbr: 'DES', score: char.dex, prof: char.dexProf },
+    { name: 'Constituição', abbr: 'CON', score: char.con, prof: char.conProf },
+    { name: 'Inteligência', abbr: 'INT', score: char.int, prof: char.intProf },
+    { name: 'Sabedoria', abbr: 'SAB', score: char.wis, prof: char.wisProf },
+    { name: 'Carisma', abbr: 'CAR', score: char.cha, prof: char.chaProf },
   ], [char.str, char.strProf, char.dex, char.dexProf, char.con, char.conProf, char.int, char.intProf, char.wis, char.wisProf, char.cha, char.chaProf]);
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.sectionHeader}>ATRIBUTOS</Text>
-      </View>
+      <Text style={styles.sectionHeader}>ATRIBUTOS</Text>
 
-      <View style={[styles.grid, isMobile && { gap: 8 }]}>
+      <View style={[styles.grid, isMobile && styles.gridMobile]}>
         {attributes.map((attr) => {
           const baseMod = getMod(attr.score);
           const effectiveMod = attr.prof ? baseMod + prof : baseMod;
@@ -40,55 +42,26 @@ export const AttributesGrid: React.FC<AttributesGridProps> = React.memo(({
           return (
             <View
               key={attr.name}
+              accessible
+              accessibilityLabel={`${attr.name}: valor ${attr.score}, modificador ${formatMod(effectiveMod)}${
+                attr.prof ? ', salvaguarda proficiente' : ''
+              }`}
               style={[
                 styles.attrCard,
-                isMobile && styles.attrCardMobile,
                 attr.prof && {
                   borderColor: themeColor,
-                  backgroundColor: `${themeColor}0E`,
+                  backgroundColor: `${themeColor}12`,
                 },
               ]}
             >
-              {/* Nome do Atributo */}
-              <View style={styles.nameRow}>
-                <Text
-                  style={[
-                    styles.attrName,
-                    attr.prof && { color: themeColor, fontWeight: 'bold' },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {isMobile ? attr.abbr : attr.name}
-                </Text>
-                {attr.prof && <Sparkles size={11} color={themeColor} />}
-              </View>
-
-              {/* Modificador Principal (com Salvaguarda se proficiente) */}
               <Text
-                style={[
-                  styles.attrMod,
-                  isMobile && { fontSize: 26, marginVertical: 1 },
-                ]}
+                style={[styles.attrName, attr.prof && { color: themeColor, fontWeight: 'bold' }]}
+                numberOfLines={1}
               >
-                {formatMod(effectiveMod)}
+                {attr.abbr}
               </Text>
-
-              {/* Valor Bruto / Score */}
-              <View
-                style={[
-                  styles.scorePill,
-                  attr.prof && { backgroundColor: `${themeColor}1E` },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.attrScore,
-                    attr.prof && { color: '#E2D8C3', fontWeight: 'bold' },
-                  ]}
-                >
-                  Score {attr.score}
-                </Text>
-              </View>
+              <Text style={[styles.attrMod, isMobile && styles.attrModMobile]}>{formatMod(effectiveMod)}</Text>
+              <Text style={[styles.attrScore, attr.prof && { color: '#E2D8C3' }]}>{attr.score}</Text>
             </View>
           );
         })}
@@ -99,72 +72,53 @@ export const AttributesGrid: React.FC<AttributesGridProps> = React.memo(({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 10,
-    flexWrap: 'wrap',
     gap: 6,
   },
   sectionHeader: {
-    color: '#BAAFA0',
-    fontSize: 12,
+    color: '#9A8F82',
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.8,
   },
   grid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    justifyContent: 'space-between',
+    gap: 6,
+  },
+  gridMobile: {
+    gap: 4,
   },
   attrCard: {
     flex: 1,
-    minWidth: 100,
+    minWidth: 0,
     backgroundColor: '#181512',
     borderWidth: 1,
     borderColor: '#332B23',
     borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  attrCardMobile: {
-    minWidth: '30%',
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 2,
+    gap: 1,
   },
   attrName: {
     color: '#A89F91',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   attrMod: {
     color: '#FFF',
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginVertical: 2,
+    lineHeight: 24,
   },
-  scorePill: {
-    backgroundColor: '#1E1A16',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+  attrModMobile: {
+    fontSize: 18,
+    lineHeight: 22,
   },
   attrScore: {
-    color: '#80776C',
-    fontSize: 10.5,
+    color: '#9A8F82',
+    fontSize: 11,
     fontWeight: '500',
   },
 });
