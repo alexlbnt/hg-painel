@@ -10,7 +10,8 @@ import { View, StyleSheet, Platform } from 'react-native';
 import FantasyLoadingScreen from '@/components/ui/FantasyLoadingScreen';
 import LoginGateScreen from '@/components/auth/LoginGateScreen';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
-import { useApiOffline } from '@/lib/apiStatus';
+import { apiStatus, useApiOffline } from '@/lib/apiStatus';
+import { getApiBaseUrl } from '@/contexts/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,7 +33,15 @@ function MainContentGate() {
       <HeaderNav />
       {offline && (
         <View style={styles.offlineBanner}>
-          <ErrorBanner message="Sem conexão com o servidor: exibindo dados salvos neste dispositivo, que podem estar desatualizados." />
+          <ErrorBanner
+            message="Sem conexão com o servidor: exibindo dados salvos neste dispositivo, que podem estar desatualizados."
+            onRetry={async () => {
+              try {
+                const res = await fetch(`${getApiBaseUrl()}/api/rooms?t=${Date.now()}`);
+                if (res.ok) apiStatus.reportOk();
+              } catch {}
+            }}
+          />
         </View>
       )}
       <View style={[styles.mainContent, isMobile && { paddingBottom: 70 }]}>

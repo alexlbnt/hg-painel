@@ -270,7 +270,7 @@ export const ApiService = {
           return data;
         }
       }
-      apiStatus.reportFailure();
+      if (res.status !== 401) apiStatus.reportFailure();
     } catch {
       apiStatus.reportFailure();
     }
@@ -365,7 +365,7 @@ export const ApiService = {
           return data;
         }
       }
-      apiStatus.reportFailure();
+      if (res.status !== 401) apiStatus.reportFailure();
     } catch {
       apiStatus.reportFailure();
     }
@@ -429,7 +429,7 @@ export const ApiService = {
           return data;
         }
       }
-      apiStatus.reportFailure();
+      if (res.status !== 401) apiStatus.reportFailure();
     } catch (e) {
       console.warn('Erro ao buscar personagens da API, usando armazenamento local', e);
       apiStatus.reportFailure();
