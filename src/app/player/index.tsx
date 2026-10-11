@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -24,8 +23,9 @@ import {
 } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { ExportService } from '@/services/exportService';
-import { confirmAction } from '@/utils/confirm';
-import { getMod, getProfBonus } from '@/utils/dnd5e';
+import { confirmAction, errorText, notify } from '@/utils/confirm';
+import { getMod, getProfBonus, STANDARD_CONDITIONS } from '@/utils/dnd5e';
+import { ConditionsTracker } from '@/components/player/ConditionsTracker';
 
 // Subcomponentes Especializados de Alta Performance
 import { CharacterHeader } from '@/components/player/CharacterHeader';
@@ -303,6 +303,25 @@ export default function PlayerModule() {
     safeUpdateCharacter(selectedChar.id, { currentHp: newHp, tempHp: newTempHp });
   };
 
+  // Liga/desliga uma condição (Envenenado, Caído...) direto na ficha, com atualização otimista
+  const handleToggleCondition = (conditionName: string) => {
+    if (!selectedChar) return;
+    const current = selectedChar.conditions || [];
+    const has = current.some((c) => c.name === conditionName);
+    const next = has
+      ? current.filter((c) => c.name !== conditionName)
+      : [
+          ...current,
+          {
+            id: `cond-${Date.now()}`,
+            name: conditionName,
+            description: STANDARD_CONDITIONS[conditionName]?.shortDesc || '',
+          },
+        ];
+    setCharacters((prev) => prev.map((c) => (c.id === selectedChar.id ? { ...c, conditions: next } : c)));
+    safeUpdateCharacter(selectedChar.id, { conditions: next });
+  };
+
   const handleToggleDeathSave = async (type: 'success' | 'fail', index: number) => {
     if (!selectedChar) return;
     let newSuccess = selectedChar.deathSaveSuccesses;
@@ -336,37 +355,41 @@ export default function PlayerModule() {
       if (selectedChar.maxKiPoints && selectedChar.maxKiPoints > 0) {
         updates.kiPoints = selectedChar.maxKiPoints;
       }
-      await ApiService.takeShortRest(selectedChar.id, healAmt, 1);
-      await loadCharacters();
-      if (Platform.OS === 'web') {
-        window.alert(
-          `Ritual de Descanso Curto concluído! 1 Dado de Vida gasto, recuperou ${healAmt} HP e restaurou habilidades de descanso curto.`
-        );
+      try {
+        await ApiService.takeShortRest(selectedChar.id, healAmt, 1);
+        await loadCharacters();
+        notify(`Descanso curto feito: +${healAmt} PV e 1 dado de vida gasto.`);
+      } catch (e) {
+        notify(errorText(e, 'Não foi possível fazer o descanso curto.'), 'error');
       }
     };
 
     confirmAction(
-      'Realizar Ritual de Descanso Curto? (Gasta 1 Dado de Vida para curar e recarrega poderes marciais)',
+      'Gasta 1 dado de vida para recuperar PV e recarrega as habilidades de descanso curto.',
       executeRest,
-      'Descanso Curto'
+      'Descanso curto',
+      { confirmLabel: 'Descansar' }
     );
   };
 
   const handleTriggerLongRest = async () => {
     if (!selectedChar) return;
     const executeRest = async () => {
-      await ApiService.takeLongRest(selectedChar.id);
-      setConcentratingSpell(null);
-      await loadCharacters();
-      if (Platform.OS === 'web') {
-        window.alert('Ritual de Descanso Longo concluído! Sinais vitais, magias e habilidades 100% restaurados!');
+      try {
+        await ApiService.takeLongRest(selectedChar.id);
+        setConcentratingSpell(null);
+        await loadCharacters();
+        notify('Descanso longo feito: PV, magias e habilidades recuperados.');
+      } catch (e) {
+        notify(errorText(e, 'Não foi possível fazer o descanso longo.'), 'error');
       }
     };
 
     confirmAction(
-      'Realizar Descanso Longo? (Restaura 100% dos pontos de vida, recupera metade dos dados de vida e recarrega todos os feitiços)',
+      'Recupera todos os PV, metade dos dados de vida, os espaços de magia e as habilidades.',
       executeRest,
-      'Descanso Longo'
+      'Descanso longo',
+      { confirmLabel: 'Descansar' }
     );
   };
 
@@ -698,20 +721,24 @@ export default function PlayerModule() {
       const loggedUser = (user?.username || '').trim().toLowerCase();
       const charUser = (target?.username || '').trim().toLowerCase();
       if (charUser && charUser !== loggedUser) {
-        if (Platform.OS === 'web') window.alert('Você só tem autorização para excluir suas próprias fichas.');
-        else Alert.alert('Acesso Negado', 'Você só tem autorização para excluir suas próprias fichas.');
+        notify('Você só pode excluir as suas próprias fichas.', 'error');
         return;
       }
     }
 
     confirmAction(
-      'Tem certeza que deseja apagar permanentemente este personagem? Essa ação não pode ser desfeita.',
+      'A ficha, o inventário e o histórico do personagem serão apagados. Essa ação não pode ser desfeita.',
       async () => {
-        await ApiService.deleteCharacter(charId);
-        const updated = characters.filter((c) => c.id !== charId);
-        setCharacters(updated);
+        try {
+          await ApiService.deleteCharacter(charId);
+          setCharacters(characters.filter((c) => c.id !== charId));
+          notify('Personagem excluído.');
+        } catch (e) {
+          notify(errorText(e, 'Não foi possível excluir o personagem.'), 'error');
+        }
       },
-      'Excluir Personagem'
+      'Excluir personagem',
+      { confirmLabel: 'Excluir personagem', destructive: true }
     );
   }, [isElevatedUser, characters, user]);
 
@@ -772,7 +799,7 @@ export default function PlayerModule() {
     if (!importJsonText.trim()) return;
     const res = ExportService.parseImportJson(importJsonText);
     if (!res.success || !res.characters || res.characters.length === 0) {
-      if (Platform.OS === 'web') window.alert(res.error || 'Arquivo JSON inválido ou corrompido.');
+      notify(res.error || 'O arquivo JSON é inválido ou está corrompido.', 'error');
       return;
     }
 
@@ -788,7 +815,7 @@ export default function PlayerModule() {
     await loadCharacters();
     setImportModalVisible(false);
     setImportJsonText('');
-    if (Platform.OS === 'web') window.alert('Personagens importados com sucesso!');
+    notify(res.characters.length === 1 ? 'Personagem importado.' : `${res.characters.length} personagens importados.`);
   };
 
   if (authLoading) {
@@ -881,7 +908,7 @@ export default function PlayerModule() {
               activeOpacity={0.7}
             >
               <Plus color="#C5A059" size={16} />
-              <Text style={styles.newCharText}>Criar Personagem</Text>
+              <Text style={styles.newCharText}>Criar personagem</Text>
             </TouchableOpacity>
 
             {isElevatedUser && (
@@ -944,6 +971,14 @@ export default function PlayerModule() {
               onToggleDeathSave={handleToggleDeathSave}
             />
             </View>
+
+            {/* 3. Condições ativas ficam junto dos PV: são o estado de combate do personagem */}
+            <ConditionsTracker
+              conditions={selectedChar.conditions || []}
+              onToggleCondition={handleToggleCondition}
+              themeColor={themeColor}
+              isMobile={isMobile}
+            />
 
             {/* 4. Grid de Atributos com Modificador Canônico Correto e Saves */}
             <AttributesGrid
@@ -1111,7 +1146,7 @@ export default function PlayerModule() {
             </Text>
             <Text style={styles.emptySubtitle}>
               {!user
-                ? 'Faça login na Taverna para acessar o seu Grimório de Jogador e visualizar ou criar as fichas do seu aventureiro.'
+                ? 'Entre com sua conta para ver e criar as fichas dos seus personagens.'
                 : visibleCharacters.length === 0 && !isElevatedUser
                 ? `Você está identificado como @${user.username}. Você não possui fichas de personagem associadas ao seu perfil ainda. Crie a sua ficha agora ou solicite ao Mestre para vincular uma ficha existente a você.`
                 : 'Crie seu primeiro aventureiro ou selecione uma ficha na barra superior para começar.'}
@@ -1133,7 +1168,7 @@ export default function PlayerModule() {
                   ? 'Acessar Taverna para Login'
                   : visibleCharacters.length === 0 && !isElevatedUser
                   ? 'Criar Minha Ficha'
-                  : 'Criar Personagem'}
+                  : 'Criar personagem'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1187,7 +1222,7 @@ export default function PlayerModule() {
                 }
               } catch (e) {
                 console.error('Erro ao salvar personagem:', e);
-                if (Platform.OS === 'web') window.alert('Erro ao salvar personagem. Tente novamente.');
+                notify(errorText(e, 'Não foi possível salvar o personagem. Tente de novo.'), 'error');
               }
               setModalVisible(false);
               loadCharacters();
@@ -1270,7 +1305,7 @@ export default function PlayerModule() {
                 <View style={styles.modalHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <FastForward color={themeColor} size={18} />
-                    <Text style={styles.modalTitle}>ALTERAR DESLOCAMENTO</Text>
+                    <Text style={styles.modalTitle}>Alterar deslocamento</Text>
                   </View>
                   <TouchableOpacity
                     onPress={() => setSpeedModalVisible(false)}
@@ -1501,7 +1536,7 @@ const styles = StyleSheet.create({
   },
   chipClass: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
   },
   newCharChip: {
     flexDirection: 'row',
@@ -1699,7 +1734,7 @@ const styles = StyleSheet.create({
   },
   speedPresetText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
   },
   speedPresetTextActive: {
     color: '#E6C280',

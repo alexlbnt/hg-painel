@@ -143,8 +143,8 @@ export default function FantasyLoadingScreen() {
       </View>
 
       {/* Título Principal */}
-      <Text style={styles.title}>HONRA & EGOÍSMO</Text>
-      <Text style={styles.subtitle}>CONSULTANDO OS PERGAMINHOS ASTRAIS...</Text>
+      <Text style={styles.title}>Honra & Egoísmo</Text>
+      <Text style={styles.subtitle}>Consultando os pergaminhos astrais...</Text>
 
       {/* Spinner estético */}
       <View style={{ marginVertical: 20 }}>
@@ -167,7 +167,7 @@ export default function FantasyLoadingScreen() {
       </Animated.View>
 
       <Text style={styles.footerNote}>
-        Grimório Arcana • 3 Mesas • Honra, Estratégia e Destino
+        Honra & Egoísmo, campanha de D&D 5e
       </Text>
     </View>
   );
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
   },
   subtitle: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#8C704F',
     letterSpacing: 2.5,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' }),
   },
   footerNote: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#6E5C49',
     letterSpacing: 1.5,
     marginTop: 28,

@@ -119,7 +119,7 @@ export function StickyStatusBar({
             </Text>
           )}
 
-          <Text style={styles.sectionLabel}>CONDIÇÕES</Text>
+          <Text style={styles.sectionLabel}>Condições</Text>
           {conditions.length === 0 ? (
             <Text style={styles.empty}>Nenhuma condição ativa.</Text>
           ) : (
@@ -193,10 +193,10 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   chipDown: { borderColor: '#B82828', backgroundColor: 'rgba(184, 40, 40, 0.18)' },
-  chipText: { color: '#D8B4FE', fontSize: 11, fontWeight: '700' },
+  chipText: { color: '#D8B4FE', fontSize: 12, fontWeight: '700' },
   rowHp: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   hpText: { color: Colors.fantasy.text, fontSize: 13, fontWeight: '800', minWidth: 56, textAlign: 'right' },
-  temp: { color: '#8FB0E6', fontSize: 11 },
+  temp: { color: '#8FB0E6', fontSize: 12 },
   panel: {
     paddingHorizontal: 12,
     paddingBottom: 12,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.fantasy.border,
   },
   death: { color: '#FF8A8A', fontSize: 12, fontWeight: '700' },
-  sectionLabel: { color: Colors.fantasy.textMuted, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  sectionLabel: { color: Colors.fantasy.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   empty: { color: Colors.fantasy.textSecondary, fontSize: 13 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   condChip: { borderWidth: 1, borderRadius: Radius.pill, paddingHorizontal: 10, paddingVertical: 4 },

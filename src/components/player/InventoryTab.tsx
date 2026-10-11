@@ -76,7 +76,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
         <View style={styles.weightHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Scale size={14} color="#C5A059" />
-            <Text style={styles.weightLabel}>CAPACIDADE DE CARGA</Text>
+            <Text style={styles.weightLabel}>Capacidade de carga</Text>
           </View>
           <Text
             style={[
@@ -110,7 +110,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = React.memo(({
       <View style={[styles.coinsBar, isMobile && styles.coinsBarMobile]}>
         <View style={styles.coinsTitleRow}>
           <Coins size={13} color="#C5A059" />
-          <Text style={styles.coinsTitle}>MOEDAS</Text>
+          <Text style={styles.coinsTitle}>Moedas</Text>
         </View>
 
         <View style={styles.coinsPillsContainer}>
@@ -384,12 +384,12 @@ const styles = StyleSheet.create({
   },
   overloadTitle: {
     color: '#FF6B6B',
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   overloadDesc: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     marginTop: 2,
   },
   weightCard: {
@@ -407,13 +407,13 @@ const styles = StyleSheet.create({
   },
   weightLabel: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
   weightNumbers: {
     color: '#E2D8C3',
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '600',
   },
   weightTrack: {
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   },
   coinsTitle: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   coinUnit: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   coinStepper: {
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   },
   filterPillText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
   },
   addItemBtn: {
     flexDirection: 'row',
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   addItemBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   emptyCard: {
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   },
   qtyText: {
     color: '#BAAFA0',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   equipBtn: {
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   },
   equipBtnText: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   iconBtn: {
     padding: 4,
@@ -605,11 +605,13 @@ const styles = StyleSheet.create({
   },
   itemMetaText: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
   },
   itemDesc: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 15,
   },
 });
+
+InventoryTab.displayName = 'InventoryTab';

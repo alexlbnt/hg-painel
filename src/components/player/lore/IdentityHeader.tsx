@@ -47,7 +47,7 @@ export const IdentityHeader: React.FC<IdentityHeaderProps> = ({
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <Sparkles size={14} color={themeColor} />
-          <Text style={styles.headerTitle}>IDENTIDADE & CRENÇAS</Text>
+          <Text style={styles.headerTitle}>Identidade & crenças</Text>
         </View>
 
         {!isEditing ? (
@@ -87,7 +87,7 @@ export const IdentityHeader: React.FC<IdentityHeaderProps> = ({
           <View style={styles.item}>
             <View style={styles.itemIconRow}>
               <Compass size={12} color={themeColor} />
-              <Text style={styles.label}>TENDÊNCIA</Text>
+              <Text style={styles.label}>Tendência</Text>
             </View>
             <Text style={styles.val} numberOfLines={1}>
               {alignment || 'Neutro'}
@@ -99,7 +99,7 @@ export const IdentityHeader: React.FC<IdentityHeaderProps> = ({
           <View style={styles.item}>
             <View style={styles.itemIconRow}>
               <Book size={12} color={themeColor} />
-              <Text style={styles.label}>ANTECEDENTE</Text>
+              <Text style={styles.label}>Antecedente</Text>
             </View>
             <Text style={styles.val} numberOfLines={1}>
               {background || 'Herói do Povo'}
@@ -111,7 +111,7 @@ export const IdentityHeader: React.FC<IdentityHeaderProps> = ({
           <View style={styles.item}>
             <View style={styles.itemIconRow}>
               <Sparkles size={12} color={themeColor} />
-              <Text style={styles.label}>DIVINDADE / CRENÇA</Text>
+              <Text style={styles.label}>Divindade / crença</Text>
             </View>
             <Text style={styles.val} numberOfLines={1}>
               {deity || 'Nenhuma'}
@@ -121,7 +121,7 @@ export const IdentityHeader: React.FC<IdentityHeaderProps> = ({
       ) : (
         <View style={styles.editGrid}>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>TENDÊNCIA</Text>
+            <Text style={styles.inputLabel}>Tendência</Text>
             <TextInput
               style={styles.input}
               value={tempAlignment}
@@ -132,7 +132,7 @@ export const IdentityHeader: React.FC<IdentityHeaderProps> = ({
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>ANTECEDENTE</Text>
+            <Text style={styles.inputLabel}>Antecedente</Text>
             <TextInput
               style={styles.input}
               value={tempBackground}
@@ -143,7 +143,7 @@ export const IdentityHeader: React.FC<IdentityHeaderProps> = ({
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>DIVINDADE / PATRONO</Text>
+            <Text style={styles.inputLabel}>Divindade / patrono</Text>
             <TextInput
               style={styles.input}
               value={tempDeity}
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#E2D8C3',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.8,
     flexShrink: 1,
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   cancelBtn: {
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: '#80776C',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     color: '#80776C',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },

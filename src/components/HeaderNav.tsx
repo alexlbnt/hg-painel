@@ -40,11 +40,12 @@ export default function HeaderNav() {
   };
 
   const navItems = [
-    { name: 'Portal da Taverna', mobileName: 'Taverna', path: '/', icon: Home },
-    { name: 'Diário da Campanha', mobileName: 'Diário', path: '/journal', icon: BookOpen },
-    { name: 'Tarefas da Mesa', mobileName: 'Tarefas', path: '/tasks', icon: ClipboardList },
-    { name: 'Grimório do Jogador', mobileName: 'Jogador', path: '/player', icon: Shield },
-    ...(user?.role === 'DM' ? [{ name: 'Escudo do Mestre', mobileName: 'Mestre', path: '/dm', icon: Crown }] : []),
+    // Mesmo nome curto no cabeçalho, no menu inferior e nos botões que levam a cada área
+    { name: 'Taverna', mobileName: 'Taverna', path: '/', icon: Home },
+    { name: 'Diário', mobileName: 'Diário', path: '/journal', icon: BookOpen },
+    { name: 'Tarefas', mobileName: 'Tarefas', path: '/tasks', icon: ClipboardList },
+    { name: 'Fichas', mobileName: 'Fichas', path: '/player', icon: Shield },
+    ...(user?.role === 'DM' ? [{ name: 'Escudo', mobileName: 'Escudo', path: '/dm', icon: Crown }] : []),
   ];
 
   const renderLoginModal = () => (
@@ -142,7 +143,7 @@ export default function HeaderNav() {
             {/* Status da Sessão */}
             <View style={styles.userMenuStatusRow}>
               <View style={styles.statusIndicatorDot} />
-              <Text style={styles.statusIndicatorText}>Conectado ao Grimório</Text>
+              <Text style={styles.statusIndicatorText}>Conectado</Text>
             </View>
 
             {/* Atalho para Meu Perfil */}
@@ -193,8 +194,7 @@ export default function HeaderNav() {
               <Sword color={Colors.fantasy.gold} size={15} />
             </View>
             <View style={{ flexShrink: 1 }}>
-              <Text style={styles.titleMobile} numberOfLines={1}>HONRA & EGOÍSMO</Text>
-              <Text style={styles.subtitleMobile} numberOfLines={1}>GRIMÓRIO D&D 5E</Text>
+              <Text style={styles.titleMobile} numberOfLines={1}>Honra & Egoísmo</Text>
             </View>
           </TouchableOpacity>
 
@@ -215,7 +215,7 @@ export default function HeaderNav() {
                 style={styles.loginBtnCompactMobile}
                 onPress={() => setShowLoginModal(true)}
               >
-                <Text style={styles.loginBtnCompactTextMobile}>LOGIN</Text>
+                <Text style={styles.loginBtnCompactTextMobile}>Entrar</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -236,8 +236,8 @@ export default function HeaderNav() {
               <Sword color={Colors.fantasy.gold} size={22} />
             </View>
             <View>
-              <Text style={styles.title}>HONRA & EGOÍSMO</Text>
-              <Text style={styles.subtitle}>GRIMÓRIO D&D 5E</Text>
+              <Text style={styles.title} numberOfLines={1}>Honra & Egoísmo</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>Campanha de D&D 5e</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -296,7 +296,7 @@ export default function HeaderNav() {
               onPress={() => setShowLoginModal(true)}
               activeOpacity={0.8}
             >
-              <Text style={styles.loginBtnCompactText}>LOGIN</Text>
+              <Text style={styles.loginBtnCompactText}>Entrar</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -370,16 +370,14 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#E6C280',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 2,
+    letterSpacing: 1,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", "Garamond", serif' : undefined,
   },
   subtitle: {
-    color: '#80776C',
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1.2,
+    color: '#9A8F82',
+    fontSize: 12,
   },
   navLinks: {
     flexDirection: 'row',
@@ -437,7 +435,7 @@ const styles = StyleSheet.create({
   },
   roomLabel: {
     color: '#80776C',
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
   },
@@ -582,7 +580,7 @@ const styles = StyleSheet.create({
   },
   loginBtnCompactText: {
     color: '#C5A059',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -640,13 +638,13 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'web' ? '"Cinzel", serif' : undefined,
   },
   userMenuRole: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     marginTop: 1,
   },
   userMenuUsername: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 1,
   },
   userMenuStatusRow: {
@@ -666,7 +664,7 @@ const styles = StyleSheet.create({
   },
   statusIndicatorText: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '600',
   },
   userMenuItemBtn: {
@@ -756,7 +754,7 @@ const styles = StyleSheet.create({
   },
   subtitleMobile: {
     color: '#80776C',
-    fontSize: 7.5,
+    fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.4,
   },
@@ -800,7 +798,7 @@ const styles = StyleSheet.create({
   },
   loginBtnCompactTextMobile: {
     color: '#C5A059',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
 });

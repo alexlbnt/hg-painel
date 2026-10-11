@@ -8,7 +8,6 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -145,15 +144,9 @@ export default function ProfileScreen() {
         message: 'Perfil atualizado com sucesso! As alterações já estão visíveis na taverna.',
       });
 
-      if (Platform.OS !== 'web') {
-        Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
-      }
     } catch (err: any) {
       const msg = err.message || 'Erro ao atualizar o perfil.';
       setFeedback({ type: 'error', message: msg });
-      if (Platform.OS !== 'web') {
-        Alert.alert('Erro', msg);
-      }
     } finally {
       setIsSaving(false);
     }
@@ -175,7 +168,7 @@ export default function ProfileScreen() {
           activeOpacity={0.7}
         >
           <ArrowLeft size={16} color="#C5A059" />
-          <Text style={styles.backButtonText}>Retornar à Taverna</Text>
+          <Text style={styles.backButtonText}>Voltar para a Taverna</Text>
         </TouchableOpacity>
       </View>
 
@@ -197,21 +190,16 @@ export default function ProfileScreen() {
                 <Shield color="#C5A059" size={14} />
               )}
               <Text style={styles.badgeText}>
-                {user?.role === 'DM'
-                  ? 'MESTRE DA CAMPANHA'
-                  : user?.role === 'MECHANIC'
-                  ? 'ARTÍFICE MECÂNICO'
-                  : 'AVENTUREIRO DA COMITIVA'}
+                {user?.role === 'DM' ? 'Mestre' : user?.role === 'MECHANIC' ? 'Mecânico' : 'Jogador'}
               </Text>
             </View>
             <Text style={[styles.title, isMobile && styles.titleMobile]}>
-              {name.trim() || 'Identidade do Jogador'}
+              {name.trim() || 'Seu perfil'}
             </Text>
           </View>
         </View>
         <Text style={styles.subtitle}>
-          Personalize seu emblema colorido e sua apresentação pessoal. Estas informações são
-          exibidas publicamente nos cards de seus heróis no Portal da Taverna.
+          Seu nome, emblema e apresentação aparecem para a mesa nos cards dos seus personagens, na Taverna.
         </Text>
       </View>
 
@@ -250,13 +238,13 @@ export default function ProfileScreen() {
           <View style={styles.cardBox}>
             <View style={styles.cardHeader}>
               <UserIcon color="#C5A059" size={20} />
-              <Text style={styles.cardTitle}>Dados Pessoais</Text>
+              <Text style={styles.cardTitle}>Dados pessoais</Text>
             </View>
 
             {/* Nome de Exibição */}
             <View style={styles.formGroup}>
               <Text style={styles.inputLabel}>
-                Nome de Exibição / Apelido <Text style={styles.requiredAsterisk}>*</Text>
+                Nome de exibição <Text style={styles.requiredAsterisk}>*</Text>
               </Text>
               <TextInput
                 style={styles.textInput}
@@ -283,7 +271,7 @@ export default function ProfileScreen() {
             <View style={styles.formGroup}>
               <View style={styles.emblemHeaderRow}>
                 <Text style={styles.inputLabel}>
-                  Emblema do Jogador <Text style={styles.requiredAsterisk}>*</Text>
+                  Emblema <Text style={styles.requiredAsterisk}>*</Text>
                 </Text>
                 {selectedPreset && (
                   <View style={[styles.activeEmblemBadge, { borderColor: selectedPreset.borderColor, backgroundColor: selectedPreset.bgColor }]}>
@@ -295,7 +283,7 @@ export default function ProfileScreen() {
                 )}
               </View>
               <Text style={styles.inputHint}>
-                Selecione o ícone colorido que representa sua honra e papel na taverna:
+                Escolha o ícone que aparece ao lado do seu nome.
               </Text>
 
               {/* Grid dos Emblemas Coloridos */}
@@ -424,14 +412,14 @@ export default function ProfileScreen() {
               >
                 <Key size={16} color="#C5A059" />
                 <Text style={styles.passwordToggleBtnText}>
-                  {showPasswordSection ? 'Ocultar Alteração de Senha' : 'Deseja alterar sua senha?'}
+                  {showPasswordSection ? 'Cancelar troca de senha' : 'Trocar senha'}
                 </Text>
               </TouchableOpacity>
 
               {showPasswordSection && (
                 <View style={styles.passwordFieldsBox}>
                   <View style={styles.formGroup}>
-                    <Text style={styles.inputLabel}>Senha Atual</Text>
+                    <Text style={styles.inputLabel}>Senha atual</Text>
                     <TextInput
                       style={styles.textInput}
                       value={currentPassword}
@@ -443,7 +431,7 @@ export default function ProfileScreen() {
                   </View>
 
                   <View style={styles.formGroup}>
-                    <Text style={styles.inputLabel}>Nova Senha</Text>
+                    <Text style={styles.inputLabel}>Nova senha</Text>
                     <TextInput
                       style={styles.textInput}
                       value={newPassword}
@@ -455,7 +443,7 @@ export default function ProfileScreen() {
                   </View>
 
                   <View style={styles.formGroup}>
-                    <Text style={styles.inputLabel}>Confirmar Nova Senha</Text>
+                    <Text style={styles.inputLabel}>Repita a nova senha</Text>
                     <TextInput
                       style={styles.textInput}
                       value={confirmPassword}
@@ -495,7 +483,7 @@ export default function ProfileScreen() {
               ) : (
                 <>
                   <CheckCircle2 color="#110F0D" size={18} />
-                  <Text style={styles.saveButtonText}>Salvar Informações do Perfil</Text>
+                  <Text style={styles.saveButtonText}>Salvar perfil</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -508,11 +496,10 @@ export default function ProfileScreen() {
           <View style={[styles.cardBox, styles.previewCardBox]}>
             <View style={styles.cardHeader}>
               <Sparkles color="#E6C280" size={18} />
-              <Text style={styles.cardTitle}>Pré-visualização ao Vivo</Text>
+              <Text style={styles.cardTitle}>Como a mesa vê você</Text>
             </View>
             <Text style={styles.previewDescription}>
-              É exatamente assim que sua foto, nome e bio aparecerão no card do seu personagem no
-              Portal da Taverna:
+              Assim seu nome e sua apresentação aparecem nos cards da Taverna.
             </Text>
 
             {/* Simulação do Bloco de Jogador do Card */}
@@ -547,7 +534,7 @@ export default function ProfileScreen() {
           <View style={styles.cardBox}>
             <View style={styles.cardHeader}>
               <Shield color="#C5A059" size={18} />
-              <Text style={styles.cardTitle}>Personagens Vinculados</Text>
+              <Text style={styles.cardTitle}>Seus personagens</Text>
             </View>
 
             {loadingCharacters ? (
@@ -555,14 +542,14 @@ export default function ProfileScreen() {
             ) : myCharacters.length === 0 ? (
               <View style={styles.noCharactersBox}>
                 <Text style={styles.noCharactersText}>
-                  Nenhum personagem registrado diretamente sob seu login (@{user?.username}).
+                  Você ainda não tem personagem.
                 </Text>
                 <TouchableOpacity
                   style={styles.createCharacterBtn}
-                  onPress={() => router.push('/player')}
+                  onPress={() => router.push('/player?new=1' as any)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.createCharacterBtnText}>Acessar Grimório do Jogador →</Text>
+                  <Text style={styles.createCharacterBtnText}>Criar personagem</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -669,7 +656,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#C5A059',
     letterSpacing: 1.2,
@@ -800,7 +787,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   inputHint: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80776C',
     marginTop: 5,
     lineHeight: 15,
@@ -811,7 +798,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   charCounter: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80776C',
     fontWeight: '600',
   },
@@ -832,7 +819,7 @@ const styles = StyleSheet.create({
     color: '#C5A059',
   },
   readOnlySubtext: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#80776C',
   },
   headerTopProfileRow: {
@@ -859,7 +846,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   activeEmblemBadgeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   iconPresetsGrid: {
@@ -892,7 +879,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   iconPresetLabel: {
-    fontSize: 10,
+    fontSize: 12,
     textAlign: 'center',
   },
   iconSelectedBadge: {
@@ -913,7 +900,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   customUrlToggleBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#8C704F',
     textDecorationLine: 'underline',
   },
@@ -954,7 +941,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   showPassToggleText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#BAAFA0',
   },
   saveButton: {
@@ -982,14 +969,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#110F0D',
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   previewCardBox: {
     borderColor: '#5C4E40',
     backgroundColor: '#191613',
   },
   previewDescription: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#BAAFA0',
     lineHeight: 16,
     marginBottom: 14,
@@ -1037,11 +1023,11 @@ const styles = StyleSheet.create({
     color: '#E2D8C3',
   },
   previewPlayerUsername: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80776C',
   },
   previewPlayerBio: {
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 15,
     color: '#BAAFA0',
     marginTop: 2,
@@ -1067,7 +1053,7 @@ const styles = StyleSheet.create({
     borderColor: '#3D342C',
   },
   createCharacterBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#C5A059',
   },
@@ -1103,7 +1089,7 @@ const styles = StyleSheet.create({
     color: '#E2D8C3',
   },
   characterDetails: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80776C',
     marginTop: 1,
   },

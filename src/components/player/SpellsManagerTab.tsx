@@ -106,7 +106,7 @@ export const SpellsManagerTab: React.FC<SpellsManagerTabProps> = React.memo(({
       {/* 🔮 1. BANNER DE ESTATÍSTICAS MÁGICAS */}
       <View style={[styles.statsBanner, { borderColor: `${themeColor}44` }]}>
         <View style={styles.statCol}>
-          <Text style={styles.statLabel}>CONJURAÇÃO</Text>
+          <Text style={styles.statLabel}>Conjuração</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Sparkles size={13} color={themeColor} />
             <Text style={[styles.statVal, { color: themeColor }]}>
@@ -118,7 +118,7 @@ export const SpellsManagerTab: React.FC<SpellsManagerTabProps> = React.memo(({
         <View style={styles.bannerDivider} />
 
         <View style={styles.statCol}>
-          <Text style={styles.statLabel}>CD DE RESISTÊNCIA</Text>
+          <Text style={styles.statLabel}>CD de resistência</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Shield size={13} color="#E6C280" />
             <Text style={[styles.statVal, { color: '#E6C280' }]}>{saveDc}</Text>
@@ -128,7 +128,7 @@ export const SpellsManagerTab: React.FC<SpellsManagerTabProps> = React.memo(({
         <View style={styles.bannerDivider} />
 
         <View style={styles.statCol}>
-          <Text style={styles.statLabel}>ATAQUE MÁGICO</Text>
+          <Text style={styles.statLabel}>Ataque mágico</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Crosshair size={13} color="#4E9C8E" />
             <Text style={[styles.statVal, { color: '#4E9C8E' }]}>
@@ -286,7 +286,7 @@ export const SpellsManagerTab: React.FC<SpellsManagerTabProps> = React.memo(({
                                 {isConcentrating && (
                                   <View style={styles.activeConcBadge}>
                                     <Sparkles size={9} color="#D8B4FE" />
-                                    <Text style={styles.activeConcText}>CONCENTRANDO</Text>
+                                    <Text style={styles.activeConcText}>Concentrando</Text>
                                   </View>
                                 )}
                               </View>
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     color: '#80776C',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   },
   filterPillText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
   },
   srdBtn: {
     flexDirection: 'row',
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   },
   srdBtnText: {
     color: '#78C288',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   addSpellBtn: {
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   addSpellBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   levelCard: {
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   },
   spellCountBadge: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
   },
   slotsPipsContainer: {
     flexDirection: 'row',
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   },
   slotsLabel: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   pipsRow: {
     flexDirection: 'row',
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   },
   noSpellsText: {
     color: '#6B6257',
-    fontSize: 11,
+    fontSize: 12,
     fontStyle: 'italic',
     paddingVertical: 4,
   },
@@ -551,12 +551,12 @@ const styles = StyleSheet.create({
   },
   activeConcText: {
     color: '#D8B4FE',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   spellMetaDetails: {
     color: '#80776C',
-    fontSize: 10.5,
+    fontSize: 12,
     marginTop: 2,
   },
   actionIconBtn: {
@@ -568,7 +568,9 @@ const styles = StyleSheet.create({
   },
   spellDesc: {
     color: '#BAAFA0',
-    fontSize: 11.5,
+    fontSize: 12,
     lineHeight: 16,
   },
 });
+
+SpellsManagerTab.displayName = 'SpellsManagerTab';

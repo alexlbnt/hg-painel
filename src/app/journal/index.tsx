@@ -1,15 +1,14 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRoom, getRoomColor } from '@/contexts/RoomContext';
+import { useRoom } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Plus, Trash, BookOpen, User as UserIcon, Edit2, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
-import { confirmAction } from '@/utils/confirm';
+import { confirmAction, errorText, notify } from '@/utils/confirm';
 import { ApiService } from '@/services/api';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -46,7 +45,6 @@ export default function JournalScreen() {
   const { activeRoom } = useRoom();
   const { isMobile } = useResponsive();
   
-  const roomColor = getRoomColor(activeRoom?.code);
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -115,7 +113,7 @@ export default function JournalScreen() {
         await loadSessions();
       } catch (e: any) {
         console.error('Erro ao excluir sessão:', e);
-        Alert.alert('Erro', e.message || 'Falha ao excluir sessão');
+        notify(errorText(e, 'Não foi possível excluir a sessão.'), 'error');
       } finally {
         setLoading(false);
       }
@@ -138,7 +136,7 @@ export default function JournalScreen() {
       await loadSessions();
     } catch (e: any) {
       console.error(e);
-      Alert.alert('Erro', e.message || 'Falha ao criar sessão');
+      notify(errorText(e, 'Não foi possível criar a sessão.'), 'error');
     } finally {
       setLoading(false);
       setNewSessionTitle('');
@@ -153,7 +151,7 @@ export default function JournalScreen() {
       await loadSessions();
     } catch (e: any) {
       console.error(e);
-      Alert.alert('Erro', e.message || 'Falha ao registrar anotação');
+      notify(errorText(e, 'Não foi possível salvar a anotação. O texto continua no campo.'), 'error');
     }
   };
 
@@ -166,7 +164,7 @@ export default function JournalScreen() {
       await loadSessions();
     } catch (e: any) {
       console.error(e);
-      Alert.alert('Erro', e.message || 'Falha ao atualizar anotação');
+      notify(errorText(e, 'Não foi possível salvar a edição.'), 'error');
     }
   };
 
@@ -178,7 +176,7 @@ export default function JournalScreen() {
       await loadSessions();
     } catch (e: any) {
       console.error(e);
-      Alert.alert('Erro', e.message || 'Falha ao atualizar título da sessão');
+      notify(errorText(e, 'Não foi possível renomear a sessão.'), 'error');
     }
   };
 
@@ -190,7 +188,7 @@ export default function JournalScreen() {
         await loadSessions();
       } catch (e: any) {
         console.error(e);
-        Alert.alert('Erro', e.message || 'Falha ao excluir anotação');
+        notify(errorText(e, 'Não foi possível excluir a anotação.'), 'error');
       }
     }, 'Excluir Anotação');
   };
@@ -213,8 +211,7 @@ export default function JournalScreen() {
                 <Text style={styles.sidebarTitle}>Capítulos</Text>
                 {activeRoom && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: roomColor }} />
-                    <Text style={{ fontSize: 11, color: roomColor, fontWeight: '700' }}>
+                    <Text style={{ fontSize: 13, color: '#9A8F82' }}>
                       {activeRoom.name}
                     </Text>
                   </View>
@@ -230,7 +227,8 @@ export default function JournalScreen() {
         {(!isMobile || isSidebarExpanded) && (
           <>
             <ScrollView style={[styles.sessionList, isMobile && { maxHeight: 200 }]}>
-              {sessions.map(session => (
+              {/* Mais recentes primeiro: em campanhas longas, a última sessão fica no topo */}
+              {[...sessions].reverse().map(session => (
                 <TouchableOpacity 
                   key={session.id} 
                   style={[styles.sessionTab, activeSessionId === session.id && styles.sessionTabActive]}
@@ -243,7 +241,10 @@ export default function JournalScreen() {
                     {session.title}
                   </Text>
                   <Text style={styles.sessionTabDate}>
-                    {new Date(session.date).toLocaleDateString()}
+                    {new Date(session.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {session.notes?.length
+                      ? `, ${session.notes.length} ${session.notes.length === 1 ? 'anotação' : 'anotações'}`
+                      : ', sem anotações'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -257,7 +258,7 @@ export default function JournalScreen() {
             {isDM && (
               <TouchableOpacity style={styles.createButton} onPress={() => setModalVisible(true)}>
                 <Plus color="#110F0D" size={20} />
-                <Text style={styles.createButtonText}>Nova Sessão</Text>
+                <Text style={styles.createButtonText}>Nova sessão</Text>
               </TouchableOpacity>
             )}
           </>
@@ -294,6 +295,8 @@ export default function JournalScreen() {
                     {isDM && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <TouchableOpacity
+                          accessibilityRole="button"
+                          hitSlop={10}
                           accessibilityLabel="Editar título da sessão"
                           onPress={() => {
                             setEditSessionTitle(activeSession.title);
@@ -303,6 +306,8 @@ export default function JournalScreen() {
                           <Edit2 color="#BAAFA0" size={18} />
                         </TouchableOpacity>
                         <TouchableOpacity
+                          accessibilityRole="button"
+                          hitSlop={10}
                           accessibilityLabel="Excluir sessão"
                           onPress={() => handleDeleteSession(activeSession.id)}
                         >
@@ -313,12 +318,19 @@ export default function JournalScreen() {
                   </>
                 )}
               </View>
-              <Text style={styles.sessionDate}>{new Date(activeSession.date).toLocaleDateString()}</Text>
+              <Text style={styles.sessionDate}>
+                {new Date(activeSession.date).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </Text>
             </View>
 
             <ScrollView style={styles.notesScroll} contentContainerStyle={styles.notesContainer}>
               {activeSession.notes.length === 0 ? (
-                <Text style={styles.emptyText}>Sem anotações neste episódio. Seja o primeiro a escrever!</Text>
+                <View style={styles.emptyPrompt}>
+                  <Text style={styles.emptyPromptTitle}>Ninguém escreveu sobre esta sessão ainda.</Text>
+                  <Text style={styles.emptyPromptText}>
+                    Algumas ideias para começar: o que aconteceu? Quem vocês conheceram? O que ficou pendente para a próxima sessão?
+                  </Text>
+                </View>
               ) : (
                 activeSession.notes.map(note => {
                   const isMine = user?.id === note.authorId;
@@ -338,15 +350,25 @@ export default function JournalScreen() {
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12 }}>
                           {isMine && (
-                            <TouchableOpacity onPress={() => {
-                              setEditingNoteId(note.id);
-                              setEditingNoteContent(note.content);
-                            }}>
+                            <TouchableOpacity
+                              accessibilityRole="button"
+                              accessibilityLabel="Editar anotação"
+                              hitSlop={10}
+                              onPress={() => {
+                                setEditingNoteId(note.id);
+                                setEditingNoteContent(note.content);
+                              }}
+                            >
                               <Edit2 color="#BAAFA0" size={14} />
                             </TouchableOpacity>
                           )}
                           {(isMine || isDM) && (
-                            <TouchableOpacity onPress={() => handleDeleteNote(note.id)}>
+                            <TouchableOpacity
+                              accessibilityRole="button"
+                              accessibilityLabel="Excluir anotação"
+                              hitSlop={10}
+                              onPress={() => handleDeleteNote(note.id)}
+                            >
                               <Trash color="#B82828" size={14} />
                             </TouchableOpacity>
                           )}
@@ -388,8 +410,9 @@ export default function JournalScreen() {
                 <TextInput
                   style={styles.textInput}
                   multiline
-                  placeholder="Escreva suas anotações... (Aceita Markdown)"
-                  placeholderTextColor="#666"
+                  placeholder="O que aconteceu nesta sessão? (aceita Markdown)"
+                  placeholderTextColor="#80776C"
+                  accessibilityLabel="Nova anotação"
                   value={newNoteContent}
                   onChangeText={setNewNoteContent}
                 />
@@ -398,12 +421,12 @@ export default function JournalScreen() {
                   onPress={handlePostNote}
                   disabled={!newNoteContent.trim()}
                 >
-                  <Text style={styles.sendButtonText}>Registrar</Text>
+                  <Text style={styles.sendButtonText}>Salvar anotação</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.loginRequiredBox}>
-                <Text style={styles.loginRequiredText}>Faça login para adicionar anotações.</Text>
+                <Text style={styles.loginRequiredText}>Entre com sua conta para escrever no diário.</Text>
               </View>
             )}
           </>
@@ -412,8 +435,10 @@ export default function JournalScreen() {
             <BookOpen color="#3D342C" size={48} />
             <Text style={[styles.emptyText, { marginTop: 8, textAlign: 'center', paddingHorizontal: 20 }]}>
               {sessions.length === 0
-                ? `Nenhum capítulo registrado ainda para a ${activeRoom?.name || 'mesa'}.`
-                : 'Selecione ou crie um capítulo ao lado para abrir o diário.'}
+                ? isDM
+                  ? 'Nenhuma sessão no diário ainda. Crie a primeira para a mesa começar a registrar a campanha.'
+                  : 'Nenhuma sessão no diário ainda. O Mestre cria uma sessão e todos podem escrever nela.'
+                : 'Escolha uma sessão na lista para ler e escrever no diário.'}
             </Text>
           </View>
         )}
@@ -423,21 +448,26 @@ export default function JournalScreen() {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Novo Capítulo (Sessão)</Text>
-            <Text style={styles.label}>Título do Episódio</Text>
+            <Text style={styles.modalTitle}>Nova sessão no diário</Text>
+            <Text style={styles.label}>Título</Text>
             <TextInput 
               style={styles.input} 
               value={newSessionTitle} 
               onChangeText={setNewSessionTitle} 
               placeholderTextColor="#666" 
-              placeholder="Ex: Sessão 5 - A Caverna do Dragão" 
+              placeholder="Ex: Sessão 13: Os esgotos de Kessa"
+              onSubmitEditing={handleCreateSession}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.btnCancel} onPress={() => setModalVisible(false)}>
                 <Text style={styles.btnCancelText}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.btnSave} onPress={handleCreateSession}>
-                <Text style={styles.btnSaveText}>Criar Sessão</Text>
+              <TouchableOpacity
+                style={[styles.btnSave, !newSessionTitle.trim() && { opacity: 0.5 }]}
+                onPress={handleCreateSession}
+                disabled={!newSessionTitle.trim()}
+              >
+                <Text style={styles.btnSaveText}>Criar sessão</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -471,6 +501,26 @@ const darkMarkdownStyles = {
 } as any;
 
 const styles = StyleSheet.create({
+  emptyPrompt: {
+    gap: 8,
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#3A2F25',
+    maxWidth: 560,
+  },
+  emptyPromptTitle: {
+    color: '#E2D8C3',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptyPromptText: {
+    color: '#BAAFA0',
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: Platform.OS === 'web' ? '"IM Fell English", Georgia, serif' : 'serif',
+  },
   container: {
     flex: 1,
     flexDirection: 'row',
@@ -523,7 +573,7 @@ const styles = StyleSheet.create({
   },
   sessionTabDate: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 4,
   },
   createButton: {
@@ -617,7 +667,7 @@ const styles = StyleSheet.create({
   },
   noteDate: {
     color: '#666',
-    fontSize: 11,
+    fontSize: 12,
   },
   noteContent: {
     marginTop: 4,

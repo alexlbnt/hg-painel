@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#E2D8C3',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.8,
     flexShrink: 1,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   hintToggleText: {
     color: '#7A7265',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '600',
   },
   pillarsGrid: {
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   cardTitle: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.6,
     flexShrink: 1,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   cardEditText: {
     color: '#BAAFA0',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   hintBox: {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   hintText: {
     color: '#A89E8D',
-    fontSize: 11,
+    fontSize: 12,
     fontStyle: 'italic',
     lineHeight: 15,
   },

@@ -1,21 +1,5 @@
-import { Alert, Platform } from 'react-native';
-
 /**
- * Exibe um diálogo de confirmação universal seguro para Web e React Native.
+ * Diálogo de confirmação universal (web e nativo) no tema do painel.
+ * A implementação vive no host global de feedback (src/components/ui/Feedback.tsx).
  */
-export function confirmAction(
-  message: string,
-  onConfirm: () => void,
-  title: string = 'Confirmação'
-) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    if (window.confirm(message)) {
-      onConfirm();
-    }
-  } else {
-    Alert.alert(title, message, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Confirmar', style: 'destructive', onPress: onConfirm },
-    ]);
-  }
-}
+export { confirmAction, notify, errorText } from '@/components/ui/Feedback';

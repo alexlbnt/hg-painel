@@ -45,7 +45,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.2,
-    textTransform: 'uppercase',
   },
   badge: {
     alignSelf: 'flex-start',
@@ -54,5 +53,5 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     borderWidth: 1,
   },
-  badgeText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
+  badgeText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.6 },
 });

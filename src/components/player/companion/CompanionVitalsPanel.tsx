@@ -108,7 +108,7 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
         <View style={[styles.statCard, isMobile && styles.statCardMobile]}>
           <View style={styles.statIconRow}>
             <Shield size={13} color="#7895C2" />
-            <Text style={styles.statLabel}>CLASSE ARM.</Text>
+            <Text style={styles.statLabel}>CA</Text>
           </View>
           {!isEditing ? (
             <Text style={[styles.statValue, { color: '#7895C2' }]}>
@@ -133,7 +133,7 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
         <View style={[styles.statCard, isMobile && styles.statCardMobile]}>
           <View style={styles.statIconRow}>
             <Zap size={13} color={themeColor} />
-            <Text style={styles.statLabel}>INICIATIVA</Text>
+            <Text style={styles.statLabel}>Iniciativa</Text>
           </View>
           {!isEditing ? (
             <Text style={[styles.statValue, { color: themeColor }]}>
@@ -160,7 +160,7 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
         <View style={[styles.statCard, isMobile && styles.statCardMobile]}>
           <View style={styles.statIconRow}>
             <Award size={13} color="#D8B4FE" />
-            <Text style={styles.statLabel}>PROFICIÊNCIA</Text>
+            <Text style={styles.statLabel}>Proficiência</Text>
           </View>
           {!isEditing ? (
             <Text style={[styles.statValue, { color: '#D8B4FE' }]}>
@@ -190,7 +190,7 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
         >
           <View style={styles.statIconRow}>
             <Compass size={13} color="#78C288" />
-            <Text style={styles.statLabel}>DESLOCAMENTO</Text>
+            <Text style={styles.statLabel}>Deslocamento</Text>
           </View>
           {!isEditing ? (
             <Text style={[styles.statValueSmall, { color: '#78C288' }]} numberOfLines={1}>
@@ -257,7 +257,7 @@ export const CompanionVitalsPanel: React.FC<CompanionVitalsPanelProps> = ({
                 />
               </View>
               <View style={styles.hpEditField}>
-                <Text style={styles.hpEditLabel}>TEMP:</Text>
+                <Text style={styles.hpEditLabel}>Temp:</Text>
                 <TextInput
                   style={styles.hpEditInput}
                   value={tempHp}
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     color: '#8A8073',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     borderColor: '#3D342C',
     borderRadius: 4,
     color: '#FFF',
-    fontSize: 11,
+    fontSize: 12,
     paddingVertical: 2,
     paddingHorizontal: 6,
     width: '100%',
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   hpTitle: {
     color: '#E2D8C3',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.7,
     flexShrink: 1,
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   },
   tempHpText: {
     color: '#E6C280',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   hpNumbersWrap: {
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   },
   restoreBtnText: {
     color: '#78C288',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: '600',
   },
   hpEditNumbersRow: {
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   },
   hpEditLabel: {
     color: '#8A8073',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   hpEditInput: {

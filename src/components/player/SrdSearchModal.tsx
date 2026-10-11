@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   footerNote: {
     padding: 12,
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     textAlign: 'center',
     borderTopWidth: 1,
     borderTopColor: '#3D342C',

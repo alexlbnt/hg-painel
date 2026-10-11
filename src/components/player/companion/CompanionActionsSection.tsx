@@ -124,7 +124,7 @@ export const CompanionActionsSection: React.FC<CompanionActionsSectionProps> = (
                   { flex: isMobile ? undefined : 2, width: isMobile ? '100%' : undefined },
                 ]}
               >
-                <Text style={styles.inputLabel}>NOME DO ATAQUE</Text>
+                <Text style={styles.inputLabel}>Nome do ataque</Text>
                 <TextInput
                   style={styles.input}
                   value={newAttackName}
@@ -137,7 +137,7 @@ export const CompanionActionsSection: React.FC<CompanionActionsSectionProps> = (
               {!isMobile && (
                 <>
                   <View style={[styles.inputGroup, { flex: 1 }]}>
-                    <Text style={styles.inputLabel}>ACERTO</Text>
+                    <Text style={styles.inputLabel}>Acerto</Text>
                     <TextInput
                       style={styles.input}
                       value={newAttackBonus}
@@ -148,7 +148,7 @@ export const CompanionActionsSection: React.FC<CompanionActionsSectionProps> = (
                   </View>
 
                   <View style={[styles.inputGroup, { flex: 1.5 }]}>
-                    <Text style={styles.inputLabel}>DANO & TIPO</Text>
+                    <Text style={styles.inputLabel}>Dano & tipo</Text>
                     <TextInput
                       style={styles.input}
                       value={newAttackDamage}
@@ -164,7 +164,7 @@ export const CompanionActionsSection: React.FC<CompanionActionsSectionProps> = (
             {isMobile && (
               <View style={styles.formRow}>
                 <View style={[styles.inputGroup, { flex: 1, minWidth: '45%' }]}>
-                  <Text style={styles.inputLabel}>ACERTO</Text>
+                  <Text style={styles.inputLabel}>Acerto</Text>
                   <TextInput
                     style={styles.input}
                     value={newAttackBonus}
@@ -175,7 +175,7 @@ export const CompanionActionsSection: React.FC<CompanionActionsSectionProps> = (
                 </View>
 
                 <View style={[styles.inputGroup, { flex: 1, minWidth: '45%' }]}>
-                  <Text style={styles.inputLabel}>DANO & TIPO</Text>
+                  <Text style={styles.inputLabel}>Dano & tipo</Text>
                   <TextInput
                     style={styles.input}
                     value={newAttackDamage}
@@ -189,7 +189,7 @@ export const CompanionActionsSection: React.FC<CompanionActionsSectionProps> = (
 
             <View style={styles.formRow}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.inputLabel}>ALCANCE / TIPO</Text>
+                <Text style={styles.inputLabel}>Alcance / tipo</Text>
                 <TextInput
                   style={styles.input}
                   value={newAttackType}
@@ -288,7 +288,7 @@ export const CompanionActionsSection: React.FC<CompanionActionsSectionProps> = (
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>Cadastrar Novo Traço / Habilidade</Text>
             <View style={styles.fieldGroup}>
-              <Text style={styles.inputLabel}>NOME DA HABILIDADE</Text>
+              <Text style={styles.inputLabel}>Nome da habilidade</Text>
               <TextInput
                 style={styles.input}
                 value={newTraitName}
@@ -299,7 +299,7 @@ export const CompanionActionsSection: React.FC<CompanionActionsSectionProps> = (
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.inputLabel}>DESCRIÇÃO / EFEITO</Text>
+              <Text style={styles.inputLabel}>Descrição / efeito</Text>
               <TextInput
                 style={[styles.input, { minHeight: 50, textAlignVertical: 'top' }]}
                 multiline
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#E2D8C3',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.7,
     flexShrink: 1,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   addBtnText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   formCard: {
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     color: '#C5A059',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   formRow: {
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     color: '#756C60',
-    fontSize: 8.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   input: {
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     color: '#E2D8C3',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    fontSize: 11.5,
+    fontSize: 12,
     minWidth: 0,
   },
   formActions: {
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   formCancelText: {
     color: '#9E9182',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   formSaveBtn: {
     paddingHorizontal: 10,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   },
   formSaveText: {
     color: '#110F0D',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   listWrap: {
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
   },
   itemMeta: {
     color: '#8A8073',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   attackStatsRow: {
     flexDirection: 'row',
@@ -530,16 +530,16 @@ const styles = StyleSheet.create({
   },
   attackPillLabel: {
     color: '#756C60',
-    fontSize: 9.5,
+    fontSize: 11,
   },
   attackPillVal: {
     color: '#E2D8C3',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   itemDesc: {
     color: '#A89E8D',
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 15,
   },
   traitName: {
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   },
   traitDesc: {
     color: '#BAAFA0',
-    fontSize: 11.5,
+    fontSize: 12,
     lineHeight: 16,
   },
   itemDeleteBtn: {
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#60574D',
-    fontSize: 11,
+    fontSize: 12,
     fontStyle: 'italic',
     paddingVertical: 4,
   },

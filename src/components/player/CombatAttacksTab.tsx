@@ -79,7 +79,7 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = React.memo(({
         <View style={styles.sectionHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Sword size={16} color={themeColor} />
-            <Text style={styles.sectionTitle}>ARMAS & ATAQUES</Text>
+            <Text style={styles.sectionTitle}>Armas & ataques</Text>
           </View>
           <TouchableOpacity onPress={onGoToInventory} style={styles.manageBtn}>
             <Package size={12} color="#BAAFA0" />
@@ -116,7 +116,7 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = React.memo(({
                         {w.isEquipped && (
                           <View style={[styles.equippedBadge, { backgroundColor: `${themeColor}22` }]}>
                             <CheckCircle size={10} color={themeColor} />
-                            <Text style={[styles.equippedText, { color: themeColor }]}>EM COMBATE</Text>
+                            <Text style={[styles.equippedText, { color: themeColor }]}>Em combate</Text>
                           </View>
                         )}
                       </View>
@@ -150,7 +150,7 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = React.memo(({
                   {/* Estatísticas de Ataque e Dano para Consulta na Mesa */}
                   <View style={styles.attackStatsRow}>
                     <View style={styles.statBox}>
-                      <Text style={styles.statLabel}>ACERTO (D20)</Text>
+                      <Text style={styles.statLabel}>Acerto (d20)</Text>
                       <Text style={[styles.statValHit, { color: themeColor }]}>
                         {attack.attackBonusStr}
                       </Text>
@@ -159,7 +159,7 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = React.memo(({
                     <View style={styles.statDivider} />
 
                     <View style={[styles.statBox, { flex: 1.5 }]}>
-                      <Text style={styles.statLabel}>DANO DA ARMA</Text>
+                      <Text style={styles.statLabel}>Dano da arma</Text>
                       <Text style={styles.statValDmg}>{attack.damageFormula}</Text>
                     </View>
                   </View>
@@ -176,7 +176,7 @@ export const CombatAttacksTab: React.FC<CombatAttacksTabProps> = React.memo(({
           <View style={styles.sectionHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Flame size={16} color="#E57373" />
-              <Text style={styles.sectionTitle}>TRUQUES & MAGIAS OFENSIVAS</Text>
+              <Text style={styles.sectionTitle}>Truques & magias ofensivas</Text>
             </View>
             <View style={styles.spellHeaderMeta}>
               <Text style={styles.spellMetaLabel}>
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   },
   manageBtnText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
   },
   emptyBox: {
     paddingVertical: 12,
@@ -328,12 +328,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   equippedText: {
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   weaponModHint: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
   },
   toggleEquipBtn: {
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   toggleEquipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   attackStatsRow: {
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     color: '#80776C',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   spellMetaLabel: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
   },
   spellCombatCard: {
     flexDirection: 'row',
@@ -417,12 +417,12 @@ const styles = StyleSheet.create({
   },
   spellLevelText: {
     color: '#E57373',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   spellDetailsText: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
   },
   spellRollPill: {
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   },
   spellRollLabel: {
     color: '#80776C',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
   },
   spellRollVal: {
@@ -445,3 +445,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+CombatAttacksTab.displayName = 'CombatAttacksTab';

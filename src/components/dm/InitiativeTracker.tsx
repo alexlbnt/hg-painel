@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import { Sword, Plus, Trash2, Copy, SkipForward, SkipBack, RotateCcw, Users } from 'lucide-react-native';
-import { confirmAction } from '@/utils/confirm';
+import { confirmAction, notify } from '@/utils/confirm';
 
 export interface Combatant {
   id: string;
@@ -167,7 +167,7 @@ export default function InitiativeTracker({ characters, roomId, onInterveneChara
 
   const handleImportPlayers = () => {
     if (!characters || characters.length === 0) {
-      if (Platform.OS === 'web') window.alert('Nenhum personagem conectado na campanha no momento.');
+      notify('Nenhum personagem nesta mesa para adicionar.', 'info');
       return;
     }
     const newAdditions: Combatant[] = [];
@@ -190,7 +190,7 @@ export default function InitiativeTracker({ characters, roomId, onInterveneChara
     });
 
     if (newAdditions.length === 0) {
-      if (Platform.OS === 'web') window.alert('Todos os jogadores da mesa já estão importados na iniciativa!');
+      notify('Todos os personagens da mesa já estão na iniciativa.', 'info');
     } else {
       setCombatants(prev => [...prev, ...newAdditions]);
     }
@@ -198,7 +198,7 @@ export default function InitiativeTracker({ characters, roomId, onInterveneChara
 
   const handleAddCustomMonster = () => {
     if (!newMonsterName.trim()) {
-      if (Platform.OS === 'web') window.alert('Digite o nome do inimigo.');
+      notify('Digite o nome do inimigo.', 'error');
       return;
     }
     const count = Math.max(1, parseInt(newMonsterCount, 10) || 1);
@@ -276,7 +276,7 @@ export default function InitiativeTracker({ characters, roomId, onInterveneChara
       <View style={styles.bannerBox}>
         <View style={styles.bannerLeft}>
           <View style={styles.roundBadge}>
-            <Text style={styles.roundLabel}>RODADA</Text>
+            <Text style={styles.roundLabel}>Rodada</Text>
             <Text style={styles.roundNumber}>#{round}</Text>
           </View>
           <View style={styles.roundControls}>
@@ -290,7 +290,7 @@ export default function InitiativeTracker({ characters, roomId, onInterveneChara
         </View>
 
         <View style={styles.bannerCenter}>
-          <Text style={styles.turnTitle}>TURNO ATUAL NO COMBATE:</Text>
+          <Text style={styles.turnTitle}>Turno atual no combate:</Text>
           {activeCombatant ? (
             <View style={styles.activeHeroBox}>
               <Text style={[styles.activeHeroName, activeCombatant.isPlayer ? styles.playerColor : styles.enemyColor]}>
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   },
   roundLabel: {
     color: '#80776C',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.5,
   },
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   },
   roundBtnText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   bannerCenter: {
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   },
   turnTitle: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.5,
     marginBottom: 4,
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
   },
   miniResetText: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   quickAddRow: {
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   },
   importBtnSub: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
   },
   formBox: {
     backgroundColor: '#1A1714',
@@ -753,12 +753,12 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   rollHint: {
     color: '#C5A059',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   input: {
@@ -884,7 +884,7 @@ const styles = StyleSheet.create({
   },
   initAdjustText: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     paddingHorizontal: 2,
   },
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(184, 40, 40, 0.4)',
   },
   typeBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   activeTurnBadge: {
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
   },
   activeTurnBadgeText: {
     color: '#110F0D',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   fallenBadge: {
@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
   },
   fallenBadgeText: {
     color: '#FFF',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   combName: {
@@ -974,7 +974,7 @@ const styles = StyleSheet.create({
   },
   actionsLabel: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   btnRow: {
@@ -995,7 +995,7 @@ const styles = StyleSheet.create({
   },
   dmgText: {
     color: '#FF6B6B',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   healBtn: {
@@ -1004,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   healText: {
     color: '#4A9C4E',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   adminRow: {
@@ -1021,7 +1021,7 @@ const styles = StyleSheet.create({
   },
   passTurnText: {
     color: '#110F0D',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   makeActiveBtn: {
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
   },
   makeActiveText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   iconBtn: {

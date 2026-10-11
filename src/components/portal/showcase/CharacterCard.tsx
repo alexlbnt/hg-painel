@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { Shield, Heart, User, ChevronRight } from 'lucide-react-native';
+import { Shield, Heart, ChevronRight } from 'lucide-react-native';
 import { CharacterData } from '@/lib/mockData';
 import { getCharacterPortrait, getCharacterLoreSnippet } from '@/constants/portraits';
 import { UserAvatar } from '@/components/common/UserAvatar';
@@ -27,10 +27,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
   // Informações do jogador responsável
   const playerName = character.user?.name || character.playerName || 'Aventureiro';
-  const playerUsername = character.user?.username || character.username || '';
   const playerAvatar = character.user?.avatarUrl;
 
-  const roomName = character.room?.name || 'Comitiva Principal';
   const cleanArchetype = character.archetype ? ` • ${character.archetype}` : '';
 
   return (
@@ -69,11 +67,11 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
             transition={300}
           />
         ) : (
-          <View style={styles.grayedOutPlaceholder}>
-            <View style={styles.grayedOutIconCircle}>
-              <User size={52} color="#453E36" strokeWidth={1.3} />
-            </View>
-            <Text style={styles.grayedOutText}>SEM RETRATO ANEXADO</Text>
+          <View style={styles.grayedOutPlaceholder} accessibilityElementsHidden>
+            {/* Sem retrato: a inicial do personagem na cor dele, em vez de uma silhueta vazia */}
+            <Text style={[styles.monogram, { color: portraitInfo.accentColor + '66' }]}>
+              {character.name.trim().charAt(0).toUpperCase()}
+            </Text>
           </View>
         )}
 
@@ -95,15 +93,11 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
       {/* 2. CABEÇALHO DO CARD (TAG DA MESA & NÍVEL) */}
       <View style={styles.cardHeader}>
-        <View style={styles.roomTag}>
-          <Text style={styles.roomTagText} numberOfLines={1}>
-            {roomName}
-          </Text>
-        </View>
+        <View />
 
         <View style={[styles.levelTag, { borderColor: portraitInfo.accentColor + '55' }]}>
           <Text style={[styles.levelTagText, { color: portraitInfo.accentColor }]}>
-            Nv. {character.level}
+            Nível {character.level}
           </Text>
         </View>
       </View>
@@ -133,10 +127,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           <View style={styles.statsInline}>
             <View style={styles.statItem}>
               <Heart size={11} color="#C95B5B" />
-              <Text style={styles.statValue}>{character.currentHp}/{character.maxHp}</Text>
+              <Text style={styles.statValue}>{character.currentHp}/{character.maxHp} PV</Text>
             </View>
-
-            <Text style={styles.statDot}>•</Text>
 
             <View style={styles.statItem}>
               <Shield size={11} color="#C5A059" />
@@ -162,10 +154,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
             <UserAvatar avatarUrl={playerAvatar} name={playerName} size={22} showBorder={false} />
           </View>
           <Text style={styles.playerSignatureText} numberOfLines={1}>
-            Conduzido por <Text style={styles.playerSignatureName}>{playerName}</Text>
-            {playerUsername ? (
-              <Text style={styles.playerSignatureUser}> (@{playerUsername})</Text>
-            ) : null}
+            Jogado por <Text style={styles.playerSignatureName}>{playerName}</Text>
           </Text>
         </View>
 
@@ -177,7 +166,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           ]}
         >
           <Text style={[styles.ctaText, isHovered && { color: portraitInfo.accentColor }]}>
-            Consultar Grimório
+            Ver ficha
           </Text>
           <ChevronRight size={13} color={isHovered ? portraitInfo.accentColor : '#8E8273'} />
         </View>
@@ -188,7 +177,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    height: 480,
+    height: 380,
     borderRadius: 12,
     backgroundColor: '#141210',
     borderWidth: 1,
@@ -220,24 +209,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 10,
-    paddingBottom: 80,
+    paddingBottom: 120,
   },
-  grayedOutIconCircle: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: '#181512',
-    borderWidth: 1,
-    borderColor: '#2A241E',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  grayedOutText: {
-    fontSize: 9,
+  monogram: {
+    fontSize: 150,
     fontWeight: '700',
-    letterSpacing: 1.2,
-    color: '#4A423A',
-    textTransform: 'uppercase',
+    fontFamily: Platform.select({ web: '"Cinzel", Georgia, serif', default: 'serif' }),
   },
   vignetteOverlay: {
     ...StyleSheet.absoluteFill,
@@ -249,21 +226,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 2,
   },
-  roomTag: {
-    backgroundColor: 'rgba(14, 12, 10, 0.75)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#2A241E',
-  },
-  roomTagText: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    color: '#A89E91',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
   levelTag: {
     backgroundColor: 'rgba(14, 12, 10, 0.75)',
     paddingHorizontal: 8,
@@ -272,7 +234,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   levelTagText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.4,
   },
@@ -286,13 +248,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   classRune: {
-    fontSize: 10,
+    fontSize: 12,
   },
   classText: {
-    fontSize: 10.5,
+    fontSize: 13,
     fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
   },
   characterName: {
     fontSize: 20,
@@ -312,7 +272,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   raceText: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: '#8E8273',
     fontWeight: '500',
   },
@@ -327,13 +287,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statValue: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#D4C8B8',
     fontWeight: '600',
-  },
-  statDot: {
-    color: '#3F362C',
-    fontSize: 10,
   },
   quoteWrap: {
     position: 'relative',
@@ -349,7 +305,7 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
   },
   quoteText: {
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 15,
     color: '#BAAFA0',
     fontStyle: 'italic',
@@ -372,17 +328,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   playerSignatureText: {
-    fontSize: 10.5,
+    fontSize: 12,
     color: '#7A6F62',
     flex: 1,
   },
   playerSignatureName: {
     color: '#C4B9A9',
     fontWeight: '600',
-  },
-  playerSignatureUser: {
-    color: '#655B50',
-    fontSize: 9.5,
   },
   ctaRow: {
     flexDirection: 'row',
@@ -402,10 +354,8 @@ const styles = StyleSheet.create({
       : {}),
   },
   ctaText: {
-    fontSize: 10.5,
+    fontSize: 13,
     fontWeight: '700',
     color: '#BAAFA0',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
   },
 });

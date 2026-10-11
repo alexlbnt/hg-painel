@@ -34,7 +34,7 @@ export const CompanionNotesSection: React.FC<CompanionNotesSectionProps> = ({
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <BookOpen size={14} color={themeColor} />
-          <Text style={styles.headerTitle}>NOTAS, COMPORTAMENTO & HISTÓRIA DO VÍNCULO</Text>
+          <Text style={styles.headerTitle}>Notas, comportamento & história do vínculo</Text>
         </View>
       </View>
 
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#E2D8C3',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.7,
     flexShrink: 1,
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#5C5449',
-    fontSize: 11.5,
+    fontSize: 12,
     fontStyle: 'italic',
   },
   editWrap: {

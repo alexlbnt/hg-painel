@@ -86,7 +86,7 @@ export const ConditionsModal: React.FC<ConditionsModalProps> = ({
                     {isActive && (
                       <View style={[styles.activePill, { backgroundColor: cond.color }]}>
                         <Check size={12} color="#111" strokeWidth={3} />
-                        <Text style={styles.activeText}>ATIVO</Text>
+                        <Text style={styles.activeText}>Ativo</Text>
                       </View>
                     )}
                   </View>
@@ -188,12 +188,12 @@ const styles = StyleSheet.create({
   },
   activeText: {
     color: '#111',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   condDesc: {
     color: '#9C9184',
-    fontSize: 11.5,
+    fontSize: 12,
     lineHeight: 16,
   },
   footer: {

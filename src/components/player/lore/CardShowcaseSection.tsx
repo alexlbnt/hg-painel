@@ -127,7 +127,7 @@ export const CardShowcaseSection: React.FC<CardShowcaseSectionProps> = ({
         <View style={styles.titleWrap}>
           <Sparkles size={14} color={themeColor} />
           <Text style={[styles.headerTitle, { color: themeColor }]}>
-            APRESENTAÇÃO NO PORTAL DA TAVERNA
+            Apresentação no portal da taverna
           </Text>
         </View>
 
@@ -189,7 +189,7 @@ export const CardShowcaseSection: React.FC<CardShowcaseSectionProps> = ({
             <View style={styles.quoteHeaderRow}>
               <View style={styles.quoteTagRow}>
                 <Quote size={11} color={themeColor} />
-                <Text style={[styles.quoteTag, { color: themeColor }]}>CITAÇÃO DO CARD</Text>
+                <Text style={[styles.quoteTag, { color: themeColor }]}>Citação do card</Text>
               </View>
               <Text style={styles.statusPill}>
                 {hasSavedImage ? '✓ Retrato ativo' : '✦ Ícone acinzentado'}
@@ -316,7 +316,7 @@ export const CardShowcaseSection: React.FC<CardShowcaseSectionProps> = ({
           {/* Campo de Descrição do Personagem */}
           <View style={styles.descFieldWrap}>
             <View style={styles.descLabelRow}>
-              <Text style={styles.fieldLabel}>Descrição do Card (Portal da Taverna)</Text>
+              <Text style={styles.fieldLabel}>Descrição no card da Taverna</Text>
               <Text style={styles.charCount}>{tempDesc.length} / 220</Text>
             </View>
 
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   headerTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.8,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", Georgia, serif' : undefined,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   editBtnText: {
-    fontSize: 10.5,
+    fontSize: 12,
     color: '#BAAFA0',
     fontWeight: '600',
   },
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     borderColor: '#4A2A2A',
   },
   actionBtnText: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '700',
   },
   previewContainer: {
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   grayedOutThumbText: {
-    fontSize: 8.5,
+    fontSize: 11,
     color: '#554E46',
     fontWeight: '600',
   },
@@ -476,12 +476,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   quoteTag: {
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.6,
   },
   statusPill: {
-    fontSize: 9.5,
+    fontSize: 11,
     color: '#8A8073',
   },
   quoteText: {
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   },
   quoteTextEmpty: {
     color: '#6E645A',
-    fontSize: 11,
+    fontSize: 12,
   },
   editContainer: {
     gap: 10,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fieldLabel: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#C5A059',
     letterSpacing: 0.4,
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#201515',
   },
   smallBtnText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   errorBanner: {
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#E06A6A',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   urlInputBox: {
     backgroundColor: '#191512',
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   },
   urlInput: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 12,
     color: '#F5EEDB',
     paddingVertical: 2,
     paddingHorizontal: 6,
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   applyUrlBtnText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#110F0D',
   },
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   charCount: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#7A7265',
     fontWeight: '600',
   },

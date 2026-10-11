@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#E2D8C3',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.7,
     flexShrink: 1,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   carryCapacityText: {
     color: '#7895C2',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: '600',
   },
   ruleNote: {
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   ruleNoteText: {
     color: '#6E6557',
-    fontSize: 10,
+    fontSize: 12,
     fontStyle: 'italic',
   },
   contentBox: {
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#5C5449',
-    fontSize: 11.5,
+    fontSize: 12,
     fontStyle: 'italic',
   },
   editWrap: {

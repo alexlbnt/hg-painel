@@ -8,7 +8,6 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import {
   Calendar as CalendarIcon,
@@ -30,6 +29,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ApiService, AvailabilityResponseData, AvailabilityRecord } from '@/services/api';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { notify } from '@/utils/confirm';
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -274,11 +274,7 @@ export default function AvailabilityModal({
   // Alternar disponibilidade de uma data específica
   const handleToggleDay = async (dateStr: string) => {
     if (!user) {
-      if (Platform.OS === 'web') {
-        window.alert('Faça login com seu herói na Taverna para registrar sua disponibilidade!');
-      } else {
-        Alert.alert('Identificação Necessária', 'Faça login com seu herói para registrar sua disponibilidade.');
-      }
+      notify('Entre com sua conta para marcar sua disponibilidade.', 'info');
       return;
     }
 
@@ -740,7 +736,7 @@ export default function AvailabilityModal({
                                   </Text>
                                 </View>
                                 <Text style={styles.heroTagConfirmedText}>{u.name}</Text>
-                                {u.role === 'DM' && <Text style={styles.roleMiniBadge}>MESTRE</Text>}
+                                {u.role === 'DM' && <Text style={styles.roleMiniBadge}>Mestre</Text>}
                               </View>
                             );
                           })}
@@ -1044,7 +1040,7 @@ export default function AvailabilityModal({
                                       {u.role === 'DM' && (
                                         <View style={styles.dmRoleBadge}>
                                           <Crown size={9} color="#110F0D" />
-                                          <Text style={styles.dmRoleBadgeText}>MESTRE</Text>
+                                          <Text style={styles.dmRoleBadgeText}>Mestre</Text>
                                         </View>
                                       )}
                                     </View>
@@ -1211,7 +1207,7 @@ const styles = StyleSheet.create({
   },
   modalSubtitle: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
   },
   closeBtn: {
@@ -1299,12 +1295,12 @@ const styles = StyleSheet.create({
   },
   quorumHeaderText: {
     color: '#E6C280',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   quorumHeaderSub: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     marginTop: 2,
   },
   legendRow: {
@@ -1331,7 +1327,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
   },
   scrollArea: {
     flex: 1,
@@ -1361,7 +1357,7 @@ const styles = StyleSheet.create({
   },
   weekDayHeaderText: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -1465,7 +1461,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   playerMiniChipText: {
-    fontSize: 7.5,
+    fontSize: 11,
     fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: 8,
@@ -1482,7 +1478,7 @@ const styles = StyleSheet.create({
     borderColor: '#3D342C',
   },
   playerMiniChipMoreText: {
-    fontSize: 7,
+    fontSize: 11,
     color: '#D4C8B8',
     fontWeight: 'bold',
   },
@@ -1511,7 +1507,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   quorumBadgeText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   quorumBadgeTextPerfect: {
@@ -1552,7 +1548,7 @@ const styles = StyleSheet.create({
   },
   inspectorSub: {
     color: '#C5A059',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
     fontWeight: '500',
   },
@@ -1574,12 +1570,12 @@ const styles = StyleSheet.create({
   },
   inspectToggleBtnTextActive: {
     color: '#110F0D',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   inspectToggleBtnTextInactive: {
     color: '#E6C280',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   heroesSection: {
@@ -1587,16 +1583,14 @@ const styles = StyleSheet.create({
   },
   heroesSectionTitle: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   heroesSectionTitlePending: {
     color: '#6E665B',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   heroesTagWrap: {
@@ -1617,7 +1611,7 @@ const styles = StyleSheet.create({
   },
   heroTagConfirmedText: {
     color: '#C8E6C9',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   playerAvatarCircleMini: {
@@ -1629,13 +1623,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   playerAvatarTextMini: {
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   roleMiniBadge: {
     backgroundColor: '#C5A059',
     color: '#110F0D',
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: 'bold',
     paddingHorizontal: 4,
     paddingVertical: 1,
@@ -1654,11 +1648,11 @@ const styles = StyleSheet.create({
   },
   heroTagPendingText: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
   },
   noHeroesText: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     fontStyle: 'italic',
   },
   scheduleFromDateBtn: {
@@ -1689,7 +1683,7 @@ const styles = StyleSheet.create({
   },
   selectDayNoticeText: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     flex: 1,
   },
   shortcutsBox: {
@@ -1698,7 +1692,7 @@ const styles = StyleSheet.create({
   },
   shortcutsTitle: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -1719,7 +1713,7 @@ const styles = StyleSheet.create({
   },
   shortcutButtonText: {
     color: '#E6C280',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   shortcutButtonSecondary: {
@@ -1735,7 +1729,7 @@ const styles = StyleSheet.create({
   },
   shortcutButtonSecondaryText: {
     color: '#A89F91',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   notLoggedNotice: {
@@ -1751,7 +1745,7 @@ const styles = StyleSheet.create({
   },
   notLoggedNoticeText: {
     color: '#E6C280',
-    fontSize: 11,
+    fontSize: 12,
     flex: 1,
     lineHeight: 16,
   },
@@ -1803,7 +1797,7 @@ const styles = StyleSheet.create({
   },
   dateListFilterText: {
     color: '#A89F91',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   dateListFilterTextActive: {
@@ -1863,7 +1857,7 @@ const styles = StyleSheet.create({
   },
   todayBadgeText: {
     color: '#FFF',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   perfectBadge: {
@@ -1877,12 +1871,12 @@ const styles = StyleSheet.create({
   },
   perfectBadgeText: {
     color: '#110F0D',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   dateListItemSub: {
     color: '#A89F91',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 3,
   },
   dateListQuickRsvpBtn: {
@@ -1903,12 +1897,12 @@ const styles = StyleSheet.create({
   },
   dateListQuickRsvpTextActive: {
     color: '#110F0D',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   dateListQuickRsvpTextInactive: {
     color: '#E6C280',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   dateListProgressBarTrack: {
@@ -1937,7 +1931,7 @@ const styles = StyleSheet.create({
   },
   dateListSectionLabel: {
     color: '#C5A059',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -1970,7 +1964,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   playerAvatarText: {
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   dateListPlayerName: {
@@ -1993,12 +1987,12 @@ const styles = StyleSheet.create({
   },
   dmRoleBadgeText: {
     color: '#110F0D',
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   dateListEmptyNotice: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     fontStyle: 'italic',
   },
   dateListPendingSection: {
@@ -2010,12 +2004,12 @@ const styles = StyleSheet.create({
   },
   dateListPendingLabel: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   dateListPendingNames: {
     color: '#A89F91',
-    fontSize: 10,
+    fontSize: 12,
   },
   scheduleFromDateBtnCompact: {
     flexDirection: 'row',
@@ -2030,7 +2024,7 @@ const styles = StyleSheet.create({
   },
   scheduleFromDateBtnCompactText: {
     color: '#110F0D',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   dateListEmptyState: {

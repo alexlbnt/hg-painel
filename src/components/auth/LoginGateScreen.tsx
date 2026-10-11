@@ -17,9 +17,12 @@ import {
   AlertCircle,
   Flame,
   Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
+import { FontFamily } from '@/constants/theme';
 
 export default function LoginGateScreen() {
   const { login } = useAuth();
@@ -29,6 +32,7 @@ export default function LoginGateScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async () => {
     if (!username.trim() || !password.trim()) {
@@ -71,8 +75,8 @@ export default function LoginGateScreen() {
         </View>
 
         {/* Título Principal de Fantasia */}
-        <Text style={styles.gameTitle}>HONRA & EGOÍSMO</Text>
-        <Text style={styles.gameSubtitle}>PORTAL DA COMITIVA & GRIMÓRIO DE CAMPANHA</Text>
+        <Text style={styles.gameTitle} accessibilityRole="header">Honra & Egoísmo</Text>
+        <Text style={styles.gameSubtitle}>Painel da campanha</Text>
 
         <View style={styles.dividerOrnamental}>
           <View style={styles.dividerLine} />
@@ -84,21 +88,22 @@ export default function LoginGateScreen() {
         <View style={[styles.loginCard, isMobile && styles.loginCardMobile]}>
           <View style={styles.cardHeader}>
             <Lock color="#C5A059" size={20} />
-            <Text style={styles.cardTitle}>Identificação do Aventureiro</Text>
+            <Text style={styles.cardTitle}>Entrar</Text>
           </View>
-          <Text style={styles.cardDesc}>
-            O acesso às fichas, crônicas e segredos das mesas é restrito aos convocados.
-          </Text>
+          <Text style={styles.cardDesc}>Use o usuário e a senha que o Mestre criou para você.</Text>
 
           {/* Input Usuário */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>USUÁRIO / PERSONAGEM</Text>
+            <Text style={styles.inputLabel} nativeID="login-user">Usuário</Text>
             <View style={styles.inputWrapper}>
               <UserIcon color="#8C704F" size={18} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Ex: lobo.l, joao.c, allan..."
-                placeholderTextColor="#5C4D3C"
+                placeholder="seu.usuario"
+                placeholderTextColor="#80776C"
+                accessibilityLabel="Usuário"
+                autoComplete="username"
+                returnKeyType="next"
                 value={username}
                 onChangeText={(text) => {
                   setUsername(text);
@@ -113,14 +118,16 @@ export default function LoginGateScreen() {
 
           {/* Input Senha */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>PALAVRA-PASSE / SENHA</Text>
+            <Text style={styles.inputLabel}>Senha</Text>
             <View style={styles.inputWrapper}>
               <Key color="#8C704F" size={18} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Sua senha secreta"
-                placeholderTextColor="#5C4D3C"
-                secureTextEntry
+                placeholder="Sua senha"
+                placeholderTextColor="#80776C"
+                accessibilityLabel="Senha"
+                autoComplete="current-password"
+                secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -129,13 +136,22 @@ export default function LoginGateScreen() {
                 editable={!loading}
                 onSubmitEditing={handleSubmit}
               />
+              <TouchableOpacity
+                onPress={() => setShowPassword((v) => !v)}
+                style={styles.eyeBtn}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                hitSlop={8}
+              >
+                {showPassword ? <EyeOff color="#9A8F82" size={18} /> : <Eye color="#9A8F82" size={18} />}
+              </TouchableOpacity>
             </View>
           </View>
 
           {/* Alerta de Erro */}
           {!!errorMsg && (
             <View style={styles.errorBox}>
-              <AlertCircle color="#E74C3C" size={16} />
+              <AlertCircle color="#F2B8B5" size={16} />
               <Text style={styles.errorText}>{errorMsg}</Text>
             </View>
           )}
@@ -152,15 +168,12 @@ export default function LoginGateScreen() {
             ) : (
               <>
                 <BookOpen color="#110F0D" size={18} />
-                <Text style={styles.submitButtonText}>Entrar no Grimório</Text>
+                <Text style={styles.submitButtonText}>Entrar</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.portalFootnote}>
-          Honra & Egoísmo RPG • Sistema de Gerenciamento & Sincronização em Tempo Real
-        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -213,21 +226,20 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   gameTitle: {
-    fontSize: 26,
-    fontWeight: '900',
+    fontSize: 34,
+    fontWeight: '700',
     color: '#E6C280',
-    letterSpacing: 4,
+    letterSpacing: 1,
     textAlign: 'center',
-    fontFamily: Platform.select({ ios: 'Cinzel', android: 'serif', default: 'Georgia, serif' }),
+    fontFamily: FontFamily.display,
     textShadowColor: 'rgba(230, 194, 128, 0.25)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
   gameSubtitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#8C704F',
-    letterSpacing: 2.2,
+    fontSize: 15,
+    color: '#BAAFA0',
+    fontFamily: FontFamily.serif,
     marginTop: 6,
     textAlign: 'center',
   },
@@ -246,7 +258,7 @@ const styles = StyleSheet.create({
   },
   dividerRune: {
     color: '#C5A059',
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 2,
   },
   loginCard: {
@@ -280,19 +292,18 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' }),
   },
   cardDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#BAAFA0',
     marginBottom: 20,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   inputGroup: {
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#8C704F',
-    letterSpacing: 1.5,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E2D8C3',
     marginBottom: 6,
   },
   inputWrapper: {
@@ -310,8 +321,9 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: '#F4ECE1',
-    fontSize: 14,
+    fontSize: 15,
     paddingVertical: 12,
+    paddingRight: 36,
   },
   errorBox: {
     flexDirection: 'row',
@@ -326,8 +338,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    color: '#E74C3C',
-    fontSize: 12,
+    color: '#F2B8B5',
+    fontSize: 13,
     fontWeight: '600',
   },
   submitButton: {
@@ -352,13 +364,10 @@ const styles = StyleSheet.create({
     color: '#110F0D',
     fontSize: 15,
     fontWeight: '800',
-    letterSpacing: 1,
   },
-  portalFootnote: {
-    fontSize: 10,
-    color: '#5C4D3C',
-    textAlign: 'center',
-    marginTop: 28,
-    letterSpacing: 1,
+  eyeBtn: {
+    position: 'absolute',
+    right: 12,
+    padding: 4,
   },
 });

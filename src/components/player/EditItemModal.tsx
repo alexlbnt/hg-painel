@@ -322,7 +322,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   input: {

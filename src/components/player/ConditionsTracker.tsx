@@ -27,7 +27,7 @@ export const ConditionsTracker: React.FC<ConditionsTrackerProps> = ({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <AlertCircle size={14} color={conditions.length > 0 ? '#FF6B6B' : '#80776C'} />
           <Text style={styles.label}>
-            CONDIÇÕES & STATUS {conditions.length > 0 ? `(${conditions.length})` : ''}
+            Condições{conditions.length > 0 ? ` (${conditions.length})` : ''}
           </Text>
         </View>
 
@@ -44,7 +44,7 @@ export const ConditionsTracker: React.FC<ConditionsTrackerProps> = ({
       {/* Badges de Condições Ativas */}
       {conditions.length === 0 ? (
         <View style={styles.normalStateBox}>
-          <Text style={styles.normalStateText}>Nenhuma condição ativa (Em condições normais)</Text>
+          <Text style={styles.normalStateText}>Nenhuma condição ativa.</Text>
         </View>
       ) : (
         <View style={styles.chipsWrap}>
@@ -76,6 +76,8 @@ export const ConditionsTracker: React.FC<ConditionsTrackerProps> = ({
                   <TouchableOpacity
                     onPress={() => onToggleCondition(cond.name)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${cond.name}`}
                   >
                     <X size={12} color={def.color} />
                   </TouchableOpacity>
@@ -112,7 +114,6 @@ const styles = StyleSheet.create({
     borderColor: '#332B23',
     borderRadius: 8,
     padding: 10,
-    marginBottom: 12,
     gap: 8,
   },
   headerRow: {
@@ -122,9 +123,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0.5,
   },
   addBtn: {
     flexDirection: 'row',
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(197, 160, 89, 0.08)',
   },
   addBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   normalStateBox: {
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   },
   normalStateText: {
     color: '#6B6257',
-    fontSize: 11,
+    fontSize: 12,
     fontStyle: 'italic',
   },
   chipsWrap: {
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   chipText: {
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: '700',
   },
   tooltipBox: {
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   tooltipText: {
     color: '#D4C9BA',
-    fontSize: 10.5,
+    fontSize: 12,
     lineHeight: 14,
   },
 });

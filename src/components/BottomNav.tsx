@@ -22,8 +22,8 @@ export default function BottomNav() {
     { name: 'Taverna', path: '/', icon: Home },
     { name: 'Diário', path: '/journal', icon: BookOpen },
     { name: 'Tarefas', path: '/tasks', icon: ClipboardList },
-    { name: 'Jogador', path: '/player', icon: Shield },
-    ...(isDM ? [{ name: 'Mestre', path: '/dm', icon: Crown }] : []),
+    { name: 'Fichas', path: '/player', icon: Shield },
+    ...(isDM ? [{ name: 'Escudo', path: '/dm', icon: Crown }] : []),
   ];
 
   return (
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.3,
   },

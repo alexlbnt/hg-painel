@@ -27,8 +27,16 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="icon" type="image/png" href="/icons/icon-192.png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 
+        {/* Fontes do tema: Cinzel (logo e títulos) e IM Fell English (avisos e diário) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IM+Fell+English:ital@0;1&display=swap"
+        />
+
         {/* Fundo escuro desde o primeiro quadro (evita flash branco ao abrir e no "puxar" da rolagem) */}
-        <style dangerouslySetInnerHTML={{ __html: 'html,body{background-color:#110F0D;}' }} />
+        <style dangerouslySetInnerHTML={{ __html: globalCss }} />
         <ScrollViewStyleReset />
 
         <script dangerouslySetInnerHTML={{ __html: registerServiceWorker }} />
@@ -37,6 +45,22 @@ export default function Root({ children }: PropsWithChildren) {
     </html>
   );
 }
+
+/**
+ * CSS global mínimo:
+ *  - fundo escuro desde o primeiro quadro;
+ *  - contorno de foco visível em tudo que é clicável (navegação por teclado);
+ *  - respeita "reduzir movimento" do sistema.
+ */
+const globalCss = `
+html,body{background-color:#110F0D;}
+[role="button"]:focus-visible,[role="tab"]:focus-visible,[role="link"]:focus-visible,a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid #E6C280 !important;outline-offset:2px !important;border-radius:6px;
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important;}
+}
+`;
 
 // Registra o service worker só em HTTPS ou localhost (requisito dos navegadores).
 const registerServiceWorker = `

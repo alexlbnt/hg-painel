@@ -260,7 +260,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
 
           <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
             {/* Informações Básicas */}
-            <Text style={styles.sectionTitle}>IDENTIDADE & ANTECEDENTES</Text>
+            <Text style={styles.sectionTitle}>Identidade & antecedentes</Text>
             
             <View style={styles.row}>
               <View style={styles.inputGroup}>
@@ -442,7 +442,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
             </View>
 
             {/* Estatísticas de Combate */}
-            <Text style={styles.sectionTitle}>ESTATÍSTICAS VITAIS DE COMBATE</Text>
+            <Text style={styles.sectionTitle}>Estatísticas vitais de combate</Text>
             <View style={styles.row}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>HP Máximo</Text>
@@ -484,7 +484,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
             </View>
 
             {/* Atributos (FOR-CAR) & Proficiência em Testes de Resistência */}
-            <Text style={styles.sectionTitle}>ATRIBUTOS ANCESTRAIS & RESISTÊNCIA</Text>
+            <Text style={styles.sectionTitle}>Atributos ancestrais & resistência</Text>
             <View style={styles.grid3}>
               {[
                 { label: 'Força (FOR)', val: str, setVal: setStr, prof: strProf, setProf: setStrProf },
@@ -515,7 +515,7 @@ export default function CharacterModal({ visible, onClose, onSave, initialData }
             <View style={{ marginTop: 24 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <Text style={[styles.sectionTitle, { marginBottom: 0, borderBottomWidth: 0, paddingBottom: 0 }]}>
-                  ESPAÇOS DE MAGIA (D&D 5E / PERSONALIZADO)
+                  Espaços de magia (D&D 5e / personalizado)
                 </Text>
                 <TouchableOpacity
                   style={styles.autoFillBtn}
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     marginBottom: 6,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
   },
   profBtnText: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   profBtnTextActive: {
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: 14,
     lineHeight: 16,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
@@ -906,11 +906,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   archetypeChipsLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80776C',
     fontWeight: '600',
     marginBottom: 6,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   archetypeChipsRow: {

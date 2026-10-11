@@ -337,7 +337,7 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
             {/* Inputs de Identificação */}
             <View style={styles.editFieldsCol}>
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>NOME DO COMPANHEIRO</Text>
+                <Text style={styles.fieldLabel}>Nome do companheiro</Text>
                 <TextInput
                   style={styles.input}
                   value={formName}
@@ -348,7 +348,7 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
               </View>
 
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>ESPÉCIE / RAÇA</Text>
+                <Text style={styles.fieldLabel}>Espécie / raça</Text>
                 <TextInput
                   style={styles.input}
                   value={formSpecies}
@@ -360,7 +360,7 @@ export const CompanionHeader: React.FC<CompanionHeaderProps> = ({
 
               {/* Seletor de Tipo de Vínculo */}
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>TIPO DE VÍNCULO</Text>
+                <Text style={styles.fieldLabel}>Tipo de vínculo</Text>
                 <View style={styles.pillOptionsRow}>
                   {BOND_TYPES.map((b) => {
                     const isSelected = formBond === b;
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   tabPillActive: {},
   tabPillText: {
     color: '#8A8073',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
   },
   addTabBtn: {
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   },
   addTabText: {
     color: '#A89E91',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   headerActions: {
     flexDirection: 'row',
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   cancelBtn: {
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   },
   emptyAvatarText: {
     color: '#60574D',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
   },
   infoCol: {
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   bondBadgeText: {
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.6,
   },
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   },
   sizeBadgeText: {
     color: '#8A8073',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
   },
   smallBtnText: {
     color: '#BAAFA0',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: '600',
   },
   urlInputRow: {
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
     color: '#E2D8C3',
     paddingHorizontal: 6,
     paddingVertical: 3,
-    fontSize: 10,
+    fontSize: 12,
   },
   urlOkBtn: {
     backgroundColor: '#2F6A35',
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#E57373',
-    fontSize: 10,
+    fontSize: 12,
   },
   editFieldsCol: {
     flex: 1,
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: '#756C60',
-    fontSize: 8.5,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
   optionPillActive: {},
   optionPillText: {
     color: '#8A8073',
-    fontSize: 10,
+    fontSize: 12,
   },
   modalOverlay: {
     flex: 1,

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   Platform,
   ActivityIndicator,
   ScrollView,
@@ -30,7 +29,7 @@ import { ApiService, UserData } from '@/services/api';
 import { Role, useAuth } from '@/contexts/AuthContext';
 import { useRoom } from '@/contexts/RoomContext';
 import { useResponsive } from '@/hooks/useResponsive';
-import { confirmAction } from '@/utils/confirm';
+import { confirmAction, errorText, notify } from '@/utils/confirm';
 
 const ROLE_CONFIG: Record<
   Role,
@@ -39,7 +38,7 @@ const ROLE_CONFIG: Record<
   DM: {
     label: 'Mestre',
     tag: 'MESTRE DA MESA',
-    description: 'Acesso total: Escudo do Mestre, Rituais em Massa, Sussurros e Controle de Usuários.',
+    description: 'Acesso total: Escudo do Mestre, ações para a mesa toda, Sussurros e usuários.',
     color: '#C5A059',
     bg: 'rgba(197, 160, 89, 0.15)',
     borderColor: '#C5A059',
@@ -163,11 +162,7 @@ export default function UserManagement() {
       setNewRoomId('');
       await loadUsers();
 
-      if (Platform.OS === 'web') {
-        window.alert('Novo aventureiro registrado com sucesso!');
-      } else {
-        Alert.alert('Sucesso', 'Novo aventureiro registrado com sucesso!');
-      }
+      notify('Usuário criado.');
     } catch (err: any) {
       setCreateError(err.message || 'Erro ao registrar aventureiro.');
     } finally {
@@ -210,17 +205,9 @@ export default function UserManagement() {
       setRoomModalVisible(false);
       await loadUsers();
       const roomName = chosenRoom?.name || 'Mesa';
-      if (Platform.OS === 'web') {
-        window.alert(`Usuário '${selectedUserForRoom.name}' vinculado com sucesso à ${roomName}.`);
-      } else {
-        Alert.alert('Sucesso', `Usuário '${selectedUserForRoom.name}' vinculado à ${roomName}.`);
-      }
+      notify(`${selectedUserForRoom.name} agora está na ${roomName}.`);
     } catch (err: any) {
-      if (Platform.OS === 'web') {
-        window.alert(`Erro: ${err.message || 'Falha ao vincular usuário à mesa.'}`);
-      } else {
-        Alert.alert('Erro', err.message || 'Falha ao vincular usuário à mesa.');
-      }
+      notify(errorText(err, 'Não foi possível trocar a mesa do usuário.'), 'error');
     } finally {
       setUpdatingRoom(false);
     }
@@ -242,17 +229,9 @@ export default function UserManagement() {
       );
       setRoleModalVisible(false);
       await loadUsers();
-      if (Platform.OS === 'web') {
-        window.alert(`Permissão de '${selectedUserForRole.name}' alterada para ${ROLE_CONFIG[targetRole].label}.`);
-      } else {
-        Alert.alert('Sucesso', `Permissão alterada para ${ROLE_CONFIG[targetRole].label}.`);
-      }
+      notify(`Permissão de ${selectedUserForRole.name} alterada para ${ROLE_CONFIG[targetRole].label}.`);
     } catch (err: any) {
-      if (Platform.OS === 'web') {
-        window.alert(`Erro: ${err.message || 'Falha ao alterar permissão.'}`);
-      } else {
-        Alert.alert('Erro', err.message || 'Falha ao alterar permissão.');
-      }
+      notify(errorText(err, 'Não foi possível alterar a permissão.'), 'error');
     } finally {
       setUpdatingRole(false);
     }
@@ -277,17 +256,9 @@ export default function UserManagement() {
     try {
       await ApiService.updateUser(selectedUserForPwd.id, { password: newPwdValue.trim() }, currentUser?.id);
       setPwdModalVisible(false);
-      if (Platform.OS === 'web') {
-        window.alert(`Senha de '${selectedUserForPwd.name}' redefinida com sucesso!`);
-      } else {
-        Alert.alert('Sucesso', `Senha de '${selectedUserForPwd.name}' redefinida!`);
-      }
+      notify(`Senha de ${selectedUserForPwd.name} redefinida.`);
     } catch (err: any) {
-      if (Platform.OS === 'web') {
-        window.alert(`Erro: ${err.message || 'Falha ao redefinir senha.'}`);
-      } else {
-        Alert.alert('Erro', err.message || 'Falha ao redefinir senha.');
-      }
+      notify(errorText(err, 'Não foi possível redefinir a senha.'), 'error');
     } finally {
       setUpdatingPwd(false);
     }
@@ -295,11 +266,7 @@ export default function UserManagement() {
 
   const handleDeleteUser = (u: UserData) => {
     if (currentUser?.id === u.id || currentUser?.username === u.username) {
-      if (Platform.OS === 'web') {
-        window.alert('Você não pode excluir o seu próprio usuário do Mestre.');
-      } else {
-        Alert.alert('Aviso', 'Você não pode excluir o seu próprio usuário.');
-      }
+      notify('Você não pode excluir o seu próprio usuário.', 'error');
       return;
     }
 
@@ -308,22 +275,17 @@ export default function UserManagement() {
         await ApiService.deleteUser(u.id, currentUser?.id);
         setUsers((prev) => prev.filter((item) => item.id !== u.id));
         await loadUsers();
-        if (Platform.OS === 'web') {
-          window.alert(`Usuário '${u.name}' removido da mesa.`);
-        }
+        notify(`${u.name} foi excluído.`);
       } catch (err: any) {
-        if (Platform.OS === 'web') {
-          window.alert(`Erro: ${err.message || 'Falha ao excluir usuário.'}`);
-        } else {
-          Alert.alert('Erro', err.message || 'Falha ao excluir usuário.');
-        }
+        notify(errorText(err, 'Não foi possível excluir o usuário.'), 'error');
       }
     };
 
     confirmAction(
-      `Tem certeza que deseja banir/remover o usuário '${u.name}' (@${u.username}) da campanha?`,
+      `${u.name} (@${u.username}) perde o acesso ao painel. As fichas dele continuam salvas.`,
       () => confirmDelete(),
-      'Confirmar Exclusão'
+      'Excluir usuário',
+      { confirmLabel: 'Excluir usuário', destructive: true }
     );
   };
 
@@ -339,28 +301,28 @@ export default function UserManagement() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{users.length}</Text>
-            <Text style={styles.statLabel}>TOTAL DE USUÁRIOS</Text>
+            <Text style={styles.statLabel}>Total de usuários</Text>
           </View>
           <View style={[styles.statCard, { borderColor: '#C5A059' }]}>
             <View style={styles.statIconRow}>
               <Crown color="#C5A059" size={14} />
               <Text style={[styles.statNumber, { color: '#C5A059' }]}>{dmCount}</Text>
             </View>
-            <Text style={[styles.statLabel, { color: '#C5A059' }]}>MESTRES</Text>
+            <Text style={[styles.statLabel, { color: '#C5A059' }]}>Mestres</Text>
           </View>
           <View style={[styles.statCard, { borderColor: '#4E9C8E' }]}>
             <View style={styles.statIconRow}>
               <Sparkles color="#4E9C8E" size={14} />
               <Text style={[styles.statNumber, { color: '#4E9C8E' }]}>{mechanicCount}</Text>
             </View>
-            <Text style={[styles.statLabel, { color: '#4E9C8E' }]}>MECÂNICOS</Text>
+            <Text style={[styles.statLabel, { color: '#4E9C8E' }]}>Mecânicos</Text>
           </View>
           <View style={[styles.statCard, { borderColor: '#80776C' }]}>
             <View style={styles.statIconRow}>
               <Shield color="#80776C" size={14} />
               <Text style={[styles.statNumber, { color: '#A8B8C8' }]}>{playerCount}</Text>
             </View>
-            <Text style={styles.statLabel}>PLAYERS</Text>
+            <Text style={styles.statLabel}>Jogadores</Text>
           </View>
         </View>
 
@@ -386,7 +348,7 @@ export default function UserManagement() {
 
       {/* Regras e Legenda dos Papéis */}
       <View style={styles.roleGuideBox}>
-        <Text style={styles.roleGuideTitle}>NÍVEIS DE PERMISSÃO NA MESA</Text>
+        <Text style={styles.roleGuideTitle}>Níveis de permissão na mesa</Text>
         <View style={styles.roleGuideGrid}>
           <View style={[styles.roleGuideItem, { borderColor: '#A8B8C8' }]}>
             <View style={styles.roleGuideHeader}>
@@ -914,7 +876,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     marginTop: 2,
@@ -1063,7 +1025,7 @@ const styles = StyleSheet.create({
   selfBadge: {
     backgroundColor: 'rgba(197, 160, 89, 0.25)',
     color: '#C5A059',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1075,7 +1037,7 @@ const styles = StyleSheet.create({
   },
   userCreated: {
     color: '#666',
-    fontSize: 11,
+    fontSize: 12,
   },
   userCardRight: {
     flexDirection: 'row',

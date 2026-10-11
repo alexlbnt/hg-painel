@@ -46,7 +46,7 @@ export const CompanionSkillsSenses: React.FC<CompanionSkillsSensesProps> = ({
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Award size={13} color="#D8B4FE" />
-          <Text style={styles.sectionTitle}>PERÍCIAS DA CRIATURA</Text>
+          <Text style={styles.sectionTitle}>Perícias da criatura</Text>
         </View>
 
         {!isEditing ? (
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#E2D8C3',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.7,
     flexShrink: 1,
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   passivePillText: {
     color: '#78C288',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: '700',
   },
   textContent: {

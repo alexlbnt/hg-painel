@@ -61,7 +61,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <User size={14} color={themeColor} />
-          <Text style={styles.headerTitle}>APARÊNCIA & CARACTERÍSTICAS FÍSICAS</Text>
+          <Text style={styles.headerTitle}>Aparência & características físicas</Text>
         </View>
 
         {!isEditing ? (
@@ -102,11 +102,11 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
             {/* Linha de pílulas com traços físicos */}
             <View style={styles.traitsGrid}>
               <View style={styles.traitPill}>
-                <Text style={styles.traitLabel}>IDADE</Text>
+                <Text style={styles.traitLabel}>Idade</Text>
                 <Text style={styles.traitValue}>{appearance.age || '—'}</Text>
               </View>
               <View style={styles.traitPill}>
-                <Text style={styles.traitLabel}>ALTURA</Text>
+                <Text style={styles.traitLabel}>Altura</Text>
                 <Text style={styles.traitValue}>{appearance.height || '—'}</Text>
               </View>
               <View style={styles.traitPill}>
@@ -114,7 +114,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
                 <Text style={styles.traitValue}>{appearance.weight || '—'}</Text>
               </View>
               <View style={styles.traitPill}>
-                <Text style={styles.traitLabel}>OLHOS</Text>
+                <Text style={styles.traitLabel}>Olhos</Text>
                 <Text style={styles.traitValue}>{appearance.eyes || '—'}</Text>
               </View>
               <View style={styles.traitPill}>
@@ -122,7 +122,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
                 <Text style={styles.traitValue}>{appearance.skin || '—'}</Text>
               </View>
               <View style={styles.traitPill}>
-                <Text style={styles.traitLabel}>CABELOS</Text>
+                <Text style={styles.traitLabel}>Cabelos</Text>
                 <Text style={styles.traitValue}>{appearance.hair || '—'}</Text>
               </View>
             </View>
@@ -132,7 +132,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
               <View style={styles.marksBox}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
                   <Eye size={12} color="#D4AF37" />
-                  <Text style={styles.marksLabel}>MARCAS NOTÁVEIS & CICATRIZES</Text>
+                  <Text style={styles.marksLabel}>Marcas notáveis & cicatrizes</Text>
                 </View>
                 <Text style={styles.marksText}>{appearance.distinguishingMarks}</Text>
               </View>
@@ -153,7 +153,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
         <View style={styles.editWrap}>
           <View style={styles.inputGrid}>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>IDADE</Text>
+              <Text style={styles.inputLabel}>Idade</Text>
               <TextInput
                 style={styles.input}
                 value={form.age}
@@ -164,7 +164,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>ALTURA</Text>
+              <Text style={styles.inputLabel}>Altura</Text>
               <TextInput
                 style={styles.input}
                 value={form.height}
@@ -186,7 +186,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>OLHOS</Text>
+              <Text style={styles.inputLabel}>Olhos</Text>
               <TextInput
                 style={styles.input}
                 value={form.eyes}
@@ -208,7 +208,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>CABELOS</Text>
+              <Text style={styles.inputLabel}>Cabelos</Text>
               <TextInput
                 style={styles.input}
                 value={form.hair}
@@ -220,7 +220,7 @@ export const PhysicalAppearance: React.FC<PhysicalAppearanceProps> = ({
           </View>
 
           <View style={[styles.inputGroup, { marginTop: 4 }]}>
-            <Text style={styles.inputLabel}>CICATRIZES, TATUAGENS & MARCAS NOTÁVEIS</Text>
+            <Text style={styles.inputLabel}>Cicatrizes, tatuagens & marcas notáveis</Text>
             <TextInput
               style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]}
               multiline
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#E2D8C3',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.8,
     flexShrink: 1,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   cancelBtn: {
@@ -316,13 +316,13 @@ const styles = StyleSheet.create({
   },
   traitLabel: {
     color: '#756C60',
-    fontSize: 8.5,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
   traitValue: {
     color: '#DDD2BE',
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '600',
     marginTop: 1,
   },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   marksLabel: {
     color: '#C5A059',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#5C5449',
-    fontSize: 11.5,
+    fontSize: 12,
     fontStyle: 'italic',
   },
   editWrap: {
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     color: '#756C60',
-    fontSize: 8.5,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },

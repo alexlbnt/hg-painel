@@ -47,7 +47,7 @@ export default function GlobalRoomSwitcher() {
           {getRoomIcon(activeRoom.code)}
         </View>
         <View style={styles.triggerTextContainer}>
-          <Text style={[styles.triggerSubtext, isMobile && styles.triggerSubtextMobile]}>MESA ATIVA</Text>
+          <Text style={[styles.triggerSubtext, isMobile && styles.triggerSubtextMobile]}>Mesa ativa</Text>
           <Text style={[styles.triggerRoomName, isMobile && styles.triggerRoomNameMobile]} numberOfLines={1}>
             {activeRoom.name}
           </Text>
@@ -138,17 +138,17 @@ export default function GlobalRoomSwitcher() {
                           </Text>
                           {isMyDmRoom && (
                             <View style={styles.myRoomTag}>
-                              <Text style={styles.myRoomTagText}>MESTRE</Text>
+                              <Text style={styles.myRoomTagText}>Mestre</Text>
                             </View>
                           )}
                           {!isMyDmRoom && isMyPlayerRoom && (
                             <View style={[styles.myRoomTag, { borderColor: '#4E9C8E', backgroundColor: 'rgba(78, 156, 142, 0.15)' }]}>
-                              <Text style={[styles.myRoomTagText, { color: '#4E9C8E' }]}>JOGADOR</Text>
+                              <Text style={[styles.myRoomTagText, { color: '#4E9C8E' }]}>Jogador</Text>
                             </View>
                           )}
                           {isSuperDm && !isMyDmRoom && !isMyPlayerRoom && (
                             <View style={[styles.myRoomTag, { borderColor: '#C5A059', backgroundColor: 'rgba(197, 160, 89, 0.15)' }]}>
-                              <Text style={[styles.myRoomTagText, { color: '#C5A059' }]}>SUPER-DM</Text>
+                              <Text style={[styles.myRoomTagText, { color: '#C5A059' }]}>Super-Mestre</Text>
                             </View>
                           )}
                         </View>
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   triggerSubtext: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: 'Cinzel-Regular',
     color: '#8C704F',
     letterSpacing: 0.8,
@@ -226,12 +226,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   triggerSubtextMobile: {
-    fontSize: 7.5,
+    fontSize: 11,
     lineHeight: 8,
     letterSpacing: 0.5,
   },
   triggerRoomNameMobile: {
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 12,
     maxWidth: 95,
   },
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   modalSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80776C',
     marginTop: 2,
   },
@@ -332,12 +332,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(197, 160, 89, 0.4)',
   },
   myRoomTagText: {
-    fontSize: 9,
+    fontSize: 11,
     color: '#C5A059',
     fontWeight: 'bold',
   },
   roomItemDm: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80776C',
     marginTop: 2,
   },
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#2A241F',
   },
   modalFooterText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80776C',
     textAlign: 'center',
   },

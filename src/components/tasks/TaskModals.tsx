@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   counter: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: 5,
   },
   input: {
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   },
   fieldError: {
     color: '#FCA5A5',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 4,
   },
   errorBox: {

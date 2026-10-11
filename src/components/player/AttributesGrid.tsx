@@ -33,18 +33,26 @@ export const AttributesGrid: React.FC<AttributesGridProps> = React.memo(({
 
   return (
     <View style={isMobile ? styles.containerCompact : styles.container}>
-      <Text style={styles.sectionHeader}>ATRIBUTOS</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.sectionHeader}>Atributos</Text>
+        <Text style={styles.legend}>
+          Embaixo: salvaguarda. <Text style={{ color: themeColor, fontWeight: '700' }}>Destaque</Text> = proficiente.
+        </Text>
+      </View>
 
       <View style={isMobile ? styles.rowCompact : styles.grid}>
         {attributes.map((attr) => {
-          const baseMod = getMod(attr.score);
-          const effectiveMod = attr.prof ? baseMod + prof : baseMod;
-          const a11y = `${attr.name.charAt(0)}${attr.name.slice(1).toLowerCase()}: valor ${attr.score}, modificador ${formatMod(effectiveMod)}${
-            attr.prof ? ', salvaguarda proficiente' : ''
+          // O número grande é o modificador do atributo (usado em testes e perícias);
+          // a salvaguarda soma a proficiência só quando o personagem é proficiente nela.
+          const mod = getMod(attr.score);
+          const save = attr.prof ? mod + prof : mod;
+          const label = `${attr.name.charAt(0)}${attr.name.slice(1).toLowerCase()}`;
+          const a11y = `${label}: valor ${attr.score}, modificador ${formatMod(mod)}, salvaguarda ${formatMod(save)}${
+            attr.prof ? ' (proficiente)' : ''
           }`;
           const profStyle = attr.prof && { borderColor: themeColor, backgroundColor: `${themeColor}12` };
 
-          // Celular: card compacto (sigla, modificador e valor base)
+          // Celular: card compacto (sigla, modificador e salvaguarda)
           if (isMobile) {
             return (
               <View key={attr.name} accessible accessibilityLabel={a11y} style={[styles.cardCompact, profStyle]}>
@@ -54,32 +62,28 @@ export const AttributesGrid: React.FC<AttributesGridProps> = React.memo(({
                 >
                   {attr.abbr}
                 </Text>
-                <Text style={styles.modCompact}>{formatMod(effectiveMod)}</Text>
-                <Text style={[styles.scoreCompact, attr.prof && { color: '#E2D8C3' }]}>{attr.score}</Text>
+                <Text style={styles.modCompact}>{formatMod(mod)}</Text>
+                <Text style={[styles.scoreCompact, attr.prof && { color: themeColor, fontWeight: '700' }]}>
+                  {formatMod(save)}
+                </Text>
               </View>
             );
           }
 
           // Desktop/tablet: 2 fileiras de 3
           return (
-            <View
-              key={attr.name}
-              accessible
-              accessibilityLabel={a11y}
-              style={[styles.card, attr.prof && { borderColor: themeColor, backgroundColor: `${themeColor}0E` }]}
-            >
+            <View key={attr.name} accessible accessibilityLabel={a11y} style={[styles.card, profStyle]}>
               <View style={styles.nameRow}>
                 <Text style={[styles.name, attr.prof && { color: themeColor, fontWeight: 'bold' }]} numberOfLines={1}>
-                  {attr.name}
+                  {label}
                 </Text>
-                {attr.prof && <Sparkles size={11} color={themeColor} />}
+                {attr.prof && <Sparkles size={12} color={themeColor} />}
               </View>
-              <Text style={styles.mod}>{formatMod(effectiveMod)}</Text>
-              <View style={[styles.scorePill, attr.prof && { backgroundColor: `${themeColor}1E` }]}>
-                <Text style={[styles.score, attr.prof && { color: '#E2D8C3', fontWeight: 'bold' }]}>
-                  Score {attr.score}
-                </Text>
-              </View>
+              <Text style={styles.mod}>{formatMod(mod)}</Text>
+              <Text style={styles.score}>Valor {attr.score}</Text>
+              <Text style={[styles.saveText, attr.prof && { color: themeColor, fontWeight: '700' }]}>
+                Salvaguarda {formatMod(save)}
+              </Text>
             </View>
           );
         })}
@@ -89,11 +93,25 @@ export const AttributesGrid: React.FC<AttributesGridProps> = React.memo(({
 });
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
   sectionHeader: {
-    color: '#9A8F82',
-    fontSize: 11,
+    color: '#E2D8C3',
+    fontSize: 15,
     fontWeight: 'bold',
-    letterSpacing: 0.8,
+  },
+  legend: {
+    color: '#9A8F82',
+    fontSize: 12,
+  },
+  saveText: {
+    color: '#9A8F82',
+    fontSize: 12,
   },
 
   // ---- Desktop / tablet: 2 fileiras de 3 ----
@@ -125,10 +143,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   name: {
-    color: '#A89F91',
-    fontSize: 11,
+    color: '#BAAFA0',
+    fontSize: 13,
     fontWeight: '600',
-    letterSpacing: 0.5,
   },
   mod: {
     color: '#FFF',
@@ -136,16 +153,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginVertical: 2,
   },
-  scorePill: {
-    backgroundColor: '#1E1A16',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
   score: {
     color: '#9A8F82',
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
   },
 
   // ---- Celular: 6 cards compactos em uma linha ----
@@ -170,10 +180,9 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   nameCompact: {
-    color: '#A89F91',
-    fontSize: 11,
+    color: '#BAAFA0',
+    fontSize: 12,
     fontWeight: '600',
-    letterSpacing: 0.4,
   },
   modCompact: {
     color: '#FFF',
@@ -183,7 +192,8 @@ const styles = StyleSheet.create({
   },
   scoreCompact: {
     color: '#9A8F82',
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
   },
 });
+
+AttributesGrid.displayName = 'AttributesGrid';

@@ -26,6 +26,11 @@ const DarkFantasyPalette = {
   greenDark: '#1E4722',          // Musgo Antigo
   border: '#3D342C',             // Borda de Bronze / Latão Escuro
   borderGlow: '#5C4E40',         // Destaque em Ouro Velho
+  // Cores de estado (texto legível sobre o fundo escuro)
+  successText: '#8FC79A',        // Confirmado / curado
+  warningText: '#E6C280',        // Atenção / em dúvida
+  dangerText: '#F2B8B5',         // Erro / ferido gravemente
+  infoText: '#9DBBE0',           // Informação neutra
 };
 
 export const Colors = {
@@ -56,6 +61,31 @@ export const Fonts = Platform.select({
     mono: '"Courier New", Courier, monospace',
   },
 });
+
+/**
+ * Famílias tipográficas (carregadas no +html.tsx na web; no app nativo caem na serif do sistema).
+ *  - display: Cinzel, só para o logo, títulos de página e nomes de personagem (é uma fonte de inscrição);
+ *  - notice: IM Fell English, para avisos e textos "de época" (tarefas, diário);
+ *  - serif: textos corridos e títulos de seção;
+ *  - sans: interface e dados numéricos.
+ */
+export const FontFamily = {
+  display: Platform.OS === 'web' ? '"Cinzel", Georgia, serif' : 'serif',
+  notice: Platform.OS === 'web' ? '"IM Fell English", Georgia, serif' : 'serif',
+  serif: Platform.OS === 'web' ? 'Georgia, "Times New Roman", serif' : 'serif',
+  sans: undefined as string | undefined,
+};
+
+/** Escala tipográfica única. Nada abaixo de 12px (legibilidade no celular). */
+export const Type = {
+  caption: 12,
+  small: 13,
+  body: 14,
+  bodyLg: 16,
+  title: 18,
+  heading: 22,
+  display: 28,
+} as const;
 
 export const Spacing = {
   half: 2,

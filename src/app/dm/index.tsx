@@ -7,13 +7,23 @@ import { CharacterData } from '@/lib/mockData';
 import { ApiService } from '@/services/api';
 import { Crown, Moon, RefreshCw, Scale, Shield, Skull, Sun, Sword, Users, ChevronDown, ChevronUp, Key } from 'lucide-react-native';
 import { useEffect, useState, useRef } from 'react';
-import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRoom } from '@/contexts/RoomContext';
 import { useRouter } from 'expo-router';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
-import { confirmAction } from '@/utils/confirm';
+import { confirmAction, errorText, notify } from '@/utils/confirm';
 import { AnimatedBar } from '@/components/ui/AnimatedBar';
+import { useResponsive } from '@/hooks/useResponsive';
+
+/** Gravidade do estado do personagem, do mais urgente ao menos (para ordenar e rotular o card). */
+function hpSeverity(c: CharacterData): { rank: number; label: string | null; color: string } {
+  const pct = c.maxHp ? c.currentHp / c.maxHp : 1;
+  if (c.currentHp <= 0) return { rank: 0, label: 'Caído', color: '#F2B8B5' };
+  if (pct <= 0.25) return { rank: 1, label: 'Ferido gravemente', color: '#F2B8B5' };
+  if (pct <= 0.5) return { rank: 2, label: 'Ferido', color: '#E6C280' };
+  return { rank: 3, label: null, color: '#8FC79A' };
+}
 
 export default function DmModule() {
   const { user, isLoading: authLoading } = useAuth();
@@ -32,7 +42,8 @@ export default function DmModule() {
   const [modalVisible, setModalVisible] = useState(false);
   const [whispersModalVisible, setWhispersModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'monitor' | 'initiative' | 'users'>('monitor');
-  const [lastSync, setLastSync] = useState<string>('Conectando ao Escudo do Mestre...');
+  const [lastSync, setLastSync] = useState<string>('Carregando...');
+  const { isMobile } = useResponsive();
   const [isAllExpanded, setIsAllExpanded] = useState<boolean>(false);
   const [hoveredCond, setHoveredCond] = useState<string | null>(null);
   const [assignUserInputs, setAssignUserInputs] = useState<Record<string, string>>({});
@@ -68,10 +79,10 @@ export default function DmModule() {
         setCharacters(data);
       }
       const now = new Date();
-      setLastSync(`Sincronizado: ${now.toLocaleTimeString()}`);
+      setLastSync(`Atualizado às ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
     } catch (e) {
       console.error('Erro no Escudo do Mestre', e);
-      setLastSync('Desconectado do Escudo do Mestre');
+      setLastSync('Sem conexão. Tente atualizar.');
     }
   };
 
@@ -123,22 +134,21 @@ export default function DmModule() {
         )
       );
       fetchTableData(true);
-      const msg = `Ritual de Descanso ${type === 'short' ? 'Curto' : 'Longo'} aplicado a todos os heróis da mesa!`;
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(msg);
-      } else {
-        Alert.alert('Ritual Concluído', msg);
-      }
+      notify(`Descanso ${type === 'short' ? 'curto' : 'longo'} aplicado a todos os personagens da mesa.`);
     } catch (e) {
       console.error(e);
+      notify(errorText(e, 'Não foi possível aplicar o descanso.'), 'error');
     }
   };
 
   const confirmMassRest = (type: 'short' | 'long') => {
     confirmAction(
-      `Aplicar Ritual de Descanso ${type === 'short' ? 'Curto' : 'Longo'} para todos os heróis?`,
+      type === 'short'
+        ? 'Todos os personagens da mesa recuperam 5 PV e gastam 1 dado de vida.'
+        : 'Todos os personagens da mesa recuperam PV, magias e habilidades.',
       () => executeMassRest(type),
-      `Ritual em Massa (${type === 'short' ? 'Curto' : 'Longo'})`
+      `Descanso ${type === 'short' ? 'curto' : 'longo'} para a mesa`,
+      { confirmLabel: 'Aplicar descanso' }
     );
   };
 
@@ -152,11 +162,11 @@ export default function DmModule() {
         playerName: newPlayerName 
       });
       
-      if (Platform.OS === 'web') window.alert(`Personagem vinculado ao usuário '${trimmedUsername}' com sucesso!`);
-      else Alert.alert('Sucesso', `Vinculado ao usuário '${trimmedUsername}'`);
+      notify(`Personagem vinculado a @${trimmedUsername.toLowerCase()}.`);
       fetchTableData(true);
     } catch (e) {
       console.error(e);
+      notify(errorText(e, 'Não foi possível vincular o personagem.'), 'error');
     }
   };
 
@@ -179,41 +189,46 @@ export default function DmModule() {
 
   return (
     <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
-      <View style={styles.container}>
-      {/* Header do Escudo do Mestre */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.crownBadge}>
-            <Crown color="#C5A059" size={20} />
-          </View>
-          <View>
-            <Text style={styles.title}>ESCUDO DO MESTRE • CONTROLE (DM)</Text>
-            <Text style={styles.subtitle}>
-              Monitoramento em tempo real dos heróis da campanha e rituais de intervenção divina
+      <View style={[styles.container, isMobile && { padding: 16, gap: 18 }]}>
+      {/* Cabeçalho do Escudo do Mestre */}
+      <View style={[styles.header, isMobile && { paddingBottom: 16 }]}>
+        <View style={[styles.headerLeft, { flexShrink: 1 }]}>
+          {!isMobile && (
+            <View style={styles.crownBadge}>
+              <Crown color="#C5A059" size={20} />
+            </View>
+          )}
+          <View style={{ flexShrink: 1 }}>
+            <Text style={[styles.title, isMobile && { fontSize: 24 }]} accessibilityRole="header">
+              Escudo do Mestre
             </Text>
+            <Text style={styles.subtitle}>Acompanhe os personagens da mesa e intervenha durante a sessão.</Text>
           </View>
         </View>
 
         <View style={styles.headerRight}>
-          <View style={styles.syncBox}>
-            <RefreshCw color="#C5A059" size={14} />
-            <Text style={styles.syncText}>{lastSync}</Text>
-          </View>
-          <TouchableOpacity style={styles.refreshBtn} onPress={() => fetchTableData()}>
-            <Text style={styles.refreshBtnText}>Sincronizar Escudo</Text>
+          <Text style={styles.syncText}>{lastSync}</Text>
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={() => fetchTableData()}
+            accessibilityRole="button"
+            accessibilityLabel="Atualizar dados da mesa"
+          >
+            <RefreshCw color="#E6C280" size={14} />
+            <Text style={styles.refreshBtnText}>Atualizar</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Abas de Navegação do Mestre */}
-      <View style={styles.tabBar}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'monitor' && styles.tabBtnActive]}
           onPress={() => setActiveTab('monitor')}
         >
           <Users color={activeTab === 'monitor' ? '#E6C280' : '#80776C'} size={18} />
           <Text style={[styles.tabText, activeTab === 'monitor' && styles.tabTextActive]}>
-            Personagens da Campanha
+            Personagens
           </Text>
         </TouchableOpacity>
 
@@ -223,7 +238,7 @@ export default function DmModule() {
         >
           <Sword color={activeTab === 'initiative' ? '#E6C280' : '#80776C'} size={18} />
           <Text style={[styles.tabText, activeTab === 'initiative' && styles.tabTextActive]}>
-            Iniciativa & Combate
+            Iniciativa
           </Text>
         </TouchableOpacity>
 
@@ -234,31 +249,31 @@ export default function DmModule() {
           >
             <Key color={activeTab === 'users' ? '#E6C280' : '#80776C'} size={18} />
             <Text style={[styles.tabText, activeTab === 'users' && styles.tabTextActive]}>
-              Usuários & Permissões
+              Usuários e mesas
             </Text>
           </TouchableOpacity>
         )}
-      </View>
+      </ScrollView>
 
       
 
       {/* SEÇÃO 1: MONITORAMENTO EM TEMPO REAL DA MESA */}
       <View style={{ display: activeTab === 'monitor' ? 'flex' : 'none', gap: 24, width: '100%' }}>
         {/* Rituais Divinos em Massa */}
-        <View style={styles.massActionsBox}>
+        <View style={[styles.massActionsBox, isMobile && { flexDirection: 'column', alignItems: 'stretch', padding: 16 }]}>
         <View style={styles.massLeft}>
           <Shield color="#C5A059" size={20} />
-          <Text style={styles.massTitle}>RITUAIS EM MASSA</Text>
+          <Text style={styles.massTitle}>Ações para a mesa toda</Text>
         </View>
 
         <View style={styles.massButtonsRow}>
           <TouchableOpacity style={styles.massBtn} onPress={() => confirmMassRest('short')}>
             <Moon color="#6B4A70" size={16} />
-            <Text style={styles.massBtnText}>Ritual Descanso Curto</Text>
+            <Text style={styles.massBtnText}>Descanso curto</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.massBtn} onPress={() => confirmMassRest('long')}>
             <Sun color="#C5A059" size={16} />
-            <Text style={styles.massBtnText}>Ritual Descanso Longo</Text>
+            <Text style={styles.massBtnText}>Descanso longo</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.massBtn, styles.shadowBtn]} onPress={() => setWhispersModalVisible(true)}>
             <Skull color="#B82828" size={16} />
@@ -269,23 +284,25 @@ export default function DmModule() {
 
       {/* Grade de Aventureiros Conectados */}
       <View style={styles.gridHeader}>
-        <Text style={styles.gridTitle}>PERSONAGENS DA CAMPANHA ({characters.length})</Text>
+        <Text style={styles.gridTitle}>Personagens da mesa ({characters.length})</Text>
         <TouchableOpacity style={styles.globalExpandBtn} onPress={() => setIsAllExpanded(!isAllExpanded)}>
           {isAllExpanded ? <ChevronUp color="#C5A059" size={16} /> : <ChevronDown color="#C5A059" size={16} />}
-          <Text style={styles.globalExpandText}>{isAllExpanded ? 'Ocultar Detalhes' : 'Expandir Fichas'}</Text>
+          <Text style={styles.globalExpandText}>{isAllExpanded ? 'Ocultar detalhes' : 'Mostrar detalhes'}</Text>
         </TouchableOpacity>
       </View>
       
       {characters.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>Nenhum aventureiro entrou na taverna ainda.</Text>
-          <Text style={styles.emptySubText}>Peça aos jogadores para criarem suas fichas na aba Grimório do Jogador.</Text>
+          <Text style={styles.emptyText}>Nenhum personagem nesta mesa ainda.</Text>
+          <Text style={styles.emptySubText}>Peça aos jogadores que criem a ficha na aba Fichas.</Text>
         </View>
       ) : (
         <View style={styles.grid}>
-          {characters.map((char) => {
+          {/* Mais urgentes primeiro: caídos, depois os mais feridos */}
+          {[...characters].sort((a, b) => hpSeverity(a).rank - hpSeverity(b).rank).map((char) => {
             const hpPercent = char.currentHp / char.maxHp;
             const isCritical = hpPercent <= 0.25;
+            const severity = hpSeverity(char);
             const totalWeight = (char.items || []).reduce((acc, i) => acc + ((Number(i.weight) || 0) * (Number(i.quantity) || 1)), 0);
             const maxWeight = (Number(char.str) || 10) * 7.5;
             const isOverloaded = totalWeight > maxWeight;
@@ -302,18 +319,18 @@ export default function DmModule() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.charName}>{char.name}</Text>
                     <Text style={styles.charClass}>
-                      {char.class}{char.archetype ? ` (${char.archetype})` : ''} • Nvl {char.level}
+                      {char.class}{char.archetype ? ` (${char.archetype})` : ''}, nível {char.level}
                     </Text>
                     <Text style={styles.playerName}>
-                      Jogador: <Text style={{ color: '#E6C280', fontWeight: 'bold' }}>{char.playerName}</Text>
-                      {char.username ? ` (@${char.username})` : ' (Sem vínculo)'}
+                      Jogado por <Text style={{ color: '#E6C280', fontWeight: 'bold' }}>{char.playerName}</Text>
+                      {char.username ? '' : ' (sem usuário vinculado)'}
                     </Text>
                     {isExpanded && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
                         <TextInput 
-                          style={{ backgroundColor: '#110F0D', borderWidth: 1, borderColor: '#3D342C', color: '#BAAFA0', fontSize: 11, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, minWidth: 120 }}
+                          style={{ backgroundColor: '#110F0D', borderWidth: 1, borderColor: '#3D342C', color: '#BAAFA0', fontSize: 12, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, minWidth: 120 }}
                           value={assignUserInputs[char.id] !== undefined ? assignUserInputs[char.id] : (char.username || '')}
-                          placeholder="username (ex: lobo.l)"
+                          placeholder="usuário do jogador"
                           placeholderTextColor="#666"
                           onChangeText={(t) => setAssignUserInputs(prev => ({ ...prev, [char.id]: t }))}
                           onSubmitEditing={(e) => handleAssignUser(char.id, e.nativeEvent.text)}
@@ -323,7 +340,7 @@ export default function DmModule() {
                           activeOpacity={0.8}
                           onPress={() => handleAssignUser(char.id, assignUserInputs[char.id] !== undefined ? assignUserInputs[char.id] : (char.username || ''))}
                         >
-                          <Text style={{ color: '#110F0D', fontSize: 11, fontWeight: 'bold' }}>Vincular</Text>
+                          <Text style={{ color: '#110F0D', fontSize: 12, fontWeight: 'bold' }}>Vincular</Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -335,12 +352,12 @@ export default function DmModule() {
                       <Text style={styles.acText}>{char.armorClass} CA</Text>
                     </View>
                     
-                    {char.deity && char.deity !== 'Nenhum' && (
+                    {!!char.deity && char.deity !== 'Nenhum' && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4, borderWidth: 1, borderColor: char.deity === 'Arcké' ? '#B82828' : char.deity === 'Vitta' ? '#C5A059' : '#1B3B6F', backgroundColor: char.deity === 'Arcké' ? '#B8282815' : char.deity === 'Vitta' ? '#C5A05915' : '#1B3B6F15' }}>
                         {char.deity === 'Arcké' && <Scale color="#B82828" size={10} />}
                         {char.deity === 'Vitta' && <Sun color="#C5A059" size={10} />}
                         {char.deity === 'Thanatos' && <Skull color="#1B3B6F" size={10} />}
-                        <Text style={{ fontSize: 9, fontWeight: '700', color: char.deity === 'Arcké' ? '#B82828' : char.deity === 'Vitta' ? '#C5A059' : '#1B3B6F', textTransform: 'uppercase' }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: char.deity === 'Arcké' ? '#B82828' : char.deity === 'Vitta' ? '#C5A059' : '#1B3B6F' }}>
                           {char.deity}
                         </Text>
                       </View>
@@ -351,9 +368,14 @@ export default function DmModule() {
                 {/* Sinais Vitais / HP Bar */}
                 <View style={styles.hpSection}>
                   <View style={styles.hpTopRow}>
-                    <Text style={styles.hpLabel}>PONTOS DE VIDA</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={styles.hpLabel}>Pontos de vida</Text>
+                      {severity.label && (
+                        <Text style={[styles.severityText, { color: severity.color }]}>{severity.label}</Text>
+                      )}
+                    </View>
                     <Text style={styles.hpVal}>
-                      {char.currentHp} / {char.maxHp} {char.tempHp > 0 && `(+${char.tempHp} Temp)`}
+                      {char.currentHp} / {char.maxHp}{char.tempHp > 0 ? ` (+${char.tempHp} temp.)` : ''}
                     </Text>
                   </View>
                   <AnimatedBar
@@ -370,9 +392,9 @@ export default function DmModule() {
                 {/* Testes contra a Morte se estiver Inconsciente / 0 HP */}
                 {char.currentHp === 0 && (
                   <View style={styles.deathBox}>
-                    <Text style={styles.deathTitle}>⚠️ HERÓI CAÍDO EM COMBATE</Text>
+                    <Text style={styles.deathTitle}>Testes contra a morte</Text>
                     <Text style={styles.deathStats}>
-                      Sucessos: {char.deathSaveSuccesses}/3 | Falhas: {char.deathSaveFailures}/3
+                      {char.deathSaveSuccesses} de 3 sucessos, {char.deathSaveFailures} de 3 falhas
                     </Text>
                   </View>
                 )}
@@ -383,10 +405,10 @@ export default function DmModule() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Scale color={isOverloaded ? "#FF4545" : "#80776C"} size={16} />
                       <Text style={[styles.overloadTitle, !isOverloaded && { color: '#80776C' }]}>
-                        {isOverloaded ? `⚠️ SOBRECARGA ATIVA` : `PESO DO INVENTÁRIO`} ({totalWeight.toFixed(1)} kg / {maxWeight.toFixed(1)} kg)
+                        {isOverloaded ? 'Sobrecarregado' : 'Peso carregado'}: {totalWeight.toFixed(1)} de {maxWeight.toFixed(1)} kg
                       </Text>
                     </View>
-                    {isOverloaded && <Text style={styles.overloadDesc}>Deslocamento reduzido em -3m. O herói carrega excesso de peso.</Text>}
+                    {isOverloaded && <Text style={styles.overloadDesc}>Deslocamento reduzido em 3m.</Text>}
                   </View>
                 )}
 
@@ -414,9 +436,9 @@ export default function DmModule() {
 
                     {/* Moedas */}
                     <View style={styles.coinsRow}>
-                      <Text style={styles.coinBadge}>🥇 {char.gold || 0} PO</Text>
-                      <Text style={styles.coinBadge}>🥈 {char.silver || 0} PP</Text>
-                      <Text style={styles.coinBadge}>🥉 {char.copper || 0} PC</Text>
+                      <Text style={styles.coinBadge}>{char.gold || 0} PO</Text>
+                      <Text style={styles.coinBadge}>{char.silver || 0} PP</Text>
+                      <Text style={styles.coinBadge}>{char.copper || 0} PC</Text>
                     </View>
                   </>
                 )}
@@ -424,7 +446,7 @@ export default function DmModule() {
                 {/* Condições Ativas */}
                 {char.conditions && char.conditions.length > 0 && (
                   <View style={styles.conditionsBox}>
-                    <Text style={styles.conditionsLabel}>Condições Sombrias:</Text>
+                    <Text style={styles.conditionsLabel}>Condições</Text>
                     <View style={styles.conditionsList}>
                       {char.conditions.map(cond => (
                         <TouchableOpacity 
@@ -455,9 +477,11 @@ export default function DmModule() {
                   <TouchableOpacity
                     style={[styles.interveneBtn, { flex: 1 }]}
                     onPress={() => handleInterveneClick(char)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Intervir em ${char.name}`}
                   >
-                    <Crown color="#110F0D" size={16} />
-                    <Text style={styles.interveneBtnText}>Intervenção</Text>
+                    <Crown color="#E6C280" size={16} />
+                    <Text style={styles.interveneBtnText}>Intervir</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -576,11 +600,8 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D342C',
-    paddingBottom: 12,
-    flexWrap: 'wrap',
+    gap: 8,
+    paddingBottom: 2,
   },
   tabBtn: {
     flexDirection: 'row',
@@ -589,16 +610,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1714',
     borderWidth: 1,
     borderColor: '#3D342C',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 6,
+    minHeight: 42,
+    paddingHorizontal: 16,
+    borderRadius: 21,
   },
   tabBtnActive: {
     backgroundColor: 'rgba(197, 160, 89, 0.15)',
     borderColor: '#C5A059',
   },
   tabText: {
-    color: '#80776C',
+    color: '#BAAFA0',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -610,29 +631,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flexWrap: 'wrap',
   },
-  syncBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#1A1714',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3D342C',
+  severityText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   syncText: {
-    color: '#C5A059',
-    fontSize: 12,
-    fontWeight: '600',
+    color: '#9A8F82',
+    fontSize: 13,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: '#24201C',
     borderWidth: 1,
     borderColor: '#8C704F',
-    paddingVertical: 8,
+    minHeight: 38,
     paddingHorizontal: 14,
     borderRadius: 6,
   },
@@ -660,10 +677,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   massTitle: {
-    color: '#C5A059',
-    fontSize: 14,
+    color: '#E2D8C3',
+    fontSize: 15,
     fontWeight: '700',
-    letterSpacing: 1,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   massButtonsRow: {
@@ -699,10 +715,9 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
   gridTitle: {
-    color: '#C5A059',
+    color: '#E2D8C3',
     fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 1,
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
   },
   gridHeader: {
@@ -807,7 +822,7 @@ const styles = StyleSheet.create({
   },
   hpLabel: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
@@ -816,16 +831,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Cinzel", "Georgia", serif' : undefined,
-  },
-  hpBg: {
-    height: 14,
-    backgroundColor: '#24201C',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  hpFill: {
-    height: '100%',
-    borderRadius: 4,
   },
   deathBox: {
     backgroundColor: 'rgba(184, 40, 40, 0.15)',
@@ -843,7 +848,7 @@ const styles = StyleSheet.create({
   },
   deathStats: {
     color: '#E2D8C3',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
   },
   miniStatsRow: {
@@ -866,7 +871,7 @@ const styles = StyleSheet.create({
   },
   miniStatLabel: {
     color: '#80776C',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '700',
     marginBottom: 2,
   },
@@ -887,7 +892,7 @@ const styles = StyleSheet.create({
   },
   miniStatMod: {
     color: '#C5A059',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '700',
   },
   conditionsBox: {
@@ -895,7 +900,7 @@ const styles = StyleSheet.create({
   },
   conditionsLabel: {
     color: '#B82828',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },
@@ -914,7 +919,7 @@ const styles = StyleSheet.create({
   },
   condText: {
     color: '#B82828',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   interveneBtn: {
@@ -922,12 +927,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#C5A059',
-    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#8C704F',
+    minHeight: 42,
     borderRadius: 6,
   },
   interveneBtnText: {
-    color: '#110F0D',
+    color: '#E6C280',
     fontSize: 14,
     fontWeight: '700',
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
@@ -965,7 +971,7 @@ const styles = StyleSheet.create({
   },
   overloadDesc: {
     color: '#E2D8C3',
-    fontSize: 11,
+    fontSize: 12,
   },
   coinsRow: {
     flexDirection: 'row',
@@ -984,19 +990,6 @@ const styles = StyleSheet.create({
     color: '#BAAFA0',
     fontSize: 12,
     fontWeight: '700',
-  },
-  weightBadge: {
-    color: '#80776C',
-    fontSize: 11,
-  },
-  expandBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(197, 160, 89, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(197, 160, 89, 0.3)',
-    borderRadius: 6,
-    paddingHorizontal: 12,
   },
   tooltipBox: {
     position: 'absolute',
@@ -1022,7 +1015,7 @@ const styles = StyleSheet.create({
   },
   tooltipText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 18,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
   },

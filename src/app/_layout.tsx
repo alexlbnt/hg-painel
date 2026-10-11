@@ -10,6 +10,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import FantasyLoadingScreen from '@/components/ui/FantasyLoadingScreen';
 import LoginGateScreen from '@/components/auth/LoginGateScreen';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { FeedbackHost } from '@/components/ui/Feedback';
 import { InstallPrompt } from '@/components/ui/InstallPrompt';
 import { apiStatus, useApiOffline } from '@/lib/apiStatus';
 import { getApiBaseUrl } from '@/contexts/AuthContext';
@@ -68,6 +69,7 @@ export default function RootLayout() {
       <RoomProvider>
         <ThemeProvider value={DarkTheme}>
           <MainContentGate />
+          <FeedbackHost />
         </ThemeProvider>
       </RoomProvider>
     </AuthProvider>

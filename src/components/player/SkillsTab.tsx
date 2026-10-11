@@ -126,7 +126,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = React.memo(({
         {/* Direita: Modificador Total e Tags */}
         <View style={styles.skillRight}>
           {status === 'exp' && !isMobile && (
-            <Text style={styles.expTag}>EXPERTISE</Text>
+            <Text style={styles.expTag}>Expertise</Text>
           )}
           {status === 'prof' && !isMobile && (
             <Text style={[styles.profTag, { color: themeColor }]}>PROF</Text>
@@ -151,7 +151,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = React.memo(({
       <View style={styles.topBar}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Award size={16} color={themeColor} />
-          <Text style={styles.title}>PERÍCIAS (D&D 5E)</Text>
+          <Text style={styles.title}>Perícias (D&D 5e)</Text>
         </View>
 
         <TouchableOpacity
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   modeBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   editNotice: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   editNoticeText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     flex: 1,
   },
   skillsColumnsContainer: {
@@ -299,14 +299,14 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   skillNameMobile: {
-    fontSize: 11,
+    fontSize: 12,
   },
   attrLabel: {
     color: '#73695D',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   attrLabelMobile: {
-    fontSize: 9.5,
+    fontSize: 11,
   },
   skillRight: {
     flexDirection: 'row',
@@ -326,14 +326,16 @@ const styles = StyleSheet.create({
     minWidth: 22,
   },
   profTag: {
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
   expTag: {
     color: '#E5A93C',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
 });
+
+SkillsTab.displayName = 'SkillsTab';

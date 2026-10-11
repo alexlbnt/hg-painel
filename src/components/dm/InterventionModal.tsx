@@ -59,7 +59,7 @@ export default function InterventionModal({ visible, onClose, character, onApply
             <View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <Crown color="#C5A059" size={16} />
-                <Text style={styles.tag}>ESCUDO DE INTERVENÇÃO DIVINA (DM)</Text>
+                <Text style={styles.tag}>Intervenção do Mestre</Text>
               </View>
               <Text style={styles.title}>{character.name} ({character.class}{character.archetype ? ` - ${character.archetype}` : ''})</Text>
               <Text style={styles.subtitle}>Jogador: {character.playerName} • Nível {character.level}</Text>
@@ -73,7 +73,7 @@ export default function InterventionModal({ visible, onClose, character, onApply
           <View style={styles.vitalBar}>
             <View style={styles.vitalItem}>
               <Heart color="#B82828" size={18} />
-              <Text style={styles.vitalLabel}>HP ATUAL</Text>
+              <Text style={styles.vitalLabel}>PV atuais</Text>
               <Text style={[styles.vitalVal, { color: '#B82828' }]}>
                 {character.currentHp} / {character.maxHp}
               </Text>
@@ -81,12 +81,12 @@ export default function InterventionModal({ visible, onClose, character, onApply
 
             <View style={styles.vitalItem}>
               <Shield color="#C5A059" size={18} />
-              <Text style={styles.vitalLabel}>TEMP HP</Text>
+              <Text style={styles.vitalLabel}>PV temporários</Text>
               <Text style={[styles.vitalVal, { color: '#C5A059' }]}>+{character.tempHp}</Text>
             </View>
 
             <View style={styles.vitalItem}>
-              <Text style={styles.vitalLabel}>CLASSE ARMADURA</Text>
+              <Text style={styles.vitalLabel}>Classe armadura</Text>
               <Text style={[styles.vitalVal, { color: '#8C6C90' }]}>{character.armorClass} CA</Text>
             </View>
           </View>
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     color: '#C5A059',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.5,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   vitalLabel: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,

@@ -64,7 +64,7 @@ export const ChronicleBiography: React.FC<ChronicleBiographyProps> = ({
       <View style={styles.headerRow}>
         <View style={styles.titleWrap}>
           <BookOpen size={14} color={themeColor} />
-          <Text style={styles.headerTitle}>LORE DO PERSONAGEM</Text>
+          <Text style={styles.headerTitle}>Lore do personagem</Text>
         </View>
 
         {!isEditing ? (
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#E2D8C3',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.8,
     flexShrink: 1,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   cancelBtn: {
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   templateBarLabel: {
     color: '#6E6557',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   templateBtn: {
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   templateBtnText: {
     color: '#BAAFA0',
-    fontSize: 9.5,
+    fontSize: 11,
   },
   textInput: {
     backgroundColor: '#14120F',

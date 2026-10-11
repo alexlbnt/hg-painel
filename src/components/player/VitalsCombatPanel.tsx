@@ -47,7 +47,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
             <Sparkles size={14} color="#D8B4FE" />
             <Text style={styles.concentrationLabel}>
-              CONCENTRANDO:{' '}
+              Concentrando em{' '}
               <Text style={{ color: '#F3E8FF', fontWeight: 'bold' }}>
                 {concentratingSpell}
               </Text>
@@ -70,11 +70,11 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
       <View style={styles.hpHeader}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Heart color="#B82828" size={18} />
-          <Text style={styles.hpTitle}>PONTOS DE VIDA</Text>
+          <Text style={styles.hpTitle}>Pontos de vida</Text>
           {char.tempHp > 0 && (
             <View style={styles.tempHpBadge}>
               <Shield color="#C5A059" size={11} />
-              <Text style={styles.tempHpText}>+{char.tempHp} TEMP</Text>
+              <Text style={styles.tempHpText}>+{char.tempHp} temporários</Text>
             </View>
           )}
         </View>
@@ -103,10 +103,10 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
       {/* DADOS DE VIDA & DESCANSOS */}
       <View style={[styles.restRow, isMobile && { flexDirection: 'column', gap: 8 }]}>
         <View style={styles.hitDiceBox}>
-          <Text style={styles.hitDiceLabel}>Dados de Vida Restantes:</Text>
+          <Text style={styles.hitDiceLabel}>Dados de vida restantes:</Text>
           <Text style={[styles.hitDiceVal, { color: themeColor }]}>
             {char.hitDiceTotal - char.hitDiceSpent} / {char.hitDiceTotal}{' '}
-            <Text style={{ color: '#80776C', fontSize: 11 }}>({char.hitDiceType})</Text>
+            <Text style={{ color: '#80776C', fontSize: 12 }}>({char.hitDiceType})</Text>
           </Text>
         </View>
 
@@ -119,7 +119,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
             activeOpacity={0.7}
           >
             <Sun size={13} color="#C5A059" />
-            <Text style={[styles.restBtnText, { color: '#C5A059' }]}>Descanso Curto</Text>
+            <Text style={[styles.restBtnText, { color: '#C5A059' }]}>Descanso curto</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -130,7 +130,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
             activeOpacity={0.7}
           >
             <Moon size={13} color="#D8B4FE" />
-            <Text style={[styles.restBtnText, { color: '#D8B4FE' }]}>Descanso Longo</Text>
+            <Text style={[styles.restBtnText, { color: '#D8B4FE' }]}>Descanso longo</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -140,13 +140,13 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
         <View style={styles.deathSavesContainer}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
             <Skull size={15} color="#B82828" />
-            <Text style={styles.deathSavesTitle}>TESTES CONTRA A MORTE</Text>
+            <Text style={styles.deathSavesTitle}>Testes contra a morte</Text>
           </View>
 
           <View style={styles.deathSavesRow}>
             {/* Sucessos */}
             <View style={{ alignItems: 'center', gap: 4 }}>
-              <Text style={{ color: '#78C288', fontSize: 11, fontWeight: '700' }}>Sucessos</Text>
+              <Text style={{ color: '#78C288', fontSize: 12, fontWeight: '700' }}>Sucessos</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 {[0, 1, 2].map((i) => (
                   <TouchableOpacity
@@ -168,7 +168,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
 
             {/* Falhas */}
             <View style={{ alignItems: 'center', gap: 4 }}>
-              <Text style={{ color: '#B82828', fontSize: 11, fontWeight: '700' }}>Falhas</Text>
+              <Text style={{ color: '#B82828', fontSize: 12, fontWeight: '700' }}>Falhas</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 {[0, 1, 2].map((i) => (
                   <TouchableOpacity
@@ -198,8 +198,8 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
           accessibilityLabel="Valor de dano ou cura"
           value={customHp}
           onChangeText={setCustomHp}
-          placeholder={isMobile ? "Qtd. dano/cura" : "Valor de dano ou cura"}
-          placeholderTextColor="#6B6257"
+          placeholder={isMobile ? "Quantidade" : "Quantidade de dano ou cura"}
+          placeholderTextColor="#80776C"
           keyboardType="numeric"
         />
         <TouchableOpacity
@@ -209,7 +209,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
           accessibilityLabel="Aplicar dano"
           activeOpacity={0.7}
         >
-          <Text style={styles.dmgBtnText}>- Dano</Text>
+          <Text style={styles.dmgBtnText}>Dano</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.hpActionBtn, styles.healBtn, isMobile && styles.hpActionBtnMobile]}
@@ -218,7 +218,7 @@ export const VitalsCombatPanel: React.FC<VitalsCombatPanelProps> = React.memo(({
           accessibilityLabel="Aplicar cura"
           activeOpacity={0.7}
         >
-          <Text style={styles.healBtnText}>+ Cura</Text>
+          <Text style={styles.healBtnText}>Curar</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   concentrationLabel: {
     color: '#D8B4FE',
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   clearConcentrationText: {
     color: '#F3E8FF',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '700',
   },
   hpHeader: {
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   },
   tempHpText: {
     color: '#E6C280',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   hpCurrent: {
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   },
   hitDiceLabel: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
   },
   hitDiceVal: {
     fontSize: 13,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   restBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   deathSavesContainer: {
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
   },
   deathSavesTitle: {
     color: '#E2D8C3',
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -422,3 +422,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+VitalsCombatPanel.displayName = 'VitalsCombatPanel';

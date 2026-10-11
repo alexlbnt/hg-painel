@@ -194,7 +194,7 @@ export const CompanionTab: React.FC<CompanionTabProps> = React.memo(({
           </View>
 
           <Text style={[styles.emptyTitle, { color: themeColor }]}>
-            NENHUM COMPANHEIRO OU FAMILIAR VINCULADO
+            Nenhum companheiro ou familiar vinculado
           </Text>
 
           <Text style={styles.emptyDesc}>
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: '#81C784',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -385,3 +385,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
 });
+
+CompanionTab.displayName = 'CompanionTab';

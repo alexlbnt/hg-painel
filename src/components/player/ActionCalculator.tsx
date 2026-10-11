@@ -130,7 +130,7 @@ export const ActionCalculator: React.FC<ActionCalculatorProps> = ({
         >
           <Sparkles size={14} color={themeColor} />
           <Text style={[styles.headerTitle, { color: themeColor }]}>
-            CALCULADORA DE AÇÃO
+            Calculadora de ação
           </Text>
           <View style={[styles.liveBadge, { backgroundColor: `${themeColor}18` }]}>
             <Text style={[styles.liveBadgeText, { color: themeColor }]}>D&D 5e</Text>
@@ -203,7 +203,7 @@ export const ActionCalculator: React.FC<ActionCalculatorProps> = ({
           <View style={[styles.heroTray, { borderColor: `${themeColor}55` }]}>
             <View style={styles.trayLabelRow}>
               <Text style={[styles.traySectionTitle, { color: themeColor }]}>
-                DADOS PARA PEGAR NA MESA E ROLAR
+                Dados para pegar na mesa e rolar
               </Text>
               <Text style={styles.trayHitCountText}>
                 {result.hitDice.totalD20 / (result.hitDice.advantage || result.hitDice.disadvantage ? 2 : 1)} ataque(s)
@@ -214,7 +214,7 @@ export const ActionCalculator: React.FC<ActionCalculatorProps> = ({
         <View style={styles.diceTrayRow}>
           {/* Dados d20 para Acerto */}
           <View style={styles.dieCardAcerto}>
-            <Text style={styles.dieCardTypeLabel}>ACERTO</Text>
+            <Text style={styles.dieCardTypeLabel}>Acerto</Text>
             <Text style={styles.dieCardCountD20}>
               {result.hitDice.totalD20}× <Text style={styles.dieCardDieName}>d20</Text>
             </Text>
@@ -250,7 +250,7 @@ export const ActionCalculator: React.FC<ActionCalculatorProps> = ({
           {/* Bônus Fixo Somado */}
           {result.totalFixedDamageBonus !== 0 && (
             <View style={styles.dieCardBonus}>
-              <Text style={styles.dieCardTypeLabelBonus}>BÔNUS FIXO</Text>
+              <Text style={styles.dieCardTypeLabelBonus}>Bônus fixo</Text>
               <Text style={styles.dieCardCountBonus}>
                 +{result.totalFixedDamageBonus}
               </Text>
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   liveBadgeText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   collapseArrowBtn: {
@@ -754,10 +754,10 @@ const styles = StyleSheet.create({
   },
   collapsedPreviewText: {
     color: '#A89F91',
-    fontSize: 11,
+    fontSize: 12,
   },
   collapsedOpenHint: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '600',
   },
   resetBtn: {
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
   },
   resetBtnText: {
     color: '#A89F91',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   presetsRow: {
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
   },
   presetChipText: {
     color: '#D4C8B5',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '600',
   },
   heroTray: {
@@ -806,13 +806,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   traySectionTitle: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
   trayHitCountText: {
     color: '#8A8275',
-    fontSize: 10,
+    fontSize: 12,
   },
   diceTrayRow: {
     flexDirection: 'row',
@@ -855,13 +855,13 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   dieCardTypeLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
     color: '#FFB74D',
   },
   dieCardTypeLabelBonus: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
     color: '#4E9C8E',
@@ -886,7 +886,7 @@ const styles = StyleSheet.create({
   },
   dieCardHint: {
     color: '#8A8275',
-    fontSize: 9.5,
+    fontSize: 11,
   },
   speechLine: {
     backgroundColor: '#1A1511',
@@ -895,7 +895,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   speechText: {
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 16,
   },
   controlsSection: {
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
   },
   actionBadgeLabel: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
     minWidth: 55,
@@ -965,7 +965,7 @@ const styles = StyleSheet.create({
   },
   choicePillText: {
     color: '#A89F91',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   togglePill: {
     flexDirection: 'row',
@@ -992,7 +992,7 @@ const styles = StyleSheet.create({
   },
   togglePillText: {
     color: '#8A8275',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   narrativeCleanSection: {
     borderTopWidth: 1,
@@ -1008,7 +1008,7 @@ const styles = StyleSheet.create({
   },
   narrativeSectionTitle: {
     color: '#8A8275',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -1021,12 +1021,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   stepDot: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   stepItemText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 16,
   },
   stepItemTitle: {

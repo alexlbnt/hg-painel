@@ -1,4 +1,5 @@
-import { Platform, Alert } from 'react-native';
+import { Platform } from 'react-native';
+import { notify } from '@/utils/confirm';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -30,7 +31,7 @@ export const ExportService = {
     } else {
       try {
         await Clipboard.setStringAsync(jsonString);
-        Alert.alert('Backup Copiado!', 'O código JSON da ficha foi copiado para a área de transferência.');
+        notify('JSON da ficha copiado para a área de transferência.');
       } catch (e) {
         console.error('Erro no mobile export', e);
       }
@@ -56,7 +57,7 @@ export const ExportService = {
       URL.revokeObjectURL(url);
     } else {
       await Clipboard.setStringAsync(jsonString);
-      Alert.alert('Backup Copiado!', 'O código JSON com todas as fichas foi copiado para a área de transferência.');
+      notify('JSON de todas as fichas copiado para a área de transferência.');
     }
   },
 
@@ -70,7 +71,7 @@ export const ExportService = {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const win = window.open('', '_blank');
       if (!win) {
-        Alert.alert('Pop-up bloqueado', 'Permita pop-ups para este site para gerar o PDF da ficha.');
+        notify('O navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente de novo.', 'error');
         return;
       }
       win.document.open();
@@ -95,11 +96,11 @@ export const ExportService = {
           dialogTitle: `Ficha de ${char.name}`,
         });
       } else {
-        Alert.alert('PDF gerado', uri);
+        notify(`PDF salvo em ${uri}`, 'info');
       }
     } catch (e) {
       console.error('Erro ao gerar PDF', e);
-      Alert.alert('Erro', 'Não foi possível gerar o PDF da ficha.');
+      notify('Não foi possível gerar o PDF da ficha.', 'error');
     }
   },
 

@@ -1,16 +1,10 @@
-import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CharacterData } from '@/lib/mockData';
 import { getProfBonus } from '@/utils/dnd5e';
-import {
-  Download,
-  Edit,
-  Scale,
-  Scroll,
-  Skull,
-  Sun,
-  Trash2,
-} from 'lucide-react-native';
+import { Colors, FontFamily, Radius, Type } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { Download, Edit, FileText, MoreHorizontal, Scale, Skull, Sun, Trash2 } from 'lucide-react-native';
 
 interface CharacterHeaderProps {
   char: CharacterData;
@@ -23,6 +17,49 @@ interface CharacterHeaderProps {
   onExportPdf?: () => void;
   onEditChar: () => void;
   onDeleteChar: () => void;
+}
+
+const DEITY_STYLE: Record<string, { icon: any; color: string }> = {
+  Arcké: { icon: Scale, color: '#E89A9A' },
+  Vitta: { icon: Sun, color: '#E6C280' },
+  Thanatos: { icon: Skull, color: '#9DBBE0' },
+};
+
+/** Menu "Mais": ações raras (exportar) e destrutivas (excluir) ficam fora da área nobre da ficha. */
+function MoreMenu({
+  visible,
+  onClose,
+  items,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  items: { label: string; icon: any; onPress: () => void; danger?: boolean }[];
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.menuOverlay} onPress={onClose} accessibilityLabel="Fechar menu">
+        <View style={styles.menu}>
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Pressable
+                key={item.label}
+                onPress={() => {
+                  onClose();
+                  item.onPress();
+                }}
+                accessibilityRole="menuitem"
+                style={(s: any) => [styles.menuItem, (s.hovered || s.pressed) && styles.menuItemHover]}
+              >
+                <Icon size={18} color={item.danger ? Colors.fantasy.dangerText : Colors.fantasy.textSecondary} />
+                <Text style={[styles.menuText, item.danger && { color: Colors.fantasy.dangerText }]}>{item.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Pressable>
+    </Modal>
+  );
 }
 
 export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
@@ -38,203 +75,95 @@ export const CharacterHeader: React.FC<CharacterHeaderProps> = React.memo(({
   onDeleteChar,
 }) => {
   const prof = getProfBonus(char.level);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const deity = char.deity && char.deity !== 'Nenhum' ? char.deity : null;
+  const deityStyle = deity ? DEITY_STYLE[deity] : null;
+  const DeityIcon = deityStyle?.icon;
+  const signed = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
+
+  const stats: { label: string; short: string; value: string; onPress?: () => void }[] = [
+    { label: 'Classe de armadura', short: 'CA', value: String(totalAc) },
+    { label: 'Iniciativa', short: 'Inic.', value: signed(char.initiativeBonus) },
+    { label: 'Proficiência', short: 'Prof.', value: `+${prof}` },
+    { label: 'Percepção passiva', short: 'Perc.', value: String(passivePerception) },
+    { label: 'Deslocamento', short: 'Desl.', value: char.speed || '9m', onPress: onOpenSpeedModal },
+  ];
 
   return (
-    <View style={[styles.headerContainer, isMobile && { gap: 12, paddingBottom: 14 }]}>
-      {/* Informações Básicas do Aventureiro */}
-      <View style={{ flexShrink: 1, minWidth: isMobile ? '100%' : 180 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-          <View
-            style={[
-              styles.levelBadge,
-              { borderColor: `${themeColor}66`, backgroundColor: `${themeColor}15` },
-            ]}
-          >
-            <Scroll color={themeColor} size={13} />
-            <Text style={[styles.levelText, { color: themeColor }]}>
-              NÍVEL {char.level} • {char.race.toUpperCase()}
-            </Text>
-          </View>
-
-          {char.room?.name && (
-            <View style={styles.roomTag}>
-              <Text style={styles.roomTagText}>🏰 {char.room.name.toUpperCase()}</Text>
-            </View>
-          )}
-        </View>
-
-        <Text
-          style={[
-            styles.charName,
-            isMobile && { fontSize: 24 },
-            { color: themeColor },
-          ]}
-        >
-          {char.name}
+    <View style={[styles.headerContainer, isMobile && styles.headerContainerMobile]}>
+      {/* Identidade */}
+      <View style={[styles.identity, isMobile && { minWidth: '100%' }]}>
+        <Text style={styles.kicker}>
+          Nível {char.level}, {char.race}
         </Text>
-
+        <Text style={[styles.charName, isMobile && { fontSize: 26 }, { color: themeColor }]}>{char.name}</Text>
         <Text style={styles.charMeta}>
-          {char.class}{char.archetype ? ` • ${char.archetype}` : ''} • Jogador:{' '}
-          <Text style={{ color: '#E2D8C3', fontWeight: '700' }}>{char.playerName}</Text>
+          {char.class}
+          {char.archetype ? ` (${char.archetype})` : ''}, jogado por{' '}
+          <Text style={{ color: Colors.fantasy.text, fontWeight: '700' }}>{char.playerName}</Text>
         </Text>
+        {!!deity && (
+          <View style={styles.deity}>
+            {DeityIcon && <DeityIcon size={14} color={deityStyle!.color} />}
+            <Text style={[styles.deityText, deityStyle && { color: deityStyle.color }]}>Devoto de {deity}</Text>
+          </View>
+        )}
+      </View>
 
-        {char.deity && char.deity !== 'Nenhum' && (
-          <View
-            style={[
-              styles.deityBadge,
-              char.deity === 'Arcké'
-                ? { borderColor: '#B82828', backgroundColor: 'rgba(184, 40, 40, 0.12)' }
-                : char.deity === 'Vitta'
-                ? { borderColor: '#C5A059', backgroundColor: 'rgba(197, 160, 89, 0.12)' }
-                : { borderColor: '#1B3B6F', backgroundColor: 'rgba(27, 59, 111, 0.12)' },
-            ]}
-          >
-            {char.deity === 'Arcké' && <Scale color="#B82828" size={13} />}
-            {char.deity === 'Vitta' && <Sun color="#C5A059" size={13} />}
-            {char.deity === 'Thanatos' && <Skull color="#4A75B5" size={13} />}
-            <Text
-              style={[
-                styles.deityText,
-                {
-                  color:
-                    char.deity === 'Arcké'
-                      ? '#E57373'
-                      : char.deity === 'Vitta'
-                      ? '#E6C280'
-                      : '#7895C2',
-                },
-              ]}
+      {/* Números de combate: uma cor só; o rótulo diz o que é */}
+      <View style={[styles.stats, isMobile && styles.statsMobile]}>
+        {stats.map((s) => {
+          const content = (
+            <>
+              <Text style={styles.statValue}>{s.value}</Text>
+              <View style={styles.statLabelRow}>
+                <Text style={styles.statLabel} numberOfLines={1}>
+                  {isMobile ? s.short : s.label}
+                </Text>
+                {s.onPress && <Edit size={11} color={Colors.fantasy.textMuted} />}
+              </View>
+            </>
+          );
+          return s.onPress ? (
+            <TouchableOpacity
+              key={s.label}
+              style={[styles.stat, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
+              onPress={s.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={`${s.label}: ${s.value}. Toque para alterar`}
             >
-              DEVOTO DE {char.deity.toUpperCase()}
-            </Text>
-          </View>
-        )}
+              {content}
+            </TouchableOpacity>
+          ) : (
+            <View key={s.label} style={styles.stat} accessibilityLabel={`${s.label}: ${s.value}`}>
+              {content}
+            </View>
+          );
+        })}
       </View>
 
-      {/* Ribbon de Estatísticas Vitais de Combate */}
-      <View
-        style={[
-          styles.headerStatsRibbon,
-          !isMobile && styles.headerStatsRibbonDesktop,
-          isMobile && {
-            width: '100%',
-            maxWidth: '100%',
-            justifyContent: 'space-around',
-            gap: 4,
-            paddingVertical: 6,
-          },
-          { borderColor: `${themeColor}44` },
-        ]}
-      >
-        <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-          <Text style={styles.headerStatLabel}>PROF.</Text>
-          <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: themeColor }]}>
-            +{prof}
-          </Text>
-        </View>
-
-        {isMobile && <View style={styles.headerStatDivider} />}
-
-        <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-          <Text style={styles.headerStatLabel}>CA</Text>
-          <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#7895C2' }]}>
-            {totalAc}
-          </Text>
-        </View>
-
-        {isMobile && <View style={styles.headerStatDivider} />}
-
-        <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-          <Text style={styles.headerStatLabel}>INIC.</Text>
-          <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }]}>
-            {char.initiativeBonus >= 0 ? `+${char.initiativeBonus}` : char.initiativeBonus}
-          </Text>
-        </View>
-
-        {isMobile && <View style={styles.headerStatDivider} />}
-
-        <View style={[styles.headerStatItem, isMobile && { minWidth: 28 }]}>
-          <Text style={styles.headerStatLabel}>PERC.</Text>
-          <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#78C288' }]}>
-            {passivePerception}
-          </Text>
-        </View>
-
-        {isMobile && <View style={styles.headerStatDivider} />}
-
-        <TouchableOpacity
-          style={[
-            styles.headerStatItem,
-            isMobile && { minWidth: 28 },
-            Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
-          ]}
-          onPress={onOpenSpeedModal}
-          activeOpacity={0.7}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-            <Text style={styles.headerStatLabel}>DESL.</Text>
-            <Edit size={9} color={themeColor} />
-          </View>
-          <Text style={[styles.headerStatVal, isMobile && { fontSize: 16 }, { color: '#E6C280' }]}>
-            {char.speed || '9m'}
-          </Text>
-        </TouchableOpacity>
+      {/* Ações: editar à vista; exportar e excluir no menu */}
+      <View style={[styles.actions, isMobile && styles.actionsMobile]}>
+        <Button label="Editar ficha" icon={Edit} size="sm" onPress={onEditChar} grow={isMobile} />
+        <Button
+          label="Mais"
+          icon={MoreHorizontal}
+          size="sm"
+          variant="ghost"
+          onPress={() => setMenuOpen(true)}
+          accessibilityLabel="Mais ações da ficha"
+        />
       </View>
 
-      {/* Botões de Ação do Header */}
-      <View
-        style={[
-          styles.headerActions,
-          isMobile && {
-            width: '100%',
-            flexWrap: 'wrap',
-            justifyContent: 'flex-end',
-            gap: 6,
-            marginTop: 4,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={[styles.actionBtn, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]}
-          onPress={onExportJson}
-          accessibilityLabel="Exportar Ficha em JSON"
-        >
-          <Download color="#78C288" size={14} />
-          <Text style={[styles.actionBtnText, { color: '#78C288' }]}>JSON</Text>
-        </TouchableOpacity>
-
-        {onExportPdf && (
-          <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: '#4A8C59', backgroundColor: '#1A2E1D' }]}
-            onPress={onExportPdf}
-            accessibilityRole="button"
-            accessibilityLabel="Exportar Ficha em PDF"
-          >
-            <Download color="#78C288" size={14} />
-            <Text style={[styles.actionBtnText, { color: '#78C288' }]}>PDF</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={[
-            styles.actionBtn,
-            isMobile && { flex: 1, justifyContent: 'center' },
-            { borderColor: `${themeColor}66` },
-          ]}
-          onPress={onEditChar}
-        >
-          <Edit color={themeColor} size={14} />
-          <Text style={[styles.actionBtnText, { color: themeColor }]}>Editar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.deleteBtn]}
-          onPress={onDeleteChar}
-          accessibilityLabel="Excluir Ficha"
-        >
-          <Trash2 color="#B82828" size={14} />
-        </TouchableOpacity>
-      </View>
+      <MoreMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={[
+          { label: 'Baixar ficha em PDF', icon: FileText, onPress: () => onExportPdf?.() },
+          { label: 'Baixar backup em JSON', icon: Download, onPress: onExportJson },
+          { label: 'Excluir personagem', icon: Trash2, onPress: onDeleteChar, danger: true },
+        ].filter((i) => i.label !== 'Baixar ficha em PDF' || !!onExportPdf)}
+      />
     </View>
   );
 });
@@ -245,127 +174,117 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#2D251E',
-    paddingBottom: 16,
+    paddingBottom: 18,
   },
-  levelBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
+  headerContainerMobile: {
+    gap: 14,
+    paddingBottom: 14,
   },
-  roomTag: {
-    backgroundColor: 'rgba(197, 160, 89, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(197, 160, 89, 0.4)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+  identity: {
+    flexShrink: 1,
+    minWidth: 200,
+    gap: 2,
   },
-  roomTagText: {
-    fontSize: 9.5,
-    fontWeight: 'bold',
-    color: '#E6C280',
-    letterSpacing: 0.5,
-  },
-  levelText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+  kicker: {
+    color: Colors.fantasy.textMuted,
+    fontSize: Type.small,
+    fontWeight: '600',
   },
   charName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: 'serif',
-    letterSpacing: 0.5,
+    fontSize: 30,
+    fontWeight: '700',
+    fontFamily: FontFamily.display,
   },
   charMeta: {
-    color: '#BAAFA0',
-    fontSize: 13,
-    marginTop: 2,
+    color: Colors.fantasy.textSecondary,
+    fontSize: Type.body,
   },
-  deityBadge: {
-    marginTop: 6,
+  deity: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    alignSelf: 'flex-start',
-    paddingVertical: 3,
-    paddingHorizontal: 7,
-    borderRadius: 4,
-    borderWidth: 1,
+    marginTop: 6,
   },
   deityText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: Colors.fantasy.textSecondary,
+    fontSize: Type.small,
+    fontWeight: '600',
   },
-  headerStatsRibbon: {
+  stats: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#161311',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 12,
-  },
-  // Desktop: sem moldura nem traços divisórios; as informações ficam soltas, com mais espaço entre si
-  headerStatsRibbonDesktop: {
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    paddingHorizontal: 0,
     gap: 28,
   },
-  headerStatItem: {
+  statsMobile: {
+    width: '100%',
+    justifyContent: 'space-between',
+    gap: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: Radius.md,
+    backgroundColor: '#161311',
+    borderWidth: 1,
+    borderColor: Colors.fantasy.border,
+  },
+  stat: {
     alignItems: 'center',
-    minWidth: 42,
+    minWidth: 44,
   },
-  headerStatLabel: {
-    color: '#80776C',
-    fontSize: 9.5,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-    marginBottom: 2,
+  statValue: {
+    color: Colors.fantasy.text,
+    fontSize: 22,
+    fontWeight: '700',
   },
-  headerStatVal: {
-    color: '#E2D8C3',
-    fontSize: 18,
-    fontWeight: 'bold',
+  statLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
-  headerStatDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#2D251E',
+  statLabel: {
+    color: Colors.fantasy.textMuted,
+    fontSize: Type.caption,
   },
-  headerActions: {
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  actionBtn: {
+  actionsMobile: {
+    width: '100%',
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  menu: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: Colors.fantasy.backgroundSecondary,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.fantasy.border,
+    paddingVertical: 6,
+  },
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#1E1A16',
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    gap: 12,
+    minHeight: 48,
+    paddingHorizontal: 18,
   },
-  actionBtnText: {
-    fontSize: 12,
+  menuItemHover: {
+    backgroundColor: 'rgba(226, 216, 195, 0.06)',
+  },
+  menuText: {
+    color: Colors.fantasy.text,
+    fontSize: Type.body,
     fontWeight: '600',
   },
-  deleteBtn: {
-    backgroundColor: 'rgba(184, 40, 40, 0.15)',
-    borderColor: '#B82828',
-    paddingHorizontal: 8,
-  },
 });
+
+CharacterHeader.displayName = 'CharacterHeader';

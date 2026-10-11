@@ -68,7 +68,7 @@ export default function WhispersModal({ visible, onClose, characters, onApplyMas
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <Skull color="#B82828" size={16} />
-                <Text style={styles.tag}>SUSSURROS DO MESTRE (INTERVENÇÃO EM MASSA)</Text>
+                <Text style={styles.tag}>Sussurros do Mestre (intervenção em massa)</Text>
               </View>
               <Text style={styles.title}>Sussurros Sombrios & Divinos</Text>
               <Text style={styles.subtitle}>
@@ -84,13 +84,13 @@ export default function WhispersModal({ visible, onClose, characters, onApplyMas
           <View style={styles.vitalBar}>
             <View style={styles.vitalItem}>
               <Users color="#C5A059" size={18} />
-              <Text style={styles.vitalLabel}>PERSONAGENS CONECTADOS</Text>
+              <Text style={styles.vitalLabel}>Personagens conectados</Text>
               <Text style={[styles.vitalVal, { color: '#E2D8C3' }]}>{characters.length}</Text>
             </View>
 
             <View style={styles.vitalItem}>
               <Heart color="#B82828" size={18} />
-              <Text style={styles.vitalLabel}>HP TOTAL DA MESA</Text>
+              <Text style={styles.vitalLabel}>PV total da mesa</Text>
               <Text style={[styles.vitalVal, { color: '#B82828' }]}>
                 {totalHp} / {totalMaxHp}
               </Text>
@@ -98,7 +98,7 @@ export default function WhispersModal({ visible, onClose, characters, onApplyMas
 
             <View style={styles.vitalItem}>
               <Skull color={fallenCount > 0 ? '#FF4545' : '#80776C'} size={18} />
-              <Text style={styles.vitalLabel}>PERSONAGENS CAÍDOS (0 HP)</Text>
+              <Text style={styles.vitalLabel}>Personagens caídos (0 PV)</Text>
               <Text style={[styles.vitalVal, { color: fallenCount > 0 ? '#FF4545' : '#80776C' }]}>
                 {fallenCount} {fallenCount === 1 ? 'caído' : 'caídos'}
               </Text>
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     color: '#B82828',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.5,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   vitalLabel: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     fontFamily: Platform.OS === 'web' ? '"Georgia", serif' : undefined,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   },
   clearAllBtnText: {
     color: '#E6C280',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   conditionsGrid: {
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   countTextActive: {
@@ -515,12 +515,12 @@ const styles = StyleSheet.create({
   },
   conditionDescText: {
     color: '#80776C',
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 16,
   },
   actionHintText: {
     color: '#60584C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     fontStyle: 'italic',
   },

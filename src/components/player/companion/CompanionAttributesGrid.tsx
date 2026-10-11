@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     color: '#E2D8C3',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.8,
   },
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   },
   attrName: {
     color: '#A89F91',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   attrScore: {
     color: '#80776C',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   editWrap: {
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     height: 28,
   },
   editModPreview: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });

@@ -57,10 +57,7 @@ export const CharacterShowcaseSection: React.FC<CharacterShowcaseSectionProps> =
       <View style={[styles.sectionContainer, isMobile && styles.sectionContainerMobile]}>
         <View style={styles.header}>
           <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-            Heróis da Mesa
-          </Text>
-          <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>
-            Conhecendo os personagens forjados pela Honra e pelo Egoísmo...
+            Personagens da mesa
           </Text>
         </View>
 
@@ -101,12 +98,9 @@ export const CharacterShowcaseSection: React.FC<CharacterShowcaseSectionProps> =
       {/* Cabeçalho da Seção com Atmosfera Dark Fantasy */}
       <View style={styles.header}>
         <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-          Heróis da Mesa
+          Personagens da mesa
         </Text>
 
-        <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>
-          Conheça os personagens forjados pela Honra e pelo Egoísmo que moldam o destino do mundo.
-        </Text>
 
         {/* Abas de Filtro por Mesa */}
         {roomsList.length > 1 && (
@@ -169,7 +163,7 @@ export const CharacterShowcaseSection: React.FC<CharacterShowcaseSectionProps> =
       ) : (
         <View style={styles.emptyState}>
           <Compass size={32} color="#80776C" />
-          <Text style={styles.emptyTitle}>Nenhum herói encontrado</Text>
+          <Text style={styles.emptyTitle}>Nenhum personagem ainda</Text>
           <Text style={styles.emptySubtitle}>
             Nenhum personagem registrado nesta mesa até o momento.
           </Text>
@@ -202,11 +196,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   eyebrowText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#C5A059',
     letterSpacing: 2,
-    textTransform: 'uppercase',
   },
   sectionTitle: {
     fontSize: 28,
@@ -265,7 +258,7 @@ const styles = StyleSheet.create({
     borderColor: '#C5A059',
   },
   filterTabText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#80776C',
   },
@@ -297,7 +290,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   skeletonCard: {
-    height: 480,
+    height: 380,
     borderRadius: 12,
     backgroundColor: '#141210',
     borderWidth: 1,

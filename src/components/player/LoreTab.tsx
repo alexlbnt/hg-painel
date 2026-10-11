@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: '#81C784',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   mobileTabText: {
     color: '#8A8073',
-    fontSize: 10.5,
+    fontSize: 12,
   },
   mobileContent: {
     gap: 12,
@@ -314,3 +314,5 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 });
+
+LoreTab.displayName = 'LoreTab';

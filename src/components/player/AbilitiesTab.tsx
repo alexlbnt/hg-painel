@@ -164,7 +164,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
           <View style={styles.compactHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' }}>
               <Zap size={14} color="#D4883A" />
-              <Text style={styles.compactTitle}>PONTOS DE QI (MONGE)</Text>
+              <Text style={styles.compactTitle}>Pontos de ki (monge)</Text>
             </View>
             {(char.kiPoints || 0) < (char.maxKiPoints || char.level) ? (
               <TouchableOpacity
@@ -245,7 +245,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
           <View style={styles.compactHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' }}>
               <Sparkles size={14} color="#C084FC" />
-              <Text style={styles.compactTitle}>PONTOS DE FEITIÇARIA (FEITICEIRO)</Text>
+              <Text style={styles.compactTitle}>Pontos de feitiçaria (feiticeiro)</Text>
             </View>
             {(char.sorceryPoints || 0) < (char.maxSorceryPoints || char.level) ? (
               <TouchableOpacity
@@ -327,7 +327,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = React.memo(({
           <View style={styles.compactHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' }}>
               <Crosshair size={14} color="#E05252" />
-              <Text style={styles.compactTitle}>DADOS DE SUPERIORIDADE</Text>
+              <Text style={styles.compactTitle}>Dados de superioridade</Text>
               <View style={styles.compactDcBadge}>
                 <Text style={styles.compactDcLabel}>CD</Text>
                 <Text style={styles.compactDcVal}>{bmStats.saveDc}</Text>
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   },
   compactTitle: {
     color: '#E2D8C3',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -658,17 +658,17 @@ const styles = StyleSheet.create({
   },
   compactDcLabel: {
     color: '#80776C',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   compactDcVal: {
     color: '#E05252',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   compactDcAttr: {
     color: '#BAAFA0',
-    fontSize: 9,
+    fontSize: 11,
   },
   compactRestoreBtn: {
     flexDirection: 'row',
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   },
   compactRestoreText: {
     color: '#E05252',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   compactRestPill: {
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
   },
   compactRestText: {
     color: '#C5A059',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: '600',
   },
   compactTrayRow: {
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
   },
   compactMaxVal: {
     color: '#80776C',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '600',
   },
   compactDiceGrid: {
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   compactDieText: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   compactDieTextActive: {
@@ -780,12 +780,12 @@ const styles = StyleSheet.create({
   },
   compactQuickText: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '600',
   },
   quickStepText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   toolbar: {
@@ -814,7 +814,7 @@ const styles = StyleSheet.create({
   },
   filterPillText: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
   },
   addBtn: {
     flexDirection: 'row',
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   addBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   emptyCard: {
@@ -876,7 +876,7 @@ const styles = StyleSheet.create({
   },
   actionTypeText: {
     color: '#BAAFA0',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   resetBadge: {
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   resetBadgeText: {
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   iconBtn: {
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
   },
   pipsLabel: {
     color: '#BAAFA0',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   pipsRow: {
@@ -943,12 +943,12 @@ const styles = StyleSheet.create({
   },
   resetBtnText: {
     color: '#C5A059',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   descText: {
     color: '#BAAFA0',
-    fontSize: 11.5,
+    fontSize: 12,
     lineHeight: 16,
   },
   expandBtn: {
@@ -959,7 +959,9 @@ const styles = StyleSheet.create({
   },
   expandText: {
     color: '#BAAFA0',
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });
+
+AbilitiesTab.displayName = 'AbilitiesTab';
