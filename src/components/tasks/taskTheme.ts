@@ -1,46 +1,52 @@
-import { CheckCircle, Clock, Lock, PlayCircle, Sparkles } from 'lucide-react-native';
+import { Platform } from 'react-native';
+import {
+  CheckCircle,
+  Clock,
+  Code,
+  Feather,
+  Hammer,
+  Lock,
+  Palette,
+  PlayCircle,
+  Sparkles,
+  Star,
+} from 'lucide-react-native';
 import { TaskCategory, TaskStatus } from '@/lib/taskRules';
 
-// Paleta de Post-Its de Alta Legibilidade e Estética Tátil
-export const POST_IT_THEMES: Record<
-  TaskCategory,
-  { bg: string; border: string; badgeBg: string; badgeText: string; label: string }
-> = {
-  LORE: {
-    bg: '#FEF9C3',
-    border: '#FDE047',
-    badgeBg: 'rgba(161, 98, 7, 0.16)',
-    badgeText: '#854D0E',
-    label: 'Lore & História',
-  },
-  MECANICA: {
-    bg: '#E0F2FE',
-    border: '#BAE6FD',
-    badgeBg: 'rgba(3, 105, 161, 0.16)',
-    badgeText: '#0369A1',
-    label: 'Mecânica & Regras',
-  },
-  ARTE: {
-    bg: '#FFE4E6',
-    border: '#FECDD3',
-    badgeBg: 'rgba(190, 24, 93, 0.16)',
-    badgeText: '#BE185D',
-    label: 'Arte & Mapas',
-  },
-  DEV: {
-    bg: '#DCFCE7',
-    border: '#BBF7D0',
-    badgeBg: 'rgba(21, 128, 61, 0.16)',
-    badgeText: '#15803D',
-    label: 'Dev & Painel',
-  },
-  ESPECIAL: {
-    bg: '#FEF3C7',
-    border: '#FDE68A',
-    badgeBg: 'rgba(180, 83, 9, 0.16)',
-    badgeText: '#B45309',
-    label: 'Especial & Quests',
-  },
+/**
+ * "Mural da Taverna": cada tarefa é um aviso de pergaminho pregado num mural de madeira,
+ * marcado por um selo de cera da categoria. O selo é o único elemento de destaque; o resto é sóbrio.
+ */
+export const BOARD = {
+  wood: '#1C1611',
+  woodEdge: '#2E251D',
+  parchment: '#E9DDC4',
+  parchmentEdge: '#CDBB98',
+  ink: '#2B2119',
+  inkSoft: '#4A3B2D',
+  inkFaded: '#6E5D49',
+  rule: 'rgba(43, 33, 25, 0.18)',
+  gold: '#C5A059',
+  goldBright: '#E6C280',
+  text: '#E2D8C3',
+  textSecondary: '#BAAFA0',
+  textMuted: '#9A8F82',
+  bloodInk: '#8E1F1F',
+  focus: '#E6C280',
+};
+
+/** Títulos dos avisos: tipografia de impressão antiga (carregada só na web; no app nativo cai em serif). */
+export const NOTICE_FONT = Platform.OS === 'web' ? '"IM Fell English", Georgia, serif' : 'serif';
+export const BODY_FONT = Platform.OS === 'web' ? 'Georgia, "Times New Roman", serif' : 'serif';
+export const NOTICE_FONT_URL =
+  'https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap';
+
+export const CATEGORY_THEMES: Record<TaskCategory, { wax: string; label: string; icon: any }> = {
+  LORE: { wax: '#9A7420', label: 'Lore e história', icon: Feather },
+  MECANICA: { wax: '#2E5B7D', label: 'Mecânica e regras', icon: Hammer },
+  ARTE: { wax: '#8E2F3C', label: 'Arte e mapas', icon: Palette },
+  DEV: { wax: '#3D6B47', label: 'Dev e painel', icon: Code },
+  ESPECIAL: { wax: '#61427A', label: 'Especial', icon: Star },
 };
 
 export interface ColumnConfig {
@@ -48,7 +54,8 @@ export interface ColumnConfig {
   statuses: TaskStatus[];
   key: TaskStatus;
   label: string;
-  shortLabel: string;
+  /** O que a etapa significa, em uma frase. */
+  hint: string;
   icon: any;
   accentColor: string;
   emptyText: string;
@@ -58,65 +65,66 @@ export const COLUMNS: ColumnConfig[] = [
   {
     key: 'SUGERIDO',
     statuses: ['SUGERIDO', 'RECUSADO'],
-    label: 'SUGESTÕES',
-    shortLabel: 'Sugestões',
+    label: 'Sugestões',
+    hint: 'Ideias aguardando o Mestre',
     icon: Sparkles,
-    accentColor: '#B280E6',
-    emptyText: 'Nenhuma sugestão aguardando aprovação.',
+    accentColor: '#B89AD9',
+    emptyText: 'Nenhuma sugestão pendente. Tem uma ideia para a campanha? Sugira uma tarefa.',
   },
   {
     key: 'PARADO',
     statuses: ['PARADO'],
-    label: 'ABERTAS (BACKLOG)',
-    shortLabel: 'Abertas',
+    label: 'Abertas',
+    hint: 'Livres para quem quiser assumir',
     icon: Clock,
     accentColor: '#C5A059',
-    emptyText: 'Todas as tasks abertas foram assumidas!',
+    emptyText: 'Nenhuma tarefa livre agora. Todas já têm alguém cuidando.',
   },
   {
     key: 'ANDAMENTO',
     statuses: ['ANDAMENTO'],
-    label: 'EM ANDAMENTO',
-    shortLabel: 'Andamento',
+    label: 'Em andamento',
+    hint: 'Alguém já está cuidando',
     icon: PlayCircle,
-    accentColor: '#5B8AC9',
-    emptyText: 'Nenhuma task em andamento no momento.',
+    accentColor: '#7FA3D1',
+    emptyText: 'Ninguém está com tarefa em andamento. Assuma uma das abertas.',
   },
   {
     key: 'FINALIZADO',
     statuses: ['FINALIZADO'],
-    label: 'CONCLUÍDAS',
-    shortLabel: 'Concluídas',
+    label: 'Concluídas',
+    hint: 'Aguardando a revisão do Mestre',
     icon: CheckCircle,
-    accentColor: '#4E9C8E',
-    emptyText: 'Nenhuma task aguardando revisão do Mestre.',
+    accentColor: '#6FB3A6',
+    emptyText: 'Nada esperando revisão.',
   },
   {
     key: 'APROVADO',
     statuses: ['APROVADO'],
-    label: 'ARQUIVO DA MESA',
-    shortLabel: 'Arquivo',
+    label: 'Arquivo',
+    hint: 'Aprovadas e encerradas',
     icon: Lock,
-    accentColor: '#80776C',
-    emptyText: 'Nenhuma task arquivada até o momento.',
+    accentColor: '#9A8F82',
+    emptyText: 'Nenhuma tarefa arquivada ainda.',
   },
 ];
 
-export const CATEGORIES: { label: string; value: 'ALL' | TaskCategory; color?: string }[] = [
+export const CATEGORIES: { label: string; value: 'ALL' | TaskCategory }[] = [
   { label: 'Todas', value: 'ALL' },
-  { label: 'Lore', value: 'LORE', color: '#EAB308' },
-  { label: 'Mecânica', value: 'MECANICA', color: '#0284C7' },
-  { label: 'Arte', value: 'ARTE', color: '#E11D48' },
-  { label: 'Dev', value: 'DEV', color: '#16A34A' },
-  { label: 'Especial', value: 'ESPECIAL', color: '#D97706' },
+  { label: 'Lore', value: 'LORE' },
+  { label: 'Mecânica', value: 'MECANICA' },
+  { label: 'Arte', value: 'ARTE' },
+  { label: 'Dev', value: 'DEV' },
+  { label: 'Especial', value: 'ESPECIAL' },
 ];
 
-// Estilização Markdown de Alto Contraste dentro do Post-it
+// Markdown com tinta escura sobre o pergaminho
 export const markdownStyles = {
   body: {
-    color: '#292524',
-    fontSize: 13,
-    lineHeight: 19,
+    color: BOARD.inkSoft,
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: BODY_FONT,
     margin: 0,
     padding: 0,
   },
@@ -125,16 +133,14 @@ export const markdownStyles = {
     marginBottom: 6,
   },
   link: {
-    color: '#0369A1',
+    color: '#1F4E79',
     textDecorationLine: 'underline',
-    fontWeight: '600',
   },
   strong: {
-    color: '#1C1917',
+    color: BOARD.ink,
     fontWeight: '700',
   },
   em: {
-    color: '#44403C',
     fontStyle: 'italic',
   },
 } as any;
@@ -142,8 +148,9 @@ export const markdownStyles = {
 export const darkMarkdownStyles = {
   body: {
     color: '#E2D8C3',
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 24,
+    fontFamily: BODY_FONT,
   },
   link: {
     color: '#E6C280',
@@ -153,12 +160,12 @@ export const darkMarkdownStyles = {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** "12/03/26" — inclui o ano para não confundir tasks antigas. */
+/** "12/03/26": inclui o ano para não confundir tarefas antigas. */
 export function formatTaskDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-/** "hoje", "ontem", "há 5 dias" — para mostrar há quanto tempo a task está parada. */
+/** "hoje", "ontem", "há 5 dias": há quanto tempo a tarefa está na etapa. */
 export function formatAge(iso: string | undefined, now = Date.now()): string | null {
   if (!iso) return null;
   const days = Math.floor((now - new Date(iso).getTime()) / DAY_MS);
@@ -167,3 +174,7 @@ export function formatAge(iso: string | undefined, now = Date.now()): string | n
   if (days === 1) return 'ontem';
   return `há ${days} dias`;
 }
+
+/** Contorno de foco visível para navegação por teclado (web). */
+export const focusRing = (focused: boolean) =>
+  Platform.OS === 'web' && focused ? ({ outlineStyle: 'solid', outlineWidth: 2, outlineColor: BOARD.focus, outlineOffset: 2 } as any) : null;

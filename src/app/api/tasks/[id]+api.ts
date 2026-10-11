@@ -21,7 +21,7 @@ export async function GET(request: Request, context: any) {
     return Response.json(task);
   } catch (error) {
     console.error('Erro no Prisma GET /api/tasks/[id]:', error);
-    return Response.json({ error: 'Falha ao buscar task' }, { status: 500 });
+    return Response.json({ error: 'Não foi possível carregar a tarefa.' }, { status: 500 });
   }
 }
 
@@ -66,7 +66,7 @@ export async function PUT(request: Request, context: any) {
     });
     if (result.count === 0) {
       return Response.json(
-        { error: 'A task mudou de etapa enquanto você a via. Atualize o quadro e tente de novo.' },
+        { error: 'A tarefa mudou de etapa enquanto você a via. Atualize o quadro e tente de novo.' },
         { status: 409 }
       );
     }
@@ -76,7 +76,7 @@ export async function PUT(request: Request, context: any) {
     return Response.json(updatedTask);
   } catch (error) {
     console.error('Erro no Prisma PUT /api/tasks/[id]:', error);
-    return Response.json({ error: 'Falha ao atualizar a task' }, { status: 500 });
+    return Response.json({ error: 'Não foi possível salvar a tarefa. Tente de novo.' }, { status: 500 });
   }
 }
 
@@ -91,16 +91,16 @@ export async function DELETE(request: Request, context: any) {
       return Response.json({ error: 'Tarefa não encontrada' }, { status: 404 });
     }
     if (!canDeleteTask(existing, actor)) {
-      return forbidden('Você não tem permissão para excluir esta task');
+      return forbidden('Você não tem permissão para excluir esta tarefa');
     }
 
     await prisma.task.delete({
       where: { id },
     });
     broadcastEvent({ type: 'TASK_DELETED', id });
-    return Response.json({ message: 'Task deletada com sucesso' });
+    return Response.json({ message: 'Tarefa excluída' });
   } catch (error) {
     console.error('Erro no Prisma DELETE /api/tasks/[id]:', error);
-    return Response.json({ error: 'Falha ao deletar a task' }, { status: 500 });
+    return Response.json({ error: 'Não foi possível excluir a tarefa. Tente de novo.' }, { status: 500 });
   }
 }

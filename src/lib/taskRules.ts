@@ -144,10 +144,10 @@ export function planTaskAction(
   const rule = ACTION_RULES[action];
   if (!rule) return fail(400, 'Ação desconhecida');
   if (!rule.from.includes(task.status)) {
-    return fail(409, 'A task mudou de etapa enquanto você a via. Atualize o quadro e tente de novo.');
+    return fail(409, 'A tarefa mudou de etapa enquanto você a via. Atualize o quadro e tente de novo.');
   }
   if (!canRunTaskAction(task, actor, action)) {
-    return fail(403, 'Você não tem permissão para esta ação nesta task');
+    return fail(403, 'Você não tem permissão para esta ação nesta tarefa');
   }
 
   const changes: TaskChanges = { status: rule.to };
@@ -205,14 +205,14 @@ function validateContent(input: TaskContentInput, partial: boolean): TaskPlan {
 
   if (!partial || input.title !== undefined) {
     const title = clean(input.title);
-    if (!title) return fail(400, 'Informe o título da task');
+    if (!title) return fail(400, 'Informe o título da tarefa');
     const err = tooLong(title, TASK_LIMITS.title, 'O título');
     if (err) return err;
     changes.title = title;
   }
   if (!partial || input.description !== undefined) {
     const description = clean(input.description);
-    if (!description) return fail(400, 'Informe a descrição da task');
+    if (!description) return fail(400, 'Informe a descrição da tarefa');
     const err = tooLong(description, TASK_LIMITS.description, 'A descrição');
     if (err) return err;
     changes.description = description;
@@ -271,7 +271,7 @@ export function canDeleteTask(task: TaskSnapshot, actor: TaskActor): boolean {
  * recusada, ela volta para análise do Mestre.
  */
 export function planTaskEdit(task: TaskSnapshot, actor: TaskActor, input: TaskContentInput): TaskPlan {
-  if (!canEditTask(task, actor)) return fail(403, 'Você não tem permissão para editar esta task');
+  if (!canEditTask(task, actor)) return fail(403, 'Você não tem permissão para editar esta tarefa');
   const manager = isTaskManager(actor.role);
   const result = validateContent(
     manager ? input : { title: input.title, description: input.description, category: input.category },

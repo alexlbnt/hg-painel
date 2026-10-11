@@ -44,6 +44,6 @@ export async function POST(request: Request) {
     return Response.json(newTask, { status: 201 });
   } catch (error) {
     console.error('Erro no Prisma POST /api/tasks:', error);
-    return Response.json({ error: 'Falha ao criar task' }, { status: 500 });
+    return Response.json({ error: 'Não foi possível criar a tarefa. Tente de novo.' }, { status: 500 });
   }
 }

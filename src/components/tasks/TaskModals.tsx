@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +14,7 @@ import Markdown from 'react-native-markdown-display';
 import { AlertCircle } from 'lucide-react-native';
 import { TaskData } from '@/lib/mockData';
 import { TASK_LIMITS, TaskCategory } from '@/lib/taskRules';
-import { darkMarkdownStyles } from './taskTheme';
+import { BODY_FONT, darkMarkdownStyles, NOTICE_FONT } from './taskTheme';
 
 const errorMessage = (e: unknown) =>
   e instanceof Error && e.message ? e.message : 'Algo deu errado. Tente novamente.';
@@ -119,7 +118,7 @@ export function TaskFormModal({ visible, task, isManager, onSubmit, onClose }: T
     ? `Máximo de ${TASK_LIMITS.title} caracteres`
     : null;
   const descriptionError = !values.description.trim()
-    ? 'Descreva o objetivo da task'
+    ? 'Descreva o objetivo da tarefa'
     : values.description.trim().length > TASK_LIMITS.description
     ? `Máximo de ${TASK_LIMITS.description} caracteres`
     : null;
@@ -142,14 +141,14 @@ export function TaskFormModal({ visible, task, isManager, onSubmit, onClose }: T
     }
   };
 
-  const title = isEdit ? (isResubmit ? 'Ajustar e Reenviar Sugestão' : 'Editar Task') : isManager ? 'Nova Task da Mesa' : 'Sugerir Task';
+  const title = isEdit ? (isResubmit ? 'Ajustar e reenviar sugestão' : 'Editar tarefa') : isManager ? 'Nova tarefa' : 'Sugerir tarefa';
   const confirmLabel = isEdit
     ? isResubmit
-      ? 'Reenviar Sugestão'
-      : 'Salvar Alterações'
+      ? 'Reenviar sugestão'
+      : 'Salvar alterações'
     : isManager
-    ? 'Criar Task'
-    : 'Enviar Sugestão';
+    ? 'Criar tarefa'
+    : 'Enviar sugestão';
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -157,14 +156,14 @@ export function TaskFormModal({ visible, task, isManager, onSubmit, onClose }: T
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>{title}</Text>
           {!isManager && !isEdit && (
-            <Text style={styles.modalHint}>Sua sugestão vai para a coluna Sugestões e aguarda a aprovação do Mestre.</Text>
+            <Text style={styles.modalHint}>Sua sugestão aparece na coluna Sugestões até o Mestre aprovar ou recusar.</Text>
           )}
           {isResubmit && !!task?.reviewNote && (
             <Text style={styles.modalHint}>Motivo da recusa: {task.reviewNote}</Text>
           )}
           <ScrollView style={{ maxHeight: 520 }} keyboardShouldPersistTaps="handled">
             <View style={styles.labelRow}>
-              <Text style={styles.label}>Título da Task *</Text>
+              <Text style={styles.label}>Título</Text>
               <Counter value={values.title} max={TASK_LIMITS.title} />
             </View>
             <TextInput
@@ -173,11 +172,11 @@ export function TaskFormModal({ visible, task, isManager, onSubmit, onClose }: T
               onChangeText={set('title')}
               placeholderTextColor="#666"
               placeholder="Ex: Mapear as Ruínas do Norte"
-              accessibilityLabel="Título da task"
+              accessibilityLabel="Título da tarefa"
             />
             {submitted && titleError && <Text style={styles.fieldError}>{titleError}</Text>}
 
-            <Text style={styles.label}>Descrição Detalhada * (suporta Markdown)</Text>
+            <Text style={styles.label}>Descrição (aceita Markdown)</Text>
             <TextInput
               style={[styles.input, { height: 110, textAlignVertical: 'top' }, submitted && descriptionError && styles.inputError]}
               multiline
@@ -185,7 +184,7 @@ export function TaskFormModal({ visible, task, isManager, onSubmit, onClose }: T
               onChangeText={set('description')}
               placeholderTextColor="#666"
               placeholder="Detalhe o objetivo da missão, pré-requisitos e passos..."
-              accessibilityLabel="Descrição da task"
+              accessibilityLabel="Descrição da tarefa"
             />
             {submitted && descriptionError && <Text style={styles.fieldError}>{descriptionError}</Text>}
 
@@ -221,7 +220,7 @@ export function TaskFormModal({ visible, task, isManager, onSubmit, onClose }: T
 
             {showResolution && (
               <>
-                <Text style={styles.label}>Diário de Missão / Resolução (Markdown)</Text>
+                <Text style={styles.label}>Diário de missão (aceita Markdown)</Text>
                 <TextInput
                   style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
                   multiline
@@ -319,12 +318,12 @@ export function ResolutionViewModal({ task, onClose }: { task: TaskData | null; 
     <Modal visible={!!task} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Diário de Missão: {task?.title}</Text>
-          {!!task?.assignedTo && <Text style={styles.modalHint}>Registrado por {task.assignedTo}</Text>}
+          <Text style={styles.modalTitle}>{task?.title}</Text>
+          {!!task?.assignedTo && <Text style={styles.modalHint}>Diário de missão de {task.assignedTo}</Text>}
           <View style={styles.reportContentBox}>
             <ScrollView style={{ maxHeight: 380 }}>
               <Markdown style={darkMarkdownStyles}>
-                {task?.resolution || 'Nenhum registro foi redigido para esta task.'}
+                {task?.resolution || 'Nenhum diário foi escrito para esta tarefa.'}
               </Markdown>
             </ScrollView>
           </View>
@@ -353,17 +352,18 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   modalTitle: {
-    color: '#C5A059',
-    fontSize: 19,
-    fontWeight: 'bold',
+    color: '#E6C280',
+    fontSize: 24,
+    lineHeight: 30,
     marginBottom: 8,
-    fontFamily: Platform.OS === 'web' ? '"Cinzel", serif' : undefined,
+    fontFamily: NOTICE_FONT,
   },
   modalHint: {
     color: '#BAAFA0',
-    fontSize: 13,
+    fontSize: 14,
     marginBottom: 4,
-    lineHeight: 19,
+    lineHeight: 21,
+    fontFamily: BODY_FONT,
   },
   labelRow: {
     flexDirection: 'row',

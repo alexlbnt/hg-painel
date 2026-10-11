@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react-native';
 import { TaskData } from '@/lib/mockData';
-import { ColumnConfig } from './taskTheme';
+import { TaskButton } from './TaskButton';
+import { BOARD, BODY_FONT, ColumnConfig, focusRing } from './taskTheme';
 
-/** Quantos cards a coluna mostra antes do "Mostrar mais" (usado no Arquivo, que só cresce). */
+/** Quantos avisos a coluna mostra antes do "Mostrar mais" (usado no Arquivo, que só cresce). */
 const PAGE_SIZE = 10;
+export const COLLAPSED_COLUMN_WIDTH = 72;
 
 interface TaskColumnProps {
   col: ColumnConfig;
@@ -14,29 +16,48 @@ interface TaskColumnProps {
   renderCard: (task: TaskData) => React.ReactNode;
   /** Coluna pode ser recolhida a uma faixa estreita (Arquivo no desktop). */
   collapsible?: boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
   /** Pagina a lista em blocos de PAGE_SIZE. */
   paginated?: boolean;
+  /** Ação sugerida quando a coluna está vazia. */
+  emptyAction?: { label: string; onPress: () => void };
+  /** Esconde título e contagem (no celular as abas já mostram). */
+  hideTitle?: boolean;
 }
 
-export function TaskColumn({ col, tasks, layoutStyle, renderCard, collapsible, paginated }: TaskColumnProps) {
-  const [collapsed, setCollapsed] = useState(!!collapsible);
+export function TaskColumn({
+  col,
+  tasks,
+  layoutStyle,
+  renderCard,
+  collapsible,
+  collapsed,
+  onToggleCollapsed,
+  paginated,
+  emptyAction,
+  hideTitle,
+}: TaskColumnProps) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   if (collapsible && collapsed) {
     return (
-      <TouchableOpacity
-        style={[styles.column, styles.collapsedColumn]}
-        onPress={() => setCollapsed(false)}
+      <Pressable
+        style={(state: any) => [
+          styles.column,
+          styles.collapsedColumn,
+          (state.hovered || state.pressed) && { borderColor: '#4A3E33' },
+          focusRing(!!state.focused),
+        ]}
+        onPress={onToggleCollapsed}
         accessibilityRole="button"
-        accessibilityLabel={`Abrir coluna ${col.shortLabel} (${tasks.length} tasks)`}
+        accessibilityLabel={`Abrir ${col.label} (${tasks.length} tarefas)`}
       >
-        <ChevronsLeft size={16} color={col.accentColor} />
-        <col.icon size={16} color={col.accentColor} />
-        <View style={[styles.badge, { borderColor: `${col.accentColor}44` }]}>
-          <Text style={[styles.badgeText, { color: col.accentColor }]}>{tasks.length}</Text>
-        </View>
-        <Text style={styles.collapsedLabel}>{col.shortLabel}</Text>
-      </TouchableOpacity>
+        <ChevronsLeft size={16} color={BOARD.textMuted} />
+        <col.icon size={18} color={col.accentColor} />
+        <Text style={styles.count}>{tasks.length}</Text>
+        <Text style={styles.collapsedLabel}>{col.label}</Text>
+      </Pressable>
     );
   }
 
@@ -45,49 +66,50 @@ export function TaskColumn({ col, tasks, layoutStyle, renderCard, collapsible, p
 
   return (
     <View style={[styles.column, layoutStyle]}>
-      <View style={styles.columnHeader}>
-        <View style={styles.columnHeaderTitle}>
-          <col.icon size={15} color={col.accentColor} />
-          <Text style={styles.columnTitle} accessibilityRole="header">
-            {col.label}
-          </Text>
-        </View>
-        <View style={styles.columnHeaderTitle}>
-          <View style={[styles.badge, { borderColor: `${col.accentColor}44` }]}>
-            <Text style={[styles.badgeText, { color: col.accentColor }]}>{tasks.length}</Text>
+      <View style={styles.header}>
+        {!hideTitle && (
+          <View style={styles.titleRow}>
+            <col.icon size={16} color={col.accentColor} />
+            <Text style={styles.title} accessibilityRole="header">
+              {col.label}
+            </Text>
+            <Text style={styles.count} accessibilityLabel={`${tasks.length} tarefas`}>
+              {tasks.length}
+            </Text>
+            {collapsible && (
+              <Pressable
+                onPress={onToggleCollapsed}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={`Recolher ${col.label}`}
+                style={(state: any) => [styles.collapseBtn, focusRing(!!state.focused)]}
+              >
+                <ChevronsRight size={16} color={BOARD.textMuted} />
+              </Pressable>
+            )}
           </View>
-          {collapsible && (
-            <TouchableOpacity
-              onPress={() => setCollapsed(true)}
-              style={styles.collapseBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel={`Recolher coluna ${col.shortLabel}`}
-            >
-              <ChevronsRight size={16} color="#80776C" />
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
+        <Text style={[styles.hint, hideTitle && { marginTop: 0 }]}>{col.hint}</Text>
       </View>
 
       {tasks.length === 0 ? (
-        <View style={styles.emptyColumnBox}>
-          <col.icon size={26} color="#524B43" />
-          <Text style={styles.emptyColumnText}>{col.emptyText}</Text>
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>{col.emptyText}</Text>
+          {emptyAction && (
+            <TaskButton label={emptyAction.label} onPress={emptyAction.onPress} variant="dark" compact />
+          )}
         </View>
       ) : (
-        <View style={styles.postitContainer}>
+        <View style={styles.list}>
           {shown.map((t) => (
             <React.Fragment key={t.id}>{renderCard(t)}</React.Fragment>
           ))}
           {remaining > 0 && (
-            <TouchableOpacity
-              style={styles.moreBtn}
+            <TaskButton
+              label={`Mostrar mais ${Math.min(PAGE_SIZE, remaining)} de ${remaining}`}
               onPress={() => setVisibleCount((n) => n + PAGE_SIZE)}
-              accessibilityRole="button"
-            >
-              <Text style={styles.moreBtnText}>Mostrar mais ({remaining} restantes)</Text>
-            </TouchableOpacity>
+              variant="dark"
+            />
           )}
         </View>
       )}
@@ -97,91 +119,74 @@ export function TaskColumn({ col, tasks, layoutStyle, renderCard, collapsible, p
 
 const styles = StyleSheet.create({
   column: {
-    backgroundColor: 'rgba(30, 26, 23, 0.85)',
-    borderRadius: 12,
+    backgroundColor: BOARD.wood,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#3D342C',
-    padding: 12,
+    borderColor: BOARD.woodEdge,
+    padding: 14,
+    alignSelf: 'flex-start',
+    ...(Platform.OS === 'web' ? ({ boxShadow: 'inset 0 1px 0 rgba(255, 240, 210, 0.04)' } as any) : null),
   },
   collapsedColumn: {
-    width: 64,
-    minWidth: 64,
+    width: COLLAPSED_COLUMN_WIDTH,
+    minWidth: COLLAPSED_COLUMN_WIDTH,
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 16,
-    alignSelf: 'flex-start',
+    paddingVertical: 18,
+    paddingHorizontal: 6,
   },
   collapsedLabel: {
-    color: '#BAAFA0',
-    fontSize: 11,
+    color: BOARD.textSecondary,
+    fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
   },
-  columnHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D342C',
-    paddingBottom: 10,
+  header: {
+    marginBottom: 16,
   },
-  columnHeaderTitle: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  columnTitle: {
-    color: '#E2D8C3',
-    fontWeight: 'bold',
-    fontSize: 13,
-    letterSpacing: 0.5,
+  title: {
+    color: BOARD.text,
+    fontFamily: BODY_FONT,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  count: {
+    color: BOARD.textMuted,
+    fontSize: 14,
+    fontWeight: '700',
   },
   collapseBtn: {
+    marginLeft: 'auto',
     padding: 4,
+    borderRadius: 4,
   },
-  badge: {
-    backgroundColor: '#161311',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+  hint: {
+    color: BOARD.textMuted,
+    fontSize: 13,
+    marginTop: 3,
+  },
+  empty: {
+    gap: 12,
+    alignItems: 'flex-start',
+    paddingVertical: 18,
+    paddingHorizontal: 14,
     borderWidth: 1,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  emptyColumnBox: {
-    padding: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#2D251E',
+    borderColor: '#3A2F25',
     borderStyle: 'dashed',
-    borderRadius: 8,
-    marginTop: 6,
-  },
-  emptyColumnText: {
-    color: '#80776C',
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  postitContainer: {
-    gap: 14,
-    paddingBottom: 8,
-  },
-  moreBtn: {
-    paddingVertical: 10,
-    alignItems: 'center',
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3D342C',
   },
-  moreBtnText: {
-    color: '#BAAFA0',
-    fontSize: 12,
-    fontWeight: '600',
+  emptyText: {
+    color: BOARD.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: BODY_FONT,
+  },
+  list: {
+    gap: 16,
   },
 });

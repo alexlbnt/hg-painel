@@ -1,22 +1,16 @@
 import React from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import {
-  AlertCircle,
-  Award,
   BookOpen,
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  Clock,
   Edit2,
   Lock,
-  MessageSquareWarning,
   PlayCircle,
   RotateCcw,
   Trash,
-  User,
-  XCircle,
 } from 'lucide-react-native';
 import { TaskData } from '@/lib/mockData';
 import {
@@ -28,9 +22,19 @@ import {
   TaskAction,
   TaskActor,
 } from '@/lib/taskRules';
-import { formatAge, formatTaskDate, markdownStyles, POST_IT_THEMES } from './taskTheme';
+import { TaskButton } from './TaskButton';
+import {
+  BOARD,
+  BODY_FONT,
+  CATEGORY_THEMES,
+  focusRing,
+  formatAge,
+  formatTaskDate,
+  markdownStyles,
+  NOTICE_FONT,
+} from './taskTheme';
 
-const LONG_DESCRIPTION = 150;
+const LONG_DESCRIPTION = 180;
 const HIT_SLOP = { top: 6, bottom: 6, left: 6, right: 6 };
 
 interface TaskCardProps {
@@ -46,506 +50,367 @@ interface TaskCardProps {
   onViewResolution: (task: TaskData) => void;
 }
 
-function ActionButtons({ task, actor, busy, onAction, onEdit, onDelete }: TaskCardProps) {
-  if (!actor) {
-    return (
-      <View style={styles.actionWarningBox}>
-        <AlertCircle size={13} color="#991B1B" />
-        <Text style={styles.loginRequired}>Faça login para interagir</Text>
-      </View>
-    );
-  }
+/** Ação principal (tinta cheia) e secundárias (contorno) de acordo com o que o usuário pode fazer. */
+const PRIMARY: { action: TaskAction; label: string; icon: any }[] = [
+  { action: 'APPROVE_SUGGESTION', label: 'Aprovar', icon: CheckCircle },
+  { action: 'TAKE', label: 'Assumir tarefa', icon: PlayCircle },
+  { action: 'FINISH', label: 'Concluir', icon: CheckCircle },
+  { action: 'ARCHIVE', label: 'Aprovar e arquivar', icon: Lock },
+];
+const SECONDARY: { action: TaskAction; label: string }[] = [
+  { action: 'REJECT_SUGGESTION', label: 'Recusar' },
+  { action: 'RELEASE', label: 'Liberar' },
+  { action: 'REQUEST_CHANGES', label: 'Pedir ajustes' },
+  { action: 'REOPEN', label: 'Reabrir' },
+];
 
-  const can = (action: TaskAction) => canRunTaskAction(task, actor, action);
-  const editable = canEditTask(task, actor);
-  const deletable = canDeleteTask(task, actor);
-
-  const button = (
-    action: TaskAction,
-    label: string,
-    Icon: any,
-    variant: { box: any; color: string },
-    flex = false
-  ) => (
-    <TouchableOpacity
-      key={action}
-      style={[styles.btnAction, variant.box, flex && { flex: 1 }, busy && styles.btnDisabled]}
-      onPress={() => onAction(task, action)}
-      disabled={busy}
-      accessibilityRole="button"
-      accessibilityLabel={`${label}: ${task.title}`}
-    >
-      <Icon color={variant.color} size={14} />
-      <Text style={[styles.btnActionText, { color: variant.color }]}>{label}</Text>
-    </TouchableOpacity>
-  );
-
-  const primary = { box: styles.btnPrimary, color: '#111' };
-  const take = { box: styles.btnTake, color: '#111' };
-  const finish = { box: styles.btnFinish, color: '#064E3B' };
-  const danger = { box: styles.btnApprove, color: '#FFF' };
-  const ghost = { box: styles.btnUndo, color: '#444' };
-
-  const mainButtons = [
-    can('APPROVE_SUGGESTION') && button('APPROVE_SUGGESTION', 'Aprovar', CheckCircle, primary, true),
-    can('REJECT_SUGGESTION') && button('REJECT_SUGGESTION', 'Recusar', XCircle, ghost),
-    can('TAKE') && button('TAKE', 'Assumir Missão', PlayCircle, take, true),
-    can('FINISH') && button('FINISH', 'Finalizar', CheckCircle, finish, true),
-    can('RELEASE') && button('RELEASE', 'Liberar', RotateCcw, ghost),
-    can('ARCHIVE') && button('ARCHIVE', 'Aprovar & Arquivar', Lock, danger, true),
-    can('REQUEST_CHANGES') && button('REQUEST_CHANGES', 'Pedir ajustes', MessageSquareWarning, ghost),
-    can('REOPEN') && button('REOPEN', 'Reabrir', RotateCcw, ghost),
-  ].filter(Boolean);
-
-  if (mainButtons.length === 0 && !editable && !deletable) return null;
-
+function IconAction({ icon: Icon, label, onPress, danger, disabled }: any) {
   return (
-    <View style={styles.actionButtons}>
-      {mainButtons.length > 0 && <View style={styles.actionRow}>{mainButtons}</View>}
-      {(editable || deletable) && (
-        <View style={styles.adminRow}>
-          {busy && <ActivityIndicator size="small" color="#555" />}
-          {editable && (
-            <TouchableOpacity
-              onPress={() => onEdit(task)}
-              style={styles.iconBtn}
-              hitSlop={HIT_SLOP}
-              disabled={busy}
-              accessibilityRole="button"
-              accessibilityLabel={`Editar task ${task.title}`}
-            >
-              <Edit2 color="#444" size={15} />
-            </TouchableOpacity>
-          )}
-          {deletable && (
-            <TouchableOpacity
-              onPress={() => onDelete(task)}
-              style={[styles.iconBtn, styles.iconBtnDanger]}
-              hitSlop={HIT_SLOP}
-              disabled={busy}
-              accessibilityRole="button"
-              accessibilityLabel={`Excluir task ${task.title}`}
-            >
-              <Trash color="#B82828" size={15} />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-    </View>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={HIT_SLOP}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={(state: any) => [
+        styles.iconAction,
+        (state.hovered || state.pressed) && { backgroundColor: danger ? 'rgba(142, 31, 31, 0.12)' : BOARD.rule },
+        focusRing(!!state.focused),
+      ]}
+    >
+      <Icon size={15} color={danger ? BOARD.bloodInk : BOARD.inkFaded} />
+    </Pressable>
   );
 }
 
-export function TaskCard(props: TaskCardProps) {
-  const { task, actor, isMobile, expanded, onToggleExpand, onViewResolution } = props;
-  const theme = POST_IT_THEMES[task.category] || POST_IT_THEMES.LORE;
+export function TaskCard({
+  task,
+  actor,
+  isMobile,
+  busy,
+  expanded,
+  onToggleExpand,
+  onAction,
+  onEdit,
+  onDelete,
+  onViewResolution,
+}: TaskCardProps) {
+  const theme = CATEGORY_THEMES[task.category] || CATEGORY_THEMES.LORE;
+  const Seal = theme.icon;
   const charCode = task.id.charCodeAt(task.id.length - 1) || 0;
-  // Rotação sutil apenas no desktop para visual orgânico
-  const rotation = isMobile ? 0 : ((charCode % 3) - 1) * 0.6;
+  // Avisos pregados à mão nunca ficam perfeitamente retos (só no desktop, para não atrapalhar a leitura)
+  const rotation = isMobile ? 0 : ((charCode % 3) - 1) * 0.5;
   const isLongText = task.description.length > LONG_DESCRIPTION;
   const isMine = !!actor && isTaskAssignee(task, actor);
   const isMySuggestion = !!actor && isTaskAuthor(task, actor);
   const isRejected = task.status === 'RECUSADO';
-  const age = task.status === 'PARADO' || task.status === 'ANDAMENTO' ? formatAge(task.updatedAt || task.createdAt) : null;
+  const isSuggestion = task.status === 'SUGERIDO' || isRejected;
+  const age = formatAge(task.updatedAt || task.createdAt);
+
+  const can = (action: TaskAction) => !!actor && canRunTaskAction(task, actor, action);
+  const primary = PRIMARY.filter((p) => can(p.action));
+  const secondary = SECONDARY.filter((s) => can(s.action));
+  const editable = !!actor && canEditTask(task, actor);
+  const deletable = !!actor && canDeleteTask(task, actor);
+
+  let people: string | null = null;
+  if (isSuggestion && task.createdByName) {
+    people = `Sugerida por ${isMySuggestion ? 'você' : task.createdByName}`;
+  } else if (task.assignedTo) {
+    const who = isMine ? 'você' : task.assignedTo;
+    people =
+      task.status === 'ANDAMENTO' ? `Com ${who}${age ? `, ${age}` : ''}` : `Feita por ${who}`;
+  } else if (task.status === 'PARADO') {
+    people = `Livre${age ? `, aberta ${age}` : ''}`;
+  }
 
   return (
     <View
-      style={[
-        styles.postIt,
-        {
-          backgroundColor: theme.bg,
-          borderColor: theme.border,
-          transform: [{ rotate: `${rotation}deg` }],
-        },
-        isRejected && styles.postItRejected,
-        Platform.OS === 'web' &&
-          ({
-            transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-            cursor: 'default',
-          } as any),
-      ]}
-      // @ts-ignore
-      onMouseEnter={(e: any) => {
-        if (Platform.OS === 'web' && !isMobile) {
-          e.currentTarget.style.transform = `translateY(-3px) scale(1.015) rotate(${rotation}deg)`;
-          e.currentTarget.style.boxShadow = '0 10px 22px rgba(0,0,0,0.38)';
-        }
-      }}
-      // @ts-ignore
-      onMouseLeave={(e: any) => {
-        if (Platform.OS === 'web' && !isMobile) {
-          e.currentTarget.style.transform = `rotate(${rotation}deg)`;
-          e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.22)';
-        }
-      }}
+      style={[styles.notice, { transform: [{ rotate: `${rotation}deg` }] }, isMine && styles.noticeMine]}
+      accessibilityLabel={`${theme.label}: ${task.title}`}
     >
-      {/* Fita Adesiva Translúcida (Washi Tape) */}
-      <View style={styles.washiTape} />
-
-      {/* Topo do Post-it: Categoria e Data */}
-      <View style={styles.postItHeader}>
-        <View style={[styles.categoryBadge, { backgroundColor: theme.badgeBg }]}>
-          <Text style={[styles.categoryBadgeText, { color: theme.badgeText }]}>{theme.label}</Text>
+      <View style={styles.header}>
+        <View style={[styles.seal, { backgroundColor: theme.wax }]} accessibilityElementsHidden>
+          <View style={styles.sealRing}>
+            <Seal size={14} color="rgba(255, 244, 220, 0.92)" />
+          </View>
         </View>
-        <Text style={styles.postItDate} accessibilityLabel={`Criada em ${formatTaskDate(task.createdAt)}`}>
-          {formatTaskDate(task.createdAt)}
-        </Text>
-      </View>
-
-      {isRejected && (
-        <View style={styles.rejectedTag}>
-          <XCircle size={12} color="#991B1B" />
-          <Text style={styles.rejectedTagText}>Sugestão recusada</Text>
-        </View>
-      )}
-
-      <Text style={styles.postItTitle}>{task.title}</Text>
-
-      {/* Descrição: textos longos ficam recolhidos sem cortar o Markdown no meio */}
-      <View style={styles.postItDesc}>
-        <View style={isLongText && !expanded ? styles.descCollapsed : undefined}>
-          <Markdown style={markdownStyles}>{task.description}</Markdown>
-        </View>
-        {isLongText && (
-          <TouchableOpacity
-            onPress={() => onToggleExpand(task.id)}
-            style={styles.expandToggleBtn}
-            hitSlop={HIT_SLOP}
-            accessibilityRole="button"
-            accessibilityState={{ expanded }}
-          >
-            <Text style={styles.expandToggleText}>{expanded ? 'Mostrar menos' : 'Ler descrição completa'}</Text>
-            {expanded ? <ChevronUp size={12} color="#555" /> : <ChevronDown size={12} color="#555" />}
-          </TouchableOpacity>
+        <Text style={styles.category}>{theme.label}</Text>
+        {(editable || deletable) && (
+          <View style={styles.iconActions}>
+            {editable && (
+              <IconAction icon={Edit2} label={`Editar ${task.title}`} onPress={() => onEdit(task)} disabled={busy} />
+            )}
+            {deletable && (
+              <IconAction icon={Trash} label={`Excluir ${task.title}`} onPress={() => onDelete(task)} disabled={busy} danger />
+            )}
+          </View>
         )}
       </View>
 
-      {/* Motivo da recusa ou ajustes pedidos pelo Mestre */}
+      {isRejected && (
+        <View style={styles.stamp}>
+          <Text style={styles.stampText}>Recusada</Text>
+        </View>
+      )}
+
+      <Text style={styles.title}>{task.title}</Text>
+
+      {/* Descrição: textos longos ficam recolhidos sem cortar o Markdown no meio */}
+      <View style={isLongText && !expanded ? styles.descCollapsed : undefined}>
+        <Markdown style={markdownStyles}>{task.description}</Markdown>
+      </View>
+      {isLongText && (
+        <Pressable
+          onPress={() => onToggleExpand(task.id)}
+          hitSlop={HIT_SLOP}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+          style={(state: any) => [styles.expand, focusRing(!!state.focused)]}
+        >
+          <Text style={styles.expandText}>{expanded ? 'Mostrar menos' : 'Ler tudo'}</Text>
+          {expanded ? <ChevronUp size={13} color={BOARD.inkSoft} /> : <ChevronDown size={13} color={BOARD.inkSoft} />}
+        </Pressable>
+      )}
+
       {!!task.reviewNote && (
-        <View style={styles.reviewNoteBox}>
-          <MessageSquareWarning size={13} color="#9A3412" />
-          <Text style={styles.reviewNoteText}>
-            <Text style={{ fontWeight: '700' }}>{isRejected ? 'Motivo da recusa: ' : 'Ajustes pedidos: '}</Text>
-            {task.reviewNote}
-          </Text>
+        <View style={styles.reviewNote}>
+          <Text style={styles.reviewNoteLabel}>{isRejected ? 'Motivo da recusa' : 'Ajustes pedidos pelo Mestre'}</Text>
+          <Text style={styles.reviewNoteText}>{task.reviewNote}</Text>
         </View>
       )}
 
-      {!!task.reward && (
-        <View style={styles.rewardBox}>
-          <Award size={13} color="#854D0E" />
-          <Text style={styles.rewardText}>
-            <Text style={{ fontWeight: '700' }}>Recompensa: </Text>
-            {task.reward}
+      <View style={styles.meta}>
+        {!!task.reward && (
+          <Text style={styles.metaLine}>
+            <Text style={styles.metaLabel}>Recompensa </Text>
+            <Text style={styles.metaValue}>{task.reward}</Text>
           </Text>
-        </View>
-      )}
-
-      {(task.status === 'SUGERIDO' || isRejected) && !!task.createdByName && (
-        <Text style={styles.authorText}>Sugerida por {isMySuggestion ? 'você' : task.createdByName}</Text>
-      )}
-
-      {task.assignedTo ? (
-        <View style={[styles.assignedBox, isMine && styles.assignedBoxMine]}>
-          <User size={13} color={isMine ? '#15803D' : '#444'} />
-          <Text style={styles.assignedText}>
-            {isMine ? 'Assumida por você' : `Assumida por ${task.assignedTo}`}
-            {age && task.status === 'ANDAMENTO' ? ` · ${age}` : ''}
-          </Text>
-        </View>
-      ) : task.status === 'PARADO' ? (
-        <View style={styles.openNoticeBox}>
-          <Clock size={12} color="#854D0E" />
-          <Text style={styles.openNoticeText}>Livre para assumir{age ? ` · aberta ${age}` : ''}</Text>
-        </View>
-      ) : null}
+        )}
+        {!!people && <Text style={[styles.metaLine, isMine && styles.metaMine]}>{people}</Text>}
+        <Text style={styles.metaDate}>Criada em {formatTaskDate(task.createdAt)}</Text>
+      </View>
 
       {!!task.resolution && (task.status === 'FINALIZADO' || task.status === 'APROVADO') && (
-        <TouchableOpacity
-          style={styles.viewResolutionBtn}
+        <Pressable
           onPress={() => onViewResolution(task)}
           accessibilityRole="button"
+          style={(state: any) => [styles.diaryLink, focusRing(!!state.focused)]}
         >
-          <BookOpen size={13} color="#1C1917" />
-          <Text style={styles.viewResolutionText}>Ler Diário de Missão</Text>
-        </TouchableOpacity>
+          <BookOpen size={14} color={BOARD.inkSoft} />
+          <Text style={styles.diaryText}>Ler diário de missão</Text>
+        </Pressable>
       )}
 
-      <ActionButtons {...props} />
+      {(primary.length > 0 || secondary.length > 0) && (
+        <View style={styles.actions}>
+          {primary.map((p) => (
+            <TaskButton
+              key={p.action}
+              label={p.label}
+              icon={p.icon}
+              variant="ink"
+              grow
+              loading={busy}
+              onPress={() => onAction(task, p.action)}
+              accessibilityLabel={`${p.label}: ${task.title}`}
+            />
+          ))}
+          {secondary.map((s) => (
+            <TaskButton
+              key={s.action}
+              label={s.label}
+              icon={s.action === 'REOPEN' || s.action === 'RELEASE' ? RotateCcw : undefined}
+              variant="inkOutline"
+              grow={primary.length === 0}
+              disabled={busy}
+              onPress={() => onAction(task, s.action)}
+              accessibilityLabel={`${s.label}: ${task.title}`}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  postIt: {
+  notice: {
     width: '100%',
-    padding: 14,
-    paddingTop: 18,
-    borderRadius: 4,
+    backgroundColor: BOARD.parchment,
+    borderRadius: 3,
     borderWidth: 1,
-    position: 'relative',
+    borderColor: BOARD.parchmentEdge,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 16,
     ...(Platform.OS === 'web'
-      ? ({ boxShadow: '0 3px 10px rgba(0,0,0,0.22)' } as any)
+      ? ({ boxShadow: '0 1px 0 rgba(0,0,0,0.45), 0 8px 18px rgba(0,0,0,0.35)' } as any)
       : {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.22,
-          shadowRadius: 5,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.35,
+          shadowRadius: 8,
           elevation: 4,
         }),
   },
-  postItRejected: {
-    opacity: 0.85,
-    borderStyle: 'dashed',
-    borderColor: '#B91C1C',
+  noticeMine: {
+    borderLeftWidth: 4,
+    borderLeftColor: BOARD.gold,
   },
-  washiTape: {
-    position: 'absolute',
-    top: -8,
-    alignSelf: 'center',
-    width: 62,
-    height: 16,
-    backgroundColor: 'rgba(255, 252, 240, 0.72)',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  seal: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: 'inset 0 -2px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.35)' } as any)
+      : { elevation: 2 }),
+  },
+  sealRing: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-    transform: [{ rotate: '-1deg' }],
-    zIndex: 10,
-    borderRadius: 2,
-  },
-  postItHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    borderColor: 'rgba(255, 244, 220, 0.35)',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
   },
-  categoryBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 4,
+  category: {
+    color: BOARD.inkFaded,
+    fontSize: 13,
+    fontFamily: BODY_FONT,
+    fontStyle: 'italic',
+    flexShrink: 1,
   },
-  categoryBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  postItDate: {
-    fontSize: 10,
-    color: '#57534E',
-    fontWeight: '600',
-  },
-  rejectedTag: {
+  iconActions: {
+    marginLeft: 'auto',
     flexDirection: 'row',
+    gap: 2,
+    marginRight: -6,
+  },
+  iconAction: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+  },
+  stamp: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(185, 28, 28, 0.12)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderWidth: 2,
+    borderColor: BOARD.bloodInk,
     borderRadius: 4,
-    marginBottom: 6,
-  },
-  rejectedTagText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#991B1B',
-    textTransform: 'uppercase',
-  },
-  postItTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#1C1917',
-    marginBottom: 6,
-    lineHeight: 20,
-  },
-  postItDesc: {
+    paddingHorizontal: 8,
+    paddingVertical: 1,
     marginBottom: 8,
+    transform: [{ rotate: '-4deg' }],
+    opacity: 0.85,
+  },
+  stampText: {
+    color: BOARD.bloodInk,
+    fontFamily: NOTICE_FONT,
+    fontSize: 15,
+    letterSpacing: 1,
+  },
+  title: {
+    color: BOARD.ink,
+    fontFamily: NOTICE_FONT,
+    fontSize: 20,
+    lineHeight: 25,
+    marginBottom: 6,
   },
   descCollapsed: {
-    maxHeight: 96,
+    maxHeight: 106,
     overflow: 'hidden',
   },
-  expandToggleBtn: {
+  expand: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 4,
     alignSelf: 'flex-start',
+    marginTop: 2,
+    paddingVertical: 4,
   },
-  expandToggleText: {
-    fontSize: 11,
+  expandText: {
+    color: BOARD.inkSoft,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#444',
     textDecorationLine: 'underline',
   },
-  reviewNoteBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    backgroundColor: 'rgba(234, 88, 12, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(154, 52, 18, 0.25)',
+  reviewNote: {
+    marginTop: 10,
+    paddingLeft: 10,
     paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-    marginBottom: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: BOARD.bloodInk,
+    backgroundColor: 'rgba(142, 31, 31, 0.07)',
+  },
+  reviewNoteLabel: {
+    color: BOARD.bloodInk,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 2,
   },
   reviewNoteText: {
-    flex: 1,
-    fontSize: 11,
-    color: '#7C2D12',
-    lineHeight: 16,
+    color: BOARD.ink,
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: BODY_FONT,
   },
-  rewardBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.55)',
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-    marginBottom: 6,
-  },
-  rewardText: {
-    flex: 1,
-    fontSize: 11,
-    color: '#451A03',
-  },
-  authorText: {
-    fontSize: 11,
-    color: '#57534E',
-    fontStyle: 'italic',
-    marginBottom: 6,
-  },
-  assignedBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingTop: 6,
+  meta: {
+    marginTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)',
-    marginBottom: 8,
+    borderTopColor: BOARD.rule,
+    borderStyle: 'dashed',
+    gap: 4,
   },
-  assignedBoxMine: {
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    padding: 6,
-    borderRadius: 4,
-    borderTopWidth: 0,
+  metaLine: {
+    color: BOARD.inkFaded,
+    fontSize: 13,
+    lineHeight: 18,
   },
-  assignedText: {
-    fontSize: 11,
-    color: '#292524',
-    fontWeight: '600',
+  metaLabel: {
+    color: BOARD.inkFaded,
   },
-  openNoticeBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)',
-    marginBottom: 8,
-  },
-  openNoticeText: {
-    fontSize: 11,
-    color: '#854D0E',
-    fontStyle: 'italic',
-  },
-  viewResolutionBtn: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.12)',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  viewResolutionText: {
-    color: '#1C1917',
+  metaValue: {
+    color: BOARD.ink,
     fontWeight: '700',
-    fontSize: 11,
   },
-  actionButtons: {
+  metaDate: {
+    color: BOARD.inkFaded,
+    fontSize: 12,
+  },
+  metaMine: {
+    color: BOARD.ink,
+    fontWeight: '700',
+  },
+  diaryLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
-    marginTop: 4,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingVertical: 4,
   },
-  actionRow: {
+  diaryText: {
+    color: BOARD.inkSoft,
+    fontSize: 13,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-  },
-  adminRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
     gap: 8,
-  },
-  actionWarningBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingTop: 4,
-  },
-  loginRequired: {
-    fontSize: 10,
-    color: '#991B1B',
-    fontWeight: 'bold',
-  },
-  btnAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 5,
-    minHeight: 38,
-  },
-  btnDisabled: {
-    opacity: 0.55,
-  },
-  btnPrimary: {
-    backgroundColor: '#C5A059',
-  },
-  btnTake: {
-    backgroundColor: '#FDE047',
-    borderWidth: 1,
-    borderColor: '#EAB308',
-  },
-  btnFinish: {
-    backgroundColor: 'rgba(34, 197, 94, 0.25)',
-    borderWidth: 1,
-    borderColor: '#16A34A',
-  },
-  btnApprove: {
-    backgroundColor: '#8C3E3E',
-  },
-  btnActionText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  btnUndo: {
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.15)',
-  },
-  iconBtn: {
-    minWidth: 36,
-    minHeight: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-  },
-  iconBtnDanger: {
-    backgroundColor: 'rgba(184, 40, 40, 0.12)',
+    marginTop: 14,
   },
 });
