@@ -135,8 +135,8 @@ export interface CharacterData {
   updatedAt?: string | Date;
 }
 
-export type TaskCategory = 'LORE' | 'MECANICA' | 'ARTE' | 'DEV' | 'ESPECIAL';
-export type TaskStatus = 'SUGERIDO' | 'PARADO' | 'ANDAMENTO' | 'FINALIZADO' | 'APROVADO';
+import type { TaskCategory, TaskStatus } from '@/lib/taskRules';
+export type { TaskCategory, TaskStatus };
 
 export interface TaskData {
   id: string;
@@ -146,8 +146,13 @@ export interface TaskData {
   status: TaskStatus;
   reward: string;
   resolution?: string;
+  reviewNote?: string;
   assignedTo: string | null;
+  assignedToId?: string | null;
+  createdById?: string | null;
+  createdByName?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export const CHARACTER_THEME_COLORS = [

@@ -1,32 +1,15 @@
 import { prisma } from '@/lib/prisma';
-import { INITIAL_TASKS } from '@/lib/mockData';
 import { broadcastEvent } from '@/lib/eventBus';
-import { getAuthenticatedUser } from '@/lib/auth';
+import { unauthorized } from '@/lib/auth';
+import { getTaskActor } from '@/lib/taskActor';
+import { planTaskCreate } from '@/lib/taskRules';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    if (!(await getTaskActor(request))) return unauthorized();
     const tasks = await prisma.task.findMany({
       orderBy: { createdAt: 'desc' },
     });
-
-    if (tasks.length === 0) {
-      for (const t of INITIAL_TASKS) {
-        await prisma.task.create({
-          data: {
-            title: t.title,
-            description: t.description,
-            category: t.category,
-            status: t.status,
-            reward: t.reward,
-            assignedTo: t.assignedTo,
-          },
-        });
-      }
-      const newTasks = await prisma.task.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
-      return Response.json(newTasks);
-    }
     return Response.json(tasks);
   } catch (error) {
     console.error('Erro no Prisma GET /api/tasks:', error);
@@ -36,24 +19,25 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const authUser = await getAuthenticatedUser(request);
-    if (!authUser) {
-      return Response.json(
-        { error: 'Identificação necessária para sugerir ou criar tarefas na mesa' },
-        { status: 401 }
-      );
+    const actor = await getTaskActor(request);
+    if (!actor) {
+      return unauthorized('Identificação necessária para sugerir ou criar tarefas na mesa');
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
+    // Status, autoria e responsável são definidos pelo servidor, nunca pelo cliente
+    const plan = planTaskCreate(actor, body);
+    if (!plan.ok) return Response.json({ error: plan.error }, { status: plan.status });
+
     const newTask = await prisma.task.create({
       data: {
-        title: body.title || 'Nova Tarefa',
-        description: body.description || '',
-        category: body.category || 'LORE',
-        status: body.status || 'PARADO',
-        reward: body.reward || '',
-        resolution: body.resolution || '',
-        assignedTo: body.assignedTo || null,
+        title: plan.changes.title!,
+        description: plan.changes.description!,
+        category: plan.changes.category,
+        status: plan.changes.status,
+        reward: plan.changes.reward,
+        createdById: plan.changes.createdById,
+        createdByName: plan.changes.createdByName,
       },
     });
     broadcastEvent({ type: 'TASK_CREATED', id: newTask.id, data: newTask });

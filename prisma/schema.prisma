@@ -20,22 +20,22 @@ enum ResetType {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  username  String   @unique
-  password  String
-  role      Role     @default(PLAYER)
-  roomId    String?
-  avatarUrl String   @default("")
-  isSuperDm Boolean  @default(false)
-  bio       String   @default("")
-  room      Room?    @relation("UserRoom", fields: [roomId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  journalNotes JournalNote[]
-  rsvps        SessionRsvp[]
+  id             String               @id @default(uuid())
+  name           String
+  username       String               @unique
+  password       String
+  role           Role                 @default(PLAYER)
+  roomId         String?
+  avatarUrl      String               @default("")
+  isSuperDm      Boolean              @default(false)
+  bio            String               @default("")
+  room           Room?                @relation("UserRoom", fields: [roomId], references: [id], onDelete: SetNull)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  journalNotes   JournalNote[]
+  rsvps          SessionRsvp[]
   availabilities PlayerAvailability[]
-  characters   Character[]
+  characters     Character[]
 }
 
 model Room {
@@ -53,89 +53,89 @@ model Room {
 }
 
 model Character {
-  id                 String      @id @default(uuid())
-  name               String
-  playerName         String
-  race               String      @default("Humano")
-  class              String      @default("Guerreiro")
-  archetype          String      @default("")
-  level              Int         @default(1)
-  alignment          String      @default("Neutro")
-  background         String      @default("Herói do Povo")
-  username           String      @default("")
-  lore               String      @default("")
-  companion          String      @default("")
-  description        String      @default("")
-  avatarUrl          String      @default("")
-  deity              String      @default("Nenhum")
-  
+  id          String @id @default(uuid())
+  name        String
+  playerName  String
+  race        String @default("Humano")
+  class       String @default("Guerreiro")
+  archetype   String @default("")
+  level       Int    @default(1)
+  alignment   String @default("Neutro")
+  background  String @default("Herói do Povo")
+  username    String @default("")
+  lore        String @default("")
+  companion   String @default("")
+  description String @default("")
+  avatarUrl   String @default("")
+  deity       String @default("Nenhum")
+
   // Combat stats
-  currentHp          Int         @default(10)
-  maxHp              Int         @default(10)
-  tempHp             Int         @default(0)
-  armorClass         Int         @default(10)
-  initiativeBonus    Int         @default(0)
-  speed              String      @default("9m")
-  
+  currentHp       Int    @default(10)
+  maxHp           Int    @default(10)
+  tempHp          Int    @default(0)
+  armorClass      Int    @default(10)
+  initiativeBonus Int    @default(0)
+  speed           String @default("9m")
+
   // Hit Dice
-  hitDiceType        String      @default("1d10")
-  hitDiceTotal       Int         @default(1)
-  hitDiceSpent       Int         @default(0)
-  
+  hitDiceType  String @default("1d10")
+  hitDiceTotal Int    @default(1)
+  hitDiceSpent Int    @default(0)
+
   // Death Saves
-  deathSaveSuccesses Int         @default(0)
-  deathSaveFailures  Int         @default(0)
-  
+  deathSaveSuccesses Int @default(0)
+  deathSaveFailures  Int @default(0)
+
   // Attributes (Scores)
-  str                Int         @default(10)
-  dex                Int         @default(10)
-  con                Int         @default(10)
-  int                Int         @default(10)
-  wis                Int         @default(10)
-  cha                Int         @default(10)
-  
+  str Int @default(10)
+  dex Int @default(10)
+  con Int @default(10)
+  int Int @default(10)
+  wis Int @default(10)
+  cha Int @default(10)
+
   // Saving Throw Proficiencies
-  strProf            Boolean     @default(false)
-  dexProf            Boolean     @default(false)
-  conProf            Boolean     @default(false)
-  intProf            Boolean     @default(false)
-  wisProf            Boolean     @default(false)
-  chaProf            Boolean     @default(false)
-  
+  strProf Boolean @default(false)
+  dexProf Boolean @default(false)
+  conProf Boolean @default(false)
+  intProf Boolean @default(false)
+  wisProf Boolean @default(false)
+  chaProf Boolean @default(false)
+
   // Skill Proficiencies (stored as comma-separated string for simplicity in D&D 5e skills)
-  proficientSkills   String      @default("")
+  proficientSkills String @default("")
 
   // Moedas e Recursos Especiais
-  gold               Int         @default(15) // PO
-  silver             Int         @default(10) // PP
-  copper             Int         @default(30) // PC
-  themeColor         String      @default("#C5A059") // Cor de Personalização
-  
-  sorceryPoints      Int         @default(0) // Pontos de Feitiçaria
-  maxSorceryPoints   Int         @default(0)
-  kiPoints           Int         @default(0) // Pontos de Qi / Ki (Monge)
-  maxKiPoints        Int         @default(0)
-  superiorityDice    Int         @default(0) // Dados de Superioridade atuais (Guerreiro Mestre de Batalha)
-  maxSuperiorityDice Int         @default(0) // Quantidade máxima de dados
-  superiorityDieType String      @default("d8") // Tipo do dado de superioridade (d8, d10, d12)
+  gold       Int    @default(15) // PO
+  silver     Int    @default(10) // PP
+  copper     Int    @default(30) // PC
+  themeColor String @default("#C5A059") // Cor de Personalização
+
+  sorceryPoints      Int    @default(0) // Pontos de Feitiçaria
+  maxSorceryPoints   Int    @default(0)
+  kiPoints           Int    @default(0) // Pontos de Qi / Ki (Monge)
+  maxKiPoints        Int    @default(0)
+  superiorityDice    Int    @default(0) // Dados de Superioridade atuais (Guerreiro Mestre de Batalha)
+  maxSuperiorityDice Int    @default(0) // Quantidade máxima de dados
+  superiorityDieType String @default("d8") // Tipo do dado de superioridade (d8, d10, d12)
 
   // Eixo moral do cenário: -100 (Egoísmo) a +100 (Honra)
-  honor              Int         @default(0)
+  honor Int @default(0)
 
   // Relations
-  roomId             String?
-  room               Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
-  userId             String?
-  user               User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  spellSlots         SpellSlot[]
-  abilities          Ability[]
-  conditions         Condition[]
-  items              Item[]
-  spells             Spell[]
-  logs               CharacterLog[]
-  
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  roomId     String?
+  room       Room?          @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  userId     String?
+  user       User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  spellSlots SpellSlot[]
+  abilities  Ability[]
+  conditions Condition[]
+  items      Item[]
+  spells     Spell[]
+  logs       CharacterLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([roomId])
   @@index([userId])
@@ -219,6 +219,7 @@ enum TaskCategory {
 
 enum TaskStatus {
   SUGERIDO
+  RECUSADO
   PARADO
   ANDAMENTO
   FINALIZADO
@@ -226,16 +227,22 @@ enum TaskStatus {
 }
 
 model Task {
-  id          String       @id @default(uuid())
-  title       String
-  description String
-  category    TaskCategory @default(LORE)
-  status      TaskStatus   @default(PARADO)
-  reward      String       @default("")
-  resolution  String       @default("")
-  assignedTo  String?      
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id            String       @id @default(uuid())
+  title         String
+  description   String
+  category      TaskCategory @default(LORE)
+  status        TaskStatus   @default(PARADO)
+  reward        String       @default("")
+  resolution    String       @default("")
+  /// Motivo da recusa da sugestão ou dos ajustes pedidos pelo Mestre
+  reviewNote    String       @default("")
+  /// Nome de exibição do responsável (gravado pelo servidor)
+  assignedTo    String?
+  assignedToId  String?
+  createdById   String?
+  createdByName String       @default("")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model CampaignSession {
@@ -301,7 +308,7 @@ model PlayerAvailability {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      String   // ISO YYYY-MM-DD
+  date      String // ISO YYYY-MM-DD
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -309,13 +316,12 @@ model PlayerAvailability {
   @@index([date])
 }
 
-
 // Histórico de eventos da ficha: combate, descansos, intervenções do Mestre e mudanças de Honra/Egoísmo
 model CharacterLog {
   id          String    @id @default(uuid())
   characterId String
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  kind        String    // HONOR | DAMAGE | HEAL | REST | CONDITION | NOTE
+  kind        String // HONOR | DAMAGE | HEAL | REST | CONDITION | NOTE
   delta       Int       @default(0)
   message     String    @default("")
   authorId    String?

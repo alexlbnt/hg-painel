@@ -2,6 +2,7 @@ import { CharacterData, ConditionData, INITIAL_CHARACTERS, TaskData, INITIAL_TAS
 import { Platform } from 'react-native';
 import { Role, authStorage, getApiBaseUrl } from '@/contexts/AuthContext';
 import { apiStatus } from '@/lib/apiStatus';
+import { planTaskAction, planTaskCreate, planTaskEdit, TaskAction, TaskActor, TaskPlan } from '@/lib/taskRules';
 
 export interface UserData {
   id: string;
@@ -251,6 +252,43 @@ async function postCharacterAction(id: string, action: string, body: unknown): P
 }
 
 /**
+ * Requisição de tasks. Respostas de erro do servidor (permissão, conflito, validação) sempre
+ * viram exceção com a mensagem da API. Só falha de rede no app nativo cai no modo offline (retorna null).
+ */
+async function taskRequest(path: string, method: string, body?: unknown): Promise<any | null> {
+  let res: Response;
+  try {
+    res = await apiFetch(`${getApiBaseUrl()}${path}`, {
+      method,
+      headers: getAuthHeaders(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    if (Platform.OS === 'web') throw new Error('Sem conexão com o servidor. Tente novamente.');
+    return null;
+  }
+  if (res.ok) return res.json().catch(() => ({}));
+  const err = await res.json().catch(() => ({}));
+  throw new Error(err.error || `Falha na operação (status ${res.status})`);
+}
+
+function currentTaskActor(): TaskActor {
+  const u = authStorage.get();
+  return { id: u?.id || 'local', name: u?.name || 'Aventureiro', role: u?.role || 'PLAYER' };
+}
+
+function applyLocalTaskPlan(id: string, plan: (task: TaskData) => TaskPlan): TaskData {
+  const tasks = loadTasksFromStorage();
+  const idx = tasks.findIndex(t => t.id === id);
+  if (idx === -1) throw new Error('Task não encontrada');
+  const result = plan(tasks[idx]);
+  if (!result.ok) throw new Error(result.error);
+  tasks[idx] = { ...tasks[idx], ...result.changes } as TaskData;
+  saveTasksToStorage(tasks);
+  return tasks[idx];
+}
+
+/**
  * Serviço de API Híbrido:
  * Tenta comunicar com as rotas serverless do Vercel/Expo (/api/...).
  * Caso não haja servidor ou o banco de dados Neon não esteja configurado, entra em modo fallback interativo em tempo real.
@@ -270,80 +308,67 @@ export const ApiService = {
           return data;
         }
       }
-      if (res.status !== 401) apiStatus.reportFailure();
+      // Sem login não há quadro (e não mostramos as tasks de exemplo do modo offline)
+      if (res.status === 401) return [];
+      apiStatus.reportFailure();
     } catch {
       apiStatus.reportFailure();
     }
     return loadTasksFromStorage();
   },
 
-  async createTask(data: Partial<TaskData>): Promise<TaskData> {
+  /** Cria uma task. O servidor decide o status (sugestão ou backlog) e a autoria. */
+  async createTask(data: Pick<TaskData, 'title' | 'description' | 'category'> & { reward?: string }): Promise<TaskData> {
+    const res = await taskRequest('/api/tasks', 'POST', data);
+    if (res) return res;
+    const actor = currentTaskActor();
+    const plan = planTaskCreate(actor, data);
+    if (!plan.ok) throw new Error(plan.error);
     const newTask: TaskData = {
       id: `task-${Date.now()}`,
-      title: data.title || 'Nova Tarefa',
-      description: data.description || '',
-      category: data.category || 'LORE',
-      status: data.status || 'PARADO',
-      reward: data.reward || '',
-      assignedTo: data.assignedTo || null,
+      title: plan.changes.title!,
+      description: plan.changes.description!,
+      category: plan.changes.category!,
+      status: plan.changes.status!,
+      reward: plan.changes.reward || '',
+      resolution: '',
+      reviewNote: '',
+      assignedTo: null,
+      assignedToId: null,
+      createdById: actor.id,
+      createdByName: actor.name,
       createdAt: new Date().toISOString(),
     };
-    try {
-      const baseUrl = getApiBaseUrl();
-      const res = await apiFetch(`${baseUrl}/api/tasks`, {
-        method: 'POST',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(newTask),
-      });
-      if (res.ok) return await res.json();
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Falha ao criar task (status ${res.status})`);
-    } catch (e) {
-      if (Platform.OS === 'web') throw e;
-    }
     const tasks = loadTasksFromStorage();
     tasks.push(newTask);
     saveTasksToStorage(tasks);
     return newTask;
   },
 
-  async updateTask(id: string, updates: Partial<TaskData>): Promise<TaskData> {
-    try {
-      const baseUrl = getApiBaseUrl();
-      const res = await apiFetch(`${baseUrl}/api/tasks/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(updates),
-      });
-      if (res.ok) return await res.json();
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Falha ao atualizar task (status ${res.status})`);
-    } catch (e) {
-      if (Platform.OS === 'web') throw e;
-    }
-    const tasks = loadTasksFromStorage();
-    const idx = tasks.findIndex(t => t.id === id);
-    if (idx !== -1) {
-      tasks[idx] = { ...tasks[idx], ...updates };
-      saveTasksToStorage(tasks);
-      return tasks[idx];
-    }
-    throw new Error('Task não encontrada');
+  /** Edita o conteúdo da task (título, descrição, categoria, recompensa, diário). */
+  async updateTask(
+    id: string,
+    updates: Partial<Pick<TaskData, 'title' | 'description' | 'category' | 'reward' | 'resolution'>>
+  ): Promise<TaskData> {
+    const res = await taskRequest(`/api/tasks/${id}`, 'PUT', updates);
+    if (res) return res;
+    return applyLocalTaskPlan(id, (task) => planTaskEdit(task, currentTaskActor(), updates));
+  },
+
+  /** Move a task no fluxo (assumir, finalizar, aprovar, recusar...). */
+  async runTaskAction(
+    id: string,
+    action: TaskAction,
+    input: { note?: string; resolution?: string } = {}
+  ): Promise<TaskData> {
+    const res = await taskRequest(`/api/tasks/${id}`, 'PUT', { action, ...input });
+    if (res) return res;
+    return applyLocalTaskPlan(id, (task) => planTaskAction(task, currentTaskActor(), action, input));
   },
 
   async deleteTask(id: string): Promise<boolean> {
-    try {
-      const baseUrl = getApiBaseUrl();
-      const res = await apiFetch(`${baseUrl}/api/tasks/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
-      if (res.ok) return true;
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Falha ao deletar task (status ${res.status})`);
-    } catch (e) {
-      if (Platform.OS === 'web') throw e;
-    }
+    const res = await taskRequest(`/api/tasks/${id}`, 'DELETE');
+    if (res) return true;
     let tasks = loadTasksFromStorage();
     tasks = tasks.filter(t => t.id !== id);
     saveTasksToStorage(tasks);
